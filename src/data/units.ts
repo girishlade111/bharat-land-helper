@@ -116,8 +116,14 @@ export const STATE_TO_CATEGORY: Record<string, Category> = {
 export const STATES = Object.keys(STATE_TO_CATEGORY);
 
 export function convert(value: number, fromUnitSqft: number, toUnitSqft: number): number {
-  return (value * fromUnitSqft) / toUnitSqft;
+  const baseSqft = value * fromUnitSqft;
+  return baseSqft / toUnitSqft;
 }
+
+// Verification: log test cases
+console.log("✅ 1 Acre → sqft:", convert(1, 43560, 1), "(expected 43560)");
+console.log("✅ 1 Guntha → sqft:", convert(1, 1089, 1), "(expected 1089)");
+console.log("✅ 1 Bigha UP → sqft:", convert(1, 27000, 1), "(expected 27000)");
 
 export function formatIndianNumber(num: number): string {
   if (num < 0.01) return num.toFixed(6);
