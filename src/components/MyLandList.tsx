@@ -107,11 +107,11 @@ export default function MyLandList() {
                   <div>
                     <div className="text-sm font-medium">{p.name}</div>
                     <div className="text-xs text-muted-foreground">
-                      {p.value} {u?.name || p.unitId} · {p.state} · {p.date}
+                      {p.value} {u?.name || p.unitId} · {formatIndianNumber(p.sqftTotal)} sqft · {p.state} · {p.date}
                     </div>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)} className="min-h-[44px] text-destructive">
-                    ✕
+                    🗑
                   </Button>
                 </div>
               );
