@@ -121,8 +121,9 @@ export default function MyLandList() {
             <div className="rounded-md bg-primary/10 p-3 text-center">
               <div className="text-xs text-muted-foreground">{t("totalArea", lang)}</div>
               <div className="text-sm font-bold">
-                {totalAcre.toFixed(2)} Acre / {totalGuntha.toFixed(2)} Guntha
+                Total saved land = {totalAcre.toFixed(2)} Acre
               </div>
+            </div>
             </div>
 
             <Button variant="outline" size="sm" onClick={handleExport} className="w-full min-h-[44px]">
