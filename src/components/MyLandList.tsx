@@ -107,11 +107,11 @@ export default function MyLandList() {
                   <div>
                     <div className="text-sm font-medium">{p.name}</div>
                     <div className="text-xs text-muted-foreground">
-                      {p.value} {u?.name || p.unitId} · {p.state} · {p.date}
+                      {p.value} {u?.name || p.unitId} · {formatIndianNumber(p.sqftTotal)} sqft · {p.state} · {p.date}
                     </div>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)} className="min-h-[44px] text-destructive">
-                    ✕
+                    🗑
                   </Button>
                 </div>
               );
@@ -121,7 +121,7 @@ export default function MyLandList() {
             <div className="rounded-md bg-primary/10 p-3 text-center">
               <div className="text-xs text-muted-foreground">{t("totalArea", lang)}</div>
               <div className="text-sm font-bold">
-                {totalAcre.toFixed(2)} Acre / {totalGuntha.toFixed(2)} Guntha
+                Total saved land = {totalAcre.toFixed(2)} Acre
               </div>
             </div>
 
@@ -133,9 +133,10 @@ export default function MyLandList() {
 
         {/* Pro upsell */}
         {parcels.length >= 3 && (
-          <div className="rounded-lg border-2 border-accent bg-accent/10 p-4 text-center">
-            <div className="text-lg font-bold text-accent">{t("proTitle", lang)}</div>
-            <div className="text-sm text-muted-foreground">{t("proDesc", lang)}</div>
+          <div className="rounded-lg bg-accent p-4 text-center">
+            <div className="text-base font-bold text-accent-foreground">
+              💡 Want AI land valuation? Coming soon on ladestack.in
+            </div>
           </div>
         )}
       </CollapsibleContent>
