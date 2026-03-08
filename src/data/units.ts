@@ -141,22 +141,29 @@ export function formatIndianCurrency(num: number): { formatted: string; words: s
 }
 
 export const QUICK_REFS = [
-  { section: "Maharashtra", sectionHi: "महाराष्ट्र", items: [
+  { section: "Maharashtra", sectionHi: "महाराष्ट्र", color: "border-primary", items: [
     "1 Guntha = 1,089 sq ft (33×33 ft)",
     "40 Guntha = 1 Acre",
-    "1 Bigha (MH) = 25 Guntha",
+    "1 Bigha (MH) = 25 Guntha = 27,225 sq ft",
   ]},
-  { section: "UP / Bihar", sectionHi: "उ.प्र. / बिहार", items: [
+  { section: "UP / Bihar", sectionHi: "उ.प्र. / बिहार", color: "border-accent", items: [
     "1 Bigha (UP) = 27,000 sq ft = 20 Biswa",
-    "1 Biswa (UP) = 1,350 sq ft",
     "1 Bigha (Bihar) = 27,220 sq ft = 20 Kattha",
+    "1 Kattha (Bihar) = 1,361 sq ft",
+    "1 Biswa (UP) = 1,350 sq ft",
   ]},
-  { section: "Punjab / Haryana", sectionHi: "पंजाब / हरियाणा", items: [
+  { section: "Standard", sectionHi: "मानक", color: "border-ring", items: [
+    "1 Acre = 43,560 sq ft",
+    "1 Hectare = 1,07,639 sq ft = 2.47 Acre",
+    "1 Square Meter = 10.7639 sq ft",
+    "1 Square Yard (Gaj) = 9 sq ft",
+  ]},
+  { section: "Punjab / Haryana", sectionHi: "पंजाब / हरियाणा", color: "border-destructive", items: [
     "1 Kanal = 5,445 sq ft = 20 Marla",
     "1 Marla = 272.25 sq ft",
     "1 Killa = 1 Acre = 8 Kanal",
   ]},
-  { section: "South India", sectionHi: "दक्षिण भारत", items: [
+  { section: "South India", sectionHi: "दक्षिण भारत", color: "border-muted-foreground", items: [
     "100 Cent = 1 Acre",
     "1 Ground (TN) = 2,400 sq ft",
     "1 Guntha (KA) = 1,089 sq ft",

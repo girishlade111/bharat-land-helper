@@ -2,6 +2,7 @@ import { useApp } from "@/context/AppContext";
 import { QUICK_REFS } from "@/data/units";
 import { t } from "@/data/translations";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { cn } from "@/lib/utils";
 
 export default function QuickReference() {
   const { lang } = useApp();
@@ -9,9 +10,13 @@ export default function QuickReference() {
   return (
     <div className="rounded-lg border bg-card p-4">
       <h2 className="mb-3 text-base font-bold">{t("quickRef", lang)}</h2>
-      <Accordion type="multiple" className="space-y-1">
+      <Accordion type="multiple" className="space-y-2">
         {QUICK_REFS.map((ref) => (
-          <AccordionItem key={ref.section} value={ref.section} className="border rounded-md px-3">
+          <AccordionItem
+            key={ref.section}
+            value={ref.section}
+            className={cn("rounded-md border-l-4 border px-3", ref.color)}
+          >
             <AccordionTrigger className="text-sm font-semibold py-3">
               {lang === "hi" ? ref.sectionHi : ref.section}
             </AccordionTrigger>
