@@ -20,17 +20,17 @@ export default function ShareButtons() {
 
   const handleWhatsApp = () => {
     if (!isValid) return;
-    const top5 = ["sqft", "sqm", "acre", "guntha_mh", "hectare"];
+    const top6 = ["sqft", "sqm", "sqyd", "acre", "guntha_mh", "hectare"];
     let msg = `🇮🇳 *Bharat Land Converter*\n\n`;
-    msg += `${numValue} ${fromUnit!.name} (${selectedState}) =\n\n`;
-    for (const id of top5) {
+    msg += `📍 ${numValue} ${fromUnit!.name} (${selectedState})\n\n`;
+    for (const id of top6) {
       const u = UNITS.find((x) => x.id === id);
       if (u) {
         const val = convert(numValue, fromUnit!.sqft, u.sqft);
         msg += `📐 ${u.name}: ${formatIndianNumber(val)}\n`;
       }
     }
-    msg += `\n_Calculated by BharatLandConverter_`;
+    msg += `\n_Calculated by ladestack.in_`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
