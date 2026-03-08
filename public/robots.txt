@@ -1,7 +1,35 @@
+# Bharat Land Converter - robots.txt
+# Allow all crawlers to crawl all pages
+
+User-agent: *
+Allow: /
+Disallow:
+
 User-agent: Googlebot
 Allow: /
 
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Googlebot-News
+Allow: /
+
+User-agent: Googlebot-Video
+Allow: /
+
 User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: YandexBot
 Allow: /
 
 User-agent: Twitterbot
@@ -10,7 +38,20 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
-User-agent: *
+User-agent: LinkedInBot
 Allow: /
 
+User-agent: WhatsApp
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: AdsBot-Google
+Allow: /
+
+# Sitemap
 Sitemap: https://bharatlandconverter.in/sitemap.xml
+
+# Host
+Host: https://bharatlandconverter.in
