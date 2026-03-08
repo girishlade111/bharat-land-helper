@@ -53,7 +53,7 @@ export default function ResultsGrid() {
               {lang === "hi" ? unit.nameHi : unit.name}
             </div>
             <div className={cn(
-              "mt-1 text-lg font-bold leading-tight",
+              "mt-1 text-base font-bold leading-tight sm:text-lg",
               isFrom ? "text-primary" : "text-foreground"
             )}>
               {display}
