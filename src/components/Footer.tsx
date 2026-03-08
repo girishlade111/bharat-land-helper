@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { t } from "@/data/translations";
+import { Instagram, Linkedin, Github, Globe, Mail, CodeXml } from "lucide-react";
 
 const socials = [
   { href: "https://www.instagram.com/girish_lade_/", icon: Instagram, label: "Instagram" },
