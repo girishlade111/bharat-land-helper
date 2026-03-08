@@ -35,7 +35,7 @@ export default function ShareButtons() {
   };
 
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-col gap-2 sm:flex-row">
       <Button variant="outline" size="sm" onClick={handleShare} className="min-h-[44px] flex-1">
         🔗 {t("share", lang)}
       </Button>
