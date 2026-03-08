@@ -124,7 +124,6 @@ export default function MyLandList() {
                 Total saved land = {totalAcre.toFixed(2)} Acre
               </div>
             </div>
-            </div>
 
             <Button variant="outline" size="sm" onClick={handleExport} className="w-full min-h-[44px]">
               📤 {t("export", lang)}
@@ -139,7 +138,6 @@ export default function MyLandList() {
               💡 Want AI land valuation? Coming soon on ladestack.in
             </div>
           </div>
-        )}
         )}
       </CollapsibleContent>
     </Collapsible>
