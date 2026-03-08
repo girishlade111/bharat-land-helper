@@ -134,10 +134,12 @@ export default function MyLandList() {
 
         {/* Pro upsell */}
         {parcels.length >= 3 && (
-          <div className="rounded-lg border-2 border-accent bg-accent/10 p-4 text-center">
-            <div className="text-lg font-bold text-accent">{t("proTitle", lang)}</div>
-            <div className="text-sm text-muted-foreground">{t("proDesc", lang)}</div>
+          <div className="rounded-lg bg-accent p-4 text-center">
+            <div className="text-base font-bold text-accent-foreground">
+              💡 Want AI land valuation? Coming soon on ladestack.in
+            </div>
           </div>
+        )}
         )}
       </CollapsibleContent>
     </Collapsible>
