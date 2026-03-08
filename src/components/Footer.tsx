@@ -41,8 +41,8 @@ export default function Footer() {
         </div>
 
         <div className="mt-4 flex justify-center gap-4 text-xs text-muted-foreground">
-          <span className="cursor-pointer hover:text-foreground">Privacy Policy</span>
-          <span className="cursor-pointer hover:text-foreground">About</span>
+          <Link to="/privacy" className="hover:text-foreground hover:underline">Privacy Policy</Link>
+          <Link to="/about" className="hover:text-foreground hover:underline">About</Link>
         </div>
         <p className="mt-3 text-sm text-muted-foreground">
           {lang === "hi" ? "भारत के हर किसान और दलाल के लिए" : t("footerTagline", lang)}
