@@ -3,6 +3,7 @@ import { UNITS, convert, formatIndianNumber } from "@/data/units";
 import { t } from "@/data/translations";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Link2, MessageCircle } from "lucide-react";
 
 export default function ShareButtons() {
   const { lang, inputValue, fromUnitId, selectedState } = useApp();
@@ -35,17 +36,24 @@ export default function ShareButtons() {
   };
 
   return (
-    <div className="flex flex-col gap-2 sm:flex-row">
-      <Button variant="outline" size="sm" onClick={handleShare} className="min-h-[44px] flex-1">
-        🔗 {t("share", lang)}
+    <div className="flex flex-col gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleShare}
+        className="min-h-[40px] flex-1 gap-2 rounded-lg border-border/60 text-xs font-medium"
+      >
+        <Link2 className="h-3.5 w-3.5" />
+        {t("share", lang)}
       </Button>
       <Button
         size="sm"
         onClick={handleWhatsApp}
         disabled={!isValid}
-        className="min-h-[44px] flex-1 bg-primary hover:bg-primary/90"
+        className="min-h-[40px] flex-1 gap-2 rounded-lg bg-[#25D366] text-xs font-medium text-white hover:bg-[#20bd5a] shadow-sm"
       >
-        💬 {t("shareWA", lang)}
+        <MessageCircle className="h-3.5 w-3.5" />
+        {t("shareWA", lang)}
       </Button>
     </div>
   );

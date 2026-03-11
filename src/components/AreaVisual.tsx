@@ -14,7 +14,7 @@ export default function AreaVisual() {
 
   // Determine scale label
   let label = "";
-  let emoji = "🌱";
+  let emoji = "";
   if (totalSqft < 1000) {
     label = `${side.toFixed(1)} ft × ${side.toFixed(1)} ft`;
     emoji = "🌱";
@@ -32,20 +32,26 @@ export default function AreaVisual() {
   const visualSize = Math.min(200, Math.max(40, Math.log10(totalSqft + 1) * 45));
 
   return (
-    <div className="flex flex-col items-center rounded-lg border bg-card p-4">
-      <div className="mb-2 text-sm font-medium text-muted-foreground">
+    <div className="flex flex-col items-center rounded-xl border border-border/50 bg-card p-4">
+      <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         {t("areaVisual", lang)}
       </div>
       <svg width={visualSize + 20} height={visualSize + 20} viewBox={`0 0 ${visualSize + 20} ${visualSize + 20}`}>
+        <defs>
+          <linearGradient id="areaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="hsl(152, 60%, 38%)" stopOpacity="0.15" />
+            <stop offset="100%" stopColor="hsl(152, 60%, 38%)" stopOpacity="0.08" />
+          </linearGradient>
+        </defs>
         <rect
           x="10" y="10"
           width={visualSize}
           height={visualSize}
-          rx="4"
-          fill="hsl(142, 76%, 36%)"
-          fillOpacity="0.15"
-          stroke="hsl(142, 76%, 36%)"
-          strokeWidth="2"
+          rx="8"
+          fill="url(#areaGrad)"
+          stroke="hsl(152, 60%, 38%)"
+          strokeWidth="1.5"
+          strokeDasharray="4 2"
         />
         <text
           x={(visualSize + 20) / 2}
@@ -58,8 +64,8 @@ export default function AreaVisual() {
           {emoji}
         </text>
       </svg>
-      <div className="mt-2 text-center text-sm font-semibold text-foreground">{label}</div>
-      <div className="text-xs text-muted-foreground">
+      <div className="mt-2 text-center text-sm font-bold text-foreground">{label}</div>
+      <div className="text-xs tabular-nums text-muted-foreground">
         {Math.round(totalSqft).toLocaleString("en-IN")} sq ft
       </div>
     </div>

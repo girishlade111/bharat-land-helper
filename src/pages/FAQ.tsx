@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, HelpCircle } from "lucide-react";
+import { Search, HelpCircle, ArrowLeft } from "lucide-react";
 
 interface FAQ {
   category: string;
@@ -210,24 +210,25 @@ export default function FAQ() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-4xl px-4 py-10">
-        <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
-          ← Back to Converter
+      <div className="container max-w-4xl px-4 py-8 sm:py-10">
+        <Link to="/" className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to Converter
         </Link>
 
-        <div className="text-center mb-10">
-          <h1 className="mb-2 text-3xl font-bold text-foreground">Frequently Asked Questions</h1>
-          <p className="text-sm text-muted-foreground">Find answers to common questions about Bharat Land Converter</p>
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Frequently Asked Questions</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Find answers to common questions about Bharat Land Converter</p>
         </div>
 
         {/* Language Toggle */}
-        <div className="flex justify-center mb-6">
-          <div className="inline-flex rounded-lg border bg-card p-1">
+        <div className="flex justify-center mb-5">
+          <div className="inline-flex rounded-full border border-border/60 bg-card p-0.5">
             <Button
               variant={lang === "en" ? "default" : "ghost"}
               size="sm"
               onClick={() => setLang("en")}
-              className="min-h-[36px]"
+              className="min-h-[32px] rounded-full px-4 text-xs"
             >
               English
             </Button>
@@ -235,7 +236,7 @@ export default function FAQ() {
               variant={lang === "hi" ? "default" : "ghost"}
               size="sm"
               onClick={() => setLang("hi")}
-              className="min-h-[36px]"
+              className="min-h-[32px] rounded-full px-4 text-xs"
             >
               हिंदी
             </Button>
@@ -243,14 +244,14 @@ export default function FAQ() {
         </div>
 
         {/* Search */}
-        <div className="mb-8 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <div className="mb-6 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
             placeholder={lang === "hi" ? "प्रश्न खोजें..." : "Search questions..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 min-h-[48px] text-base"
+            className="pl-10 min-h-[44px] rounded-xl border-border/60 text-sm"
           />
         </div>
 
@@ -258,22 +259,22 @@ export default function FAQ() {
         <div className="space-y-6">
           {filteredFAQs.length > 0 ? (
             filteredFAQs.map((category) => (
-              <div key={category.category} className="space-y-3">
-                <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
-                  <HelpCircle className="h-5 w-5" />
+              <div key={category.category} className="space-y-2.5">
+                <h2 className="text-sm font-bold text-primary flex items-center gap-2 uppercase tracking-wider">
+                  <HelpCircle className="h-4 w-4" />
                   {lang === "hi" ? category.categoryHi : category.category}
                 </h2>
-                <Accordion type="single" collapsible className="space-y-2">
+                <Accordion type="single" collapsible className="space-y-1.5">
                   {category.items.map((faq, index) => (
                     <AccordionItem
                       key={index}
                       value={`${category.category}-${index}`}
-                      className="rounded-lg border bg-card px-4"
+                      className="rounded-xl border border-border/50 bg-card px-4"
                     >
-                      <AccordionTrigger className="text-sm font-medium text-left py-4 hover:no-underline">
+                      <AccordionTrigger className="text-sm font-medium text-left py-3.5 hover:no-underline">
                         {lang === "hi" ? faq.qHi : faq.q}
                       </AccordionTrigger>
-                      <AccordionContent className="text-sm text-muted-foreground pb-4">
+                      <AccordionContent className="text-sm text-muted-foreground pb-4 leading-relaxed">
                         {lang === "hi" ? faq.aHi : faq.a}
                       </AccordionContent>
                     </AccordionItem>
@@ -282,12 +283,12 @@ export default function FAQ() {
               </div>
             ))
           ) : (
-            <div className="text-center py-12">
-              <div className="text-4xl mb-4">🔍</div>
-              <h3 className="text-lg font-semibold text-foreground">
+            <div className="text-center py-12 animate-fade-in">
+              <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-secondary/50 text-3xl mb-4">🔍</div>
+              <h3 className="text-lg font-bold text-foreground">
                 {lang === "hi" ? "कोई परिणाम नहीं मिला" : "No results found"}
               </h3>
-              <p className="text-sm text-muted-foreground mt-2">
+              <p className="text-sm text-muted-foreground mt-1">
                 {lang === "hi"
                   ? "अलग कीवर्ड आज़माएं या श्रेणी ब्राउज़ करें"
                   : "Try a different keyword or browse categories"}
@@ -295,7 +296,7 @@ export default function FAQ() {
               <Button
                 variant="outline"
                 onClick={() => setSearchQuery("")}
-                className="mt-4 min-h-[44px]"
+                className="mt-4 min-h-[40px] rounded-lg"
               >
                 {lang === "hi" ? "सभी प्रश्न देखें" : "View all questions"}
               </Button>
@@ -304,32 +305,32 @@ export default function FAQ() {
         </div>
 
         {/* Quick Help */}
-        <div className="mt-10 rounded-lg border bg-card p-6">
-          <h2 className="mb-4 text-xl font-semibold text-foreground text-center">
+        <div className="mt-8 rounded-xl border border-border/50 bg-card p-6 text-center">
+          <h2 className="text-base font-bold text-foreground">
             {lang === "hi" ? "अभी भी मदद चाहिए?" : "Still Need Help?"}
           </h2>
-          <p className="text-sm text-muted-foreground text-center mb-4">
+          <p className="text-sm text-muted-foreground mt-1">
             {lang === "hi"
               ? "हमारी सहायता टीम आपकी मदद करने के लिए तैयार है"
               : "Our support team is ready to help you"}
           </p>
-          <div className="flex justify-center gap-4">
+          <div className="flex justify-center gap-3 mt-4">
             <Link to="/contact">
-              <Button className="min-h-[44px] gap-2">
-                📬 {lang === "hi" ? "संपर्क करें" : "Contact Us"}
+              <Button className="min-h-[40px] gap-2 rounded-lg">
+                {lang === "hi" ? "संपर्क करें" : "Contact Us"}
               </Button>
             </Link>
             <a href="mailto:admin@ladestack.in">
-              <Button variant="outline" className="min-h-[44px] gap-2">
-                ✉️ Email
+              <Button variant="outline" className="min-h-[40px] gap-2 rounded-lg">
+                Email
               </Button>
             </a>
           </div>
         </div>
 
-        <div className="mt-10 rounded-lg border bg-secondary/50 p-4 text-center text-xs text-muted-foreground">
+        <div className="mt-8 rounded-xl border border-border/50 bg-secondary/30 p-4 text-center text-xs text-muted-foreground">
           <p>© 2026 Lade Stack. All rights reserved.</p>
-          <p className="mt-1">Bharat Land Converter — For every farmer and broker in India</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground/70">Bharat Land Converter — For every farmer and broker in India</p>
         </div>
       </div>
     </div>

@@ -17,7 +17,7 @@ const Index = () => {
     <AppProvider>
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="container max-w-4xl px-4 py-6 space-y-6">
+        <main className="container max-w-4xl px-4 py-5 space-y-4 sm:py-6 sm:space-y-5">
           {/* Main Converter */}
           <ConverterInput />
 
@@ -25,9 +25,9 @@ const Index = () => {
           <FilterTabs />
 
           {/* Results Grid + Area Visual */}
-          <div className="grid gap-6 lg:grid-cols-[1fr_220px]">
+          <div className="grid gap-4 lg:grid-cols-[1fr_200px] sm:gap-5">
             <ResultsGrid />
-            <div className="space-y-4">
+            <div className="space-y-3">
               <AreaVisual />
               <ShareButtons />
             </div>

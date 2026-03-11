@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Bookmark, ChevronDown, Trash2, Upload, Plus } from "lucide-react";
 
 interface SavedLand {
   id: string;
@@ -78,21 +79,25 @@ export default function MyLandList() {
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger asChild>
-        <Button variant="outline" className="w-full justify-between text-base font-semibold">
-          {t("myLands", lang)} ({parcels.length})
-          <span className="text-lg">{open ? "▲" : "▼"}</span>
+        <Button variant="outline" className="w-full justify-between rounded-xl border-border/60 text-sm font-semibold hover:bg-secondary/50">
+          <span className="flex items-center gap-2">
+            <Bookmark className="h-4 w-4 text-primary" />
+            {t("myLands", lang)} ({parcels.length})
+          </span>
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
         </Button>
       </CollapsibleTrigger>
-      <CollapsibleContent className="mt-3 space-y-3 rounded-lg border bg-card p-4">
+      <CollapsibleContent className="mt-2 animate-fade-in space-y-3 rounded-xl border border-border/50 bg-card p-4">
         {/* Save form */}
         <div className="flex gap-2">
           <Input
             value={landName}
             onChange={(e) => setLandName(e.target.value)}
             placeholder={t("landName", lang)}
-            className="min-h-[44px]"
+            className="min-h-[40px] rounded-lg border-border/60"
           />
-          <Button onClick={handleSave} className="min-h-[44px] min-w-[80px]">
+          <Button onClick={handleSave} className="min-h-[40px] min-w-[40px] rounded-lg gap-1.5 px-3" size="sm">
+            <Plus className="h-3.5 w-3.5" />
             {t("save", lang)}
           </Button>
         </div>
@@ -103,39 +108,40 @@ export default function MyLandList() {
             {parcels.map((p) => {
               const u = UNITS.find((x) => x.id === p.unitId);
               return (
-                <div key={p.id} className="flex items-center justify-between rounded-md border bg-secondary/50 px-3 py-2">
+                <div key={p.id} className="flex items-center justify-between rounded-lg border border-border/40 bg-secondary/30 px-3 py-2.5">
                   <div>
-                    <div className="text-sm font-medium">{p.name}</div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-sm font-semibold text-foreground">{p.name}</div>
+                    <div className="text-[11px] text-muted-foreground">
                       {p.value} {u?.name || p.unitId} · {formatIndianNumber(p.sqftTotal)} sqft · {p.state} · {p.date}
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)} className="min-h-[44px] text-destructive">
-                    🗑
+                  <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)} className="h-8 w-8 p-0 text-destructive/70 hover:text-destructive hover:bg-destructive/10">
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               );
             })}
 
             {/* Total */}
-            <div className="rounded-md bg-primary/10 p-3 text-center">
-              <div className="text-xs text-muted-foreground">{t("totalArea", lang)}</div>
-              <div className="text-sm font-bold">
+            <div className="rounded-lg bg-primary/5 border border-primary/10 p-3 text-center">
+              <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{t("totalArea", lang)}</div>
+              <div className="mt-0.5 text-sm font-bold text-foreground tabular-nums">
                 Total saved land = {totalAcre.toFixed(2)} Acre
               </div>
             </div>
 
-            <Button variant="outline" size="sm" onClick={handleExport} className="w-full min-h-[44px]">
-              📤 {t("export", lang)}
+            <Button variant="outline" size="sm" onClick={handleExport} className="w-full min-h-[40px] gap-2 rounded-lg border-border/60 text-xs">
+              <Upload className="h-3.5 w-3.5" />
+              {t("export", lang)}
             </Button>
           </div>
         )}
 
         {/* Pro upsell */}
         {parcels.length >= 3 && (
-          <div className="rounded-lg bg-accent p-4 text-center">
-            <div className="text-base font-bold text-accent-foreground">
-              💡 Want AI land valuation? Coming soon on ladestack.in
+          <div className="rounded-xl bg-accent/10 border border-accent/20 p-4 text-center">
+            <div className="text-sm font-semibold text-foreground">
+              Want AI land valuation? Coming soon on ladestack.in
             </div>
           </div>
         )}
