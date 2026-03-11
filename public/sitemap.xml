@@ -1,13 +1,388 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+
+  <!-- ============================== -->
+  <!-- MAIN PAGES                     -->
+  <!-- ============================== -->
+
+  <!-- Homepage - Main Converter Tool -->
   <url>
     <loc>https://bharatlandconverter.in/</loc>
-    <lastmod>2026-03-08</lastmod>
+    <lastmod>2026-03-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/" />
     <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?lang=hi" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/" />
+    <image:image>
+      <image:loc>https://lovable.dev/opengraph-image-p98pqg.png</image:loc>
+      <image:title>Bharat Land Converter - Indian Land Area Unit Converter</image:title>
+      <image:caption>Free Indian land area converter for Bigha, Guntha, Acre, Hectare, Kanal, Marla across all states</image:caption>
+    </image:image>
   </url>
+
+  <!-- About Page -->
+  <url>
+    <loc>https://bharatlandconverter.in/about</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/about" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/about?lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/about" />
+  </url>
+
+  <!-- FAQ Page -->
+  <url>
+    <loc>https://bharatlandconverter.in/faq</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/faq" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/faq?lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/faq" />
+  </url>
+
+  <!-- Contact Page -->
+  <url>
+    <loc>https://bharatlandconverter.in/contact</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/contact" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/contact?lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/contact" />
+  </url>
+
+  <!-- Privacy Policy -->
+  <url>
+    <loc>https://bharatlandconverter.in/privacy</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/privacy" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/privacy?lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/privacy" />
+  </url>
+
+  <!-- Terms of Service -->
+  <url>
+    <loc>https://bharatlandconverter.in/terms</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/terms" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/terms?lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/terms" />
+  </url>
+
+  <!-- ============================== -->
+  <!-- CONVERSION LANDING PAGES       -->
+  <!-- (For search-driven traffic)    -->
+  <!-- ============================== -->
+
+  <!-- Bigha Conversions -->
+  <url>
+    <loc>https://bharatlandconverter.in/?u=bigha_up&amp;v=1</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?u=bigha_up&amp;v=1" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?u=bigha_up&amp;v=1&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?u=bigha_up&amp;v=1" />
+  </url>
+
+  <url>
+    <loc>https://bharatlandconverter.in/?u=bigha_bihar&amp;v=1</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?u=bigha_bihar&amp;v=1" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?u=bigha_bihar&amp;v=1&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?u=bigha_bihar&amp;v=1" />
+  </url>
+
+  <url>
+    <loc>https://bharatlandconverter.in/?u=bigha_maha&amp;v=1</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?u=bigha_maha&amp;v=1" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?u=bigha_maha&amp;v=1&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?u=bigha_maha&amp;v=1" />
+  </url>
+
+  <url>
+    <loc>https://bharatlandconverter.in/?u=bigha_wb&amp;v=1</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?u=bigha_wb&amp;v=1" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?u=bigha_wb&amp;v=1&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?u=bigha_wb&amp;v=1" />
+  </url>
+
+  <url>
+    <loc>https://bharatlandconverter.in/?u=bigha_raj_p&amp;v=1</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?u=bigha_raj_p&amp;v=1" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?u=bigha_raj_p&amp;v=1&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?u=bigha_raj_p&amp;v=1" />
+  </url>
+
+  <!-- Guntha Conversions -->
+  <url>
+    <loc>https://bharatlandconverter.in/?u=guntha&amp;v=1</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?u=guntha&amp;v=1" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?u=guntha&amp;v=1&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?u=guntha&amp;v=1" />
+  </url>
+
+  <!-- Standard Unit Conversions -->
+  <url>
+    <loc>https://bharatlandconverter.in/?u=acre&amp;v=1</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?u=acre&amp;v=1" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?u=acre&amp;v=1&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?u=acre&amp;v=1" />
+  </url>
+
+  <url>
+    <loc>https://bharatlandconverter.in/?u=hectare&amp;v=1</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?u=hectare&amp;v=1" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?u=hectare&amp;v=1&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?u=hectare&amp;v=1" />
+  </url>
+
+  <!-- Punjab/Haryana Units -->
+  <url>
+    <loc>https://bharatlandconverter.in/?u=kanal&amp;v=1</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?u=kanal&amp;v=1" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?u=kanal&amp;v=1&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?u=kanal&amp;v=1" />
+  </url>
+
+  <url>
+    <loc>https://bharatlandconverter.in/?u=marla&amp;v=1</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?u=marla&amp;v=1" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?u=marla&amp;v=1&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?u=marla&amp;v=1" />
+  </url>
+
+  <!-- South India Units -->
+  <url>
+    <loc>https://bharatlandconverter.in/?u=cent&amp;v=1</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?u=cent&amp;v=1" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?u=cent&amp;v=1&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?u=cent&amp;v=1" />
+  </url>
+
+  <url>
+    <loc>https://bharatlandconverter.in/?u=ground&amp;v=1</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?u=ground&amp;v=1" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?u=ground&amp;v=1&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?u=ground&amp;v=1" />
+  </url>
+
+  <url>
+    <loc>https://bharatlandconverter.in/?u=ankanam&amp;v=1</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?u=ankanam&amp;v=1" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?u=ankanam&amp;v=1&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?u=ankanam&amp;v=1" />
+  </url>
+
+  <url>
+    <loc>https://bharatlandconverter.in/?u=kuncham&amp;v=1</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?u=kuncham&amp;v=1" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?u=kuncham&amp;v=1&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?u=kuncham&amp;v=1" />
+  </url>
+
+  <!-- Bihar Units -->
+  <url>
+    <loc>https://bharatlandconverter.in/?u=kattha_bihar&amp;v=1</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?u=kattha_bihar&amp;v=1" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?u=kattha_bihar&amp;v=1&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?u=kattha_bihar&amp;v=1" />
+  </url>
+
+  <url>
+    <loc>https://bharatlandconverter.in/?u=dhur&amp;v=1</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?u=dhur&amp;v=1" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?u=dhur&amp;v=1&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?u=dhur&amp;v=1" />
+  </url>
+
+  <!-- UP Units -->
+  <url>
+    <loc>https://bharatlandconverter.in/?u=biswa_up&amp;v=1</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?u=biswa_up&amp;v=1" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?u=biswa_up&amp;v=1&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?u=biswa_up&amp;v=1" />
+  </url>
+
+  <!-- Gujarat Units -->
+  <url>
+    <loc>https://bharatlandconverter.in/?u=vaar&amp;v=1</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?u=vaar&amp;v=1" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?u=vaar&amp;v=1&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?u=vaar&amp;v=1" />
+  </url>
+
+  <!-- Uttarakhand Units -->
+  <url>
+    <loc>https://bharatlandconverter.in/?u=nali&amp;v=1</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?u=nali&amp;v=1" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?u=nali&amp;v=1&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?u=nali&amp;v=1" />
+  </url>
+
+  <!-- Assam Units -->
+  <url>
+    <loc>https://bharatlandconverter.in/?u=lecha&amp;v=1</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?u=lecha&amp;v=1" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?u=lecha&amp;v=1&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?u=lecha&amp;v=1" />
+  </url>
+
+  <!-- Square Feet (most searched) -->
+  <url>
+    <loc>https://bharatlandconverter.in/?u=sqft&amp;v=1</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?u=sqft&amp;v=1" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?u=sqft&amp;v=1&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?u=sqft&amp;v=1" />
+  </url>
+
+  <!-- State-specific Views -->
+  <url>
+    <loc>https://bharatlandconverter.in/?s=maharashtra</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?s=maharashtra" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?s=maharashtra&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?s=maharashtra" />
+  </url>
+
+  <url>
+    <loc>https://bharatlandconverter.in/?s=up</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?s=up" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?s=up&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?s=up" />
+  </url>
+
+  <url>
+    <loc>https://bharatlandconverter.in/?s=bihar</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?s=bihar" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?s=bihar&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?s=bihar" />
+  </url>
+
+  <url>
+    <loc>https://bharatlandconverter.in/?s=punjab</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?s=punjab" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?s=punjab&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?s=punjab" />
+  </url>
+
+  <url>
+    <loc>https://bharatlandconverter.in/?s=tamilnadu</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?s=tamilnadu" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?s=tamilnadu&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?s=tamilnadu" />
+  </url>
+
+  <url>
+    <loc>https://bharatlandconverter.in/?s=rajasthan</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?s=rajasthan" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?s=rajasthan&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?s=rajasthan" />
+  </url>
+
+  <url>
+    <loc>https://bharatlandconverter.in/?s=karnataka</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?s=karnataka" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?s=karnataka&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?s=karnataka" />
+  </url>
+
+  <url>
+    <loc>https://bharatlandconverter.in/?s=gujarat</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://bharatlandconverter.in/?s=gujarat" />
+    <xhtml:link rel="alternate" hreflang="hi" href="https://bharatlandconverter.in/?s=gujarat&amp;lang=hi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bharatlandconverter.in/?s=gujarat" />
+  </url>
+
 </urlset>

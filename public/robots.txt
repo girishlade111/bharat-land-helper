@@ -1,10 +1,20 @@
+# ================================================
 # Bharat Land Converter - robots.txt
+# https://bharatlandconverter.in
+# Last Updated: 2026-03-11
 # Allow all crawlers to crawl all pages
+# ================================================
 
+# Default: Allow all bots
 User-agent: *
 Allow: /
 Disallow:
 
+# ================================================
+# Major Search Engine Crawlers
+# ================================================
+
+# Google
 User-agent: Googlebot
 Allow: /
 
@@ -17,20 +27,68 @@ Allow: /
 User-agent: Googlebot-Video
 Allow: /
 
+User-agent: Storebot-Google
+Allow: /
+
+User-agent: Google-InspectionTool
+Allow: /
+
+# Google Ads
+User-agent: AdsBot-Google
+Allow: /
+
+User-agent: AdsBot-Google-Mobile
+Allow: /
+
+User-agent: Mediapartners-Google
+Allow: /
+
+# Bing / Microsoft
 User-agent: Bingbot
 Allow: /
 
+User-agent: BingPreview
+Allow: /
+
+User-agent: msnbot
+Allow: /
+
+User-agent: adidxbot
+Allow: /
+
+# Yahoo
 User-agent: Slurp
 Allow: /
 
+# DuckDuckGo
 User-agent: DuckDuckBot
 Allow: /
 
+# Baidu (China)
 User-agent: Baiduspider
 Allow: /
 
+# Yandex (Russia)
 User-agent: YandexBot
 Allow: /
+
+User-agent: YandexImages
+Allow: /
+
+User-agent: YandexMobileBot
+Allow: /
+
+# Sogou (China)
+User-agent: Sogou
+Allow: /
+
+# Naver (Korea)
+User-agent: Yeti
+Allow: /
+
+# ================================================
+# Social Media Crawlers
+# ================================================
 
 User-agent: Twitterbot
 Allow: /
@@ -44,14 +102,75 @@ Allow: /
 User-agent: WhatsApp
 Allow: /
 
+User-agent: Pinterestbot
+Allow: /
+
+User-agent: TelegramBot
+Allow: /
+
+User-agent: Slackbot
+Allow: /
+
+# ================================================
+# Apple
+# ================================================
+
 User-agent: Applebot
 Allow: /
 
-User-agent: AdsBot-Google
+# ================================================
+# SEO & Analytics Crawlers
+# ================================================
+
+User-agent: Semrushbot
 Allow: /
 
-# Sitemap
-Sitemap: https://bharatlandconverter.in/sitemap.xml
+User-agent: AhrefsBot
+Allow: /
 
-# Host
+User-agent: MJ12bot
+Allow: /
+
+User-agent: DotBot
+Allow: /
+
+User-agent: rogerbot
+Allow: /
+
+User-agent: SeznamBot
+Allow: /
+
+User-agent: PetalBot
+Allow: /
+
+# ================================================
+# AI Crawlers (Allow for indexing)
+# ================================================
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+# ================================================
+# Sitemap & Host
+# ================================================
+
+Sitemap: https://bharatlandconverter.in/sitemap.xml
 Host: https://bharatlandconverter.in

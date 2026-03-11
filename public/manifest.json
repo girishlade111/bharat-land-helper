@@ -1,0 +1,25 @@
+{
+  "name": "Bharat Land Converter",
+  "short_name": "Land Converter",
+  "description": "Free Indian land area converter. Convert Bigha, Guntha, Acre, Hectare, Kanal, Marla, Cent for all Indian states.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#16a34a",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-IN",
+  "categories": ["utilities", "productivity"],
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
