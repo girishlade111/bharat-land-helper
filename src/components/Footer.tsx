@@ -41,10 +41,16 @@ export default function Footer() {
           ))}
         </div>
 
-        <div className="mt-4 flex justify-center gap-4 text-xs text-muted-foreground">
-          <Link to="/privacy" className="hover:text-foreground hover:underline">Privacy Policy</Link>
-          <Link to="/about" className="hover:text-foreground hover:underline">About</Link>
+        {/* Footer Links */}
+        <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+          <Link to="/" className="hover:text-foreground hover:underline">{lang === "hi" ? "होम" : "Home"}</Link>
+          <Link to="/about" className="hover:text-foreground hover:underline">{lang === "hi" ? "हमारे बारे में" : "About"}</Link>
+          <Link to="/contact" className="hover:text-foreground hover:underline">{lang === "hi" ? "संपर्क" : "Contact"}</Link>
+          <Link to="/faq" className="hover:text-foreground hover:underline">{lang === "hi" ? "सामान्य प्रश्न" : "FAQ"}</Link>
+          <Link to="/privacy" className="hover:text-foreground hover:underline">{lang === "hi" ? "गोपनीयता नीति" : "Privacy Policy"}</Link>
+          <Link to="/terms" className="hover:text-foreground hover:underline">{lang === "hi" ? "नियम और शर्तें" : "Terms of Service"}</Link>
         </div>
+
         <p className="mt-3 text-sm text-muted-foreground">
           {lang === "hi" ? "भारत के हर किसान और दलाल के लिए" : t("footerTagline", lang)}
         </p>
