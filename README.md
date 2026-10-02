@@ -663,3 +663,7 @@ Built with amazing open-source tools and libraries:
 **⭐ If you find this project useful, please consider giving it a star on GitHub!**
 
 </div>
+
+## Built by Girish Lade
+
+Crafted by [Girish Lade](https://ladestack.in) — explore more free tools and projects at [ladestack.in](https://ladestack.in).
