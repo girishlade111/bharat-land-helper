@@ -9,7 +9,6 @@ function renderWithRouter(ui: React.ReactElement) {
 
 describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
   beforeEach(() => {
-    // Reset window.location
     window.history.replaceState(null, "", "/");
   });
 
@@ -23,22 +22,24 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
     const input = screen.getByLabelText(/Enter area value|क्षेत्रफल दर्ज करें/);
     expect(input).toHaveValue("1");
 
-    // Converted value should show 40 (1 Acre = 40 Guntha)
-    expect(screen.getByText("40")).toBeInTheDocument();
-    expect(screen.getByText(/Guntha \(MH \/ KA \/ TG\)|गुंठा/)).toBeInTheDocument();
+    // Converted value in primary showcase should show 40 (1 Acre = 40 Guntha)
+    const resultVal = screen.getByTestId("primary-result-value");
+    expect(resultVal.textContent).toBe("40");
+
+    const unitLabel = screen.getByTestId("primary-unit-label");
+    expect(unitLabel.textContent).toContain("Guntha");
   });
 
   it("2. Entering a numeric value updates the conversion in real time", async () => {
     renderWithRouter(<Index />);
 
     const input = screen.getByLabelText(/Enter area value|क्षेत्रफल दर्ज करें/);
-    // Enter 2.5
     fireEvent.change(input, { target: { value: "2.5" } });
     expect(input).toHaveValue("2.5");
 
     // 2.5 Acres = 100 Guntha (MH)
     await waitFor(() => {
-      expect(screen.getByText("100")).toBeInTheDocument();
+      expect(screen.getByTestId("primary-result-value").textContent).toBe("100");
     });
   });
 
@@ -50,7 +51,7 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
 
     // Initial: 40 Acre = 1,600 Guntha
     await waitFor(() => {
-      expect(screen.getByText("1,600")).toBeInTheDocument();
+      expect(screen.getByTestId("primary-result-value").textContent).toBe("1,600");
     });
 
     // Click Swap button
@@ -59,7 +60,7 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
 
     // After swap: 40 Guntha = 1 Acre
     await waitFor(() => {
-      expect(screen.getByText("1")).toBeInTheDocument();
+      expect(screen.getByTestId("primary-result-value").textContent).toBe("1");
       // Input value 40 should be preserved!
       expect(input).toHaveValue("40");
     });
@@ -71,11 +72,12 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
     const input = screen.getByLabelText(/Enter area value|क्षेत्रफल दर्ज करें/);
     fireEvent.change(input, { target: { value: "-5" } });
 
-    // Should display validation error
+    // Should display validation error and hide primary result
     await waitFor(() => {
       expect(
         screen.getByText(/Physical land area cannot be negative|भूमि का क्षेत्रफल ऋणात्मक नहीं हो सकता/),
       ).toBeInTheDocument();
+      expect(screen.queryByTestId("primary-result-value")).not.toBeInTheDocument();
     });
   });
 
@@ -86,9 +88,7 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
     fireEvent.change(input, { target: { value: "0" } });
 
     await waitFor(() => {
-      // Converted value is 0
-      expect(screen.getByText("0")).toBeInTheDocument();
-      // Must not display "0.000000"
+      expect(screen.getByTestId("primary-result-value").textContent).toBe("0");
       expect(screen.queryByText("0.000000")).not.toBeInTheDocument();
     });
   });
@@ -101,14 +101,14 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
     fireEvent.change(input, { target: { value: "2.75" } });
 
     await waitFor(() => {
-      expect(screen.getByText("110")).toBeInTheDocument();
+      expect(screen.getByTestId("primary-result-value").textContent).toBe("110");
     });
 
     // 2.755 Acres = 110.2 Guntha
     fireEvent.change(input, { target: { value: "2.755" } });
 
     await waitFor(() => {
-      expect(screen.getByText("110.2")).toBeInTheDocument();
+      expect(screen.getByTestId("primary-result-value").textContent).toBe("110.2");
     });
   });
 
@@ -116,7 +116,6 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
     renderWithRouter(<Index />);
 
     const searchInput = screen.getByPlaceholderText(/Search unit|इकाई खोजें/);
-    // Type 'marla'
     fireEvent.change(searchInput, { target: { value: "marla" } });
 
     // Search results should appear
@@ -130,7 +129,8 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
 
     // 1 Acre = 160 Marla
     await waitFor(() => {
-      expect(screen.getByText("160")).toBeInTheDocument();
+      expect(screen.getByTestId("primary-result-value").textContent).toBe("160");
+      expect(screen.getByTestId("primary-unit-label").textContent).toContain("Marla");
     });
   });
 
@@ -143,9 +143,8 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
 
     // Primary target unit is now Square Feet
     await waitFor(() => {
-      // 1 Acre = 43,560 sq ft in primary showcase
-      const convertedValues = screen.getAllByText("43,560");
-      expect(convertedValues.length).toBeGreaterThan(0);
+      expect(screen.getByTestId("primary-result-value").textContent).toBe("43,560");
+      expect(screen.getByTestId("primary-unit-label").textContent).toContain("Square Feet");
     });
   });
 
@@ -153,16 +152,20 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
     renderWithRouter(<Index />);
 
     const input = screen.getByLabelText(/Enter area value|क्षेत्रफल दर्ज करें/);
-    // 1 / 3 Acre
+    // 0.333333 Acre * 40 Guntha/Acre = 13.33332 Guntha
     fireEvent.change(input, { target: { value: "0.333333" } });
 
-    // Click .2 precision
+    // Initial default precision 4 -> "13.3333"
+    await waitFor(() => {
+      expect(screen.getByTestId("primary-result-value").textContent).toBe("13.3333");
+    });
+
+    // Click .2 precision button
     const p2Btn = screen.getByRole("button", { name: "2 decimal places" });
     fireEvent.click(p2Btn);
 
     await waitFor(() => {
-      // 0.333333 * 40 = 13.33332 -> rounded to 2 decimals = 13.33
-      expect(screen.getByText("13.33")).toBeInTheDocument();
+      expect(screen.getByTestId("primary-result-value").textContent).toBe("13.33");
     });
   });
 

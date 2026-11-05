@@ -218,10 +218,10 @@ export default function ConverterInput() {
                 {lang === "hi" ? "रूपांतरित मान" : "Converted Value"}
               </span>
               <div className="flex items-baseline gap-2 flex-wrap" aria-live="polite" aria-atomic="true">
-                <span className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-foreground tabular-nums tracking-tight">
+                <span data-testid="primary-result-value" className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-foreground tabular-nums tracking-tight">
                   {primaryResult.formattedResult}
                 </span>
-                <span className="text-base sm:text-lg font-semibold text-primary">
+                <span data-testid="primary-unit-label" className="text-base sm:text-lg font-semibold text-primary">
                   {lang === "hi" ? toUnit.nameHi : toUnit.name}
                 </span>
               </div>
