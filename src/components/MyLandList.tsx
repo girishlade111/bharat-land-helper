@@ -22,6 +22,9 @@ interface SavedLand {
 const STORAGE_KEY = "bharat-land-parcels-v2";
 
 function loadParcels(): SavedLand[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
   } catch {
