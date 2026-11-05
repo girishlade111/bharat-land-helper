@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import Index from "../pages/Index";
+
+function renderWithRouter(ui: React.ReactElement) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
+}
 
 describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
   beforeEach(() => {
@@ -9,7 +14,7 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
   });
 
   it("1. Renders complete converter with default state (1 Acre -> 40 Guntha MH)", async () => {
-    render(<Index />);
+    renderWithRouter(<Index />);
 
     // Verify main headings and titles
     expect(screen.getByText(/Indian Land Area Converter|भूमि क्षेत्रफल रूपांतरण/)).toBeInTheDocument();
@@ -24,7 +29,7 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
   });
 
   it("2. Entering a numeric value updates the conversion in real time", async () => {
-    render(<Index />);
+    renderWithRouter(<Index />);
 
     const input = screen.getByLabelText(/Enter area value|क्षेत्रफल दर्ज करें/);
     // Enter 2.5
@@ -38,7 +43,7 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
   });
 
   it("3. Unit Swap Button exchanges From and To units without losing value", async () => {
-    render(<Index />);
+    renderWithRouter(<Index />);
 
     const input = screen.getByLabelText(/Enter area value|क्षेत्रफल दर्ज करें/);
     fireEvent.change(input, { target: { value: "40" } });
@@ -61,7 +66,7 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
   });
 
   it("4. Input validation rejects negative values with an explicit message", async () => {
-    render(<Index />);
+    renderWithRouter(<Index />);
 
     const input = screen.getByLabelText(/Enter area value|क्षेत्रफल दर्ज करें/);
     fireEvent.change(input, { target: { value: "-5" } });
@@ -75,7 +80,7 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
   });
 
   it("5. Zero input converts cleanly without crashing or displaying '0.000000'", async () => {
-    render(<Index />);
+    renderWithRouter(<Index />);
 
     const input = screen.getByLabelText(/Enter area value|क्षेत्रफल दर्ज करें/);
     fireEvent.change(input, { target: { value: "0" } });
@@ -89,7 +94,7 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
   });
 
   it("6. Decimal preservation: values >= 100 retain fractional decimals", async () => {
-    render(<Index />);
+    renderWithRouter(<Index />);
 
     const input = screen.getByLabelText(/Enter area value|क्षेत्रफल दर्ज करें/);
     // 2.75 Acres = 110 Guntha
@@ -108,7 +113,7 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
   });
 
   it("7. Interactive Unit Search allows finding and converting to arbitrary units", async () => {
-    render(<Index />);
+    renderWithRouter(<Index />);
 
     const searchInput = screen.getByPlaceholderText(/Search unit|इकाई खोजें/);
     // Type 'marla'
@@ -130,7 +135,7 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
   });
 
   it("8. Clicking a card in the Results Grid sets it as the active target unit", async () => {
-    render(<Index />);
+    renderWithRouter(<Index />);
 
     // Find the Square Feet card in results grid
     const sqftCard = screen.getByLabelText(/Square Feet \(sq ft\): 43,560/);
@@ -145,7 +150,7 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
   });
 
   it("9. Changing precision toggles decimal digits", async () => {
-    render(<Index />);
+    renderWithRouter(<Index />);
 
     const input = screen.getByLabelText(/Enter area value|क्षेत्रफल दर्ज करें/);
     // 1 / 3 Acre
@@ -162,7 +167,7 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
   });
 
   it("10. Language switch toggles UI between English and Hindi", async () => {
-    render(<Index />);
+    renderWithRouter(<Index />);
 
     const langBtn = screen.getByRole("button", { name: /Switch language/ });
     fireEvent.click(langBtn);
