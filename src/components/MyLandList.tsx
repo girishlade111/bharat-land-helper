@@ -99,6 +99,7 @@ export default function MyLandList() {
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger asChild>
         <Button
+          id="my-lands-toggle"
           variant="outline"
           className="w-full justify-between rounded-2xl border-border/70 p-4 h-auto text-sm font-semibold hover:bg-secondary/40 shadow-xs"
         >

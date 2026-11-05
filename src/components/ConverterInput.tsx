@@ -229,6 +229,7 @@ export default function ConverterInput() {
 
             {/* Copy Button */}
             <Button
+              id="copy-primary-result-btn"
               type="button"
               variant={copied ? "default" : "outline"}
               onClick={handleCopy}

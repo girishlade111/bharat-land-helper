@@ -32,6 +32,7 @@ export default function RateCalculator() {
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger asChild>
         <Button
+          id="rate-calculator-toggle"
           variant="outline"
           className="w-full justify-between rounded-2xl border-border/70 p-4 h-auto text-sm font-semibold hover:bg-secondary/40 shadow-xs"
         >
@@ -94,10 +95,10 @@ export default function RateCalculator() {
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {t("totalValue", lang)}
             </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700 dark:text-emerald-400 tabular-nums">
+            <div id="rate-total-value" className="text-2xl sm:text-3xl font-extrabold text-emerald-700 dark:text-emerald-400 tabular-nums">
               {valuation.formattedCurrency}
             </div>
-            <div className="text-xs font-medium text-foreground">
+            <div id="rate-words-display" className="text-xs font-medium text-foreground">
               {lang === "hi" ? valuation.wordsHi : valuation.wordsEn}
             </div>
             <p className="pt-2 text-[11px] text-muted-foreground font-mono">

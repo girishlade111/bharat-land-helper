@@ -35,6 +35,7 @@ export default function Header() {
           {/* State / UT Selector */}
           <Select value={selectedRegion.code} onValueChange={setSelectedRegionCode}>
             <SelectTrigger
+              id="state-selector-trigger"
               aria-label={t("selectState", lang)}
               className="h-9 w-[140px] rounded-xl border-border/70 bg-secondary/50 text-xs font-semibold sm:w-[190px] sm:text-sm"
             >
