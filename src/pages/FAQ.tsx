@@ -55,8 +55,8 @@ const FAQS: FAQ[] = [
       {
         q: "Why does Bigha have different values?",
         qHi: "बीघा के अलग-अलग मान क्यों हैं?",
-        a: "Bigha varies significantly across Indian states. For example: UP Bigha = 27,000 sq ft, Bihar Bigha = 27,220 sq ft, West Bengal Bigha = 14,400 sq ft, MP Bigha = 12,000 sq ft, Maharashtra Bigha = 27,225 sq ft. This variation is due to historical and regional measurement systems.",
-        aHi: "बीघा भारतीय राज्यों में काफी भिन्न होता है। उदाहरण के लिए: UP बीघा = 27,000 वर्ग फीट, बिहार बीघा = 27,220 वर्ग फीट, पश्चिम बंगाल बीघा = 14,400 वर्ग फीट, MP बीघा = 12,000 वर्ग फीट, महाराष्ट्र बीघा = 27,225 वर्ग फीट। यह भिन्नता ऐतिहासिक और क्षेत्रीय माप प्रणालियों के कारण है।",
+        a: "Bigha varies significantly across Indian states. For example: UP Pucca Bigha = 27,225 sq ft, Bihar Standard Bigha = 27,225 sq ft, West Bengal Bigha = 14,400 sq ft, MP Gwalior Bigha = 12,000 sq ft, Maharashtra Bigha = 27,225 sq ft. This variation is due to historical settlement and revenue systems.",
+        aHi: "बीघा भारतीय राज्यों में भिन्न होता है। उदाहरण के लिए: UP पक्का बीघा = 27,225 वर्ग फीट, बिहार मानक बीघा = 27,225 वर्ग फीट, पश्चिम बंगाल बीघा = 14,400 वर्ग फीट, MP ग्वालियर बीघा = 12,000 वर्ग फीट, महाराष्ट्र बीघा = 27,225 वर्ग फीट। यह भिन्नता ऐतिहासिक बंदोबस्त के कारण है।",
       },
       {
         q: "How many Guntha in 1 Acre?",
