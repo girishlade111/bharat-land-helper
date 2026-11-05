@@ -214,20 +214,14 @@ async function main() {
     await cdp.eval(`
       (() => {
         const toSelect = document.querySelector('#to-unit-select');
-        if (toSelect) {
-          toSelect.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
-          toSelect.click();
-        }
+        toSelect.click();
       })()
     `);
-    await sleep(400);
+    await sleep(300);
     await cdp.eval(`
       (() => {
         const item = Array.from(document.querySelectorAll('[role="option"]')).find(el => el.textContent.includes('Square Feet') || el.textContent.includes('वर्ग फीट'));
-        if (item) {
-          item.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
-          item.click();
-        }
+        if (item) item.click();
       })()
     `);
     await sleep(400);
