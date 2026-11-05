@@ -487,3 +487,4 @@ export function getCoreRouteByPath(pathname: string): CoreRouteData | undefined 
   const clean = pathname.replace(/\/$/, "") || "/";
   return CORE_ROUTES.find((r) => r.path === clean);
 }
+

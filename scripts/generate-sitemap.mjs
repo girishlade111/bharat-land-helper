@@ -69,3 +69,4 @@ export function writeSitemap() {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   writeSitemap();
 }
+

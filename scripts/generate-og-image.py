@@ -67,3 +67,4 @@ draw.text((width - 430, height - 100), "https://bharatlandconverter.in", font=fo
 output_path = os.path.join("public", "og-image.png")
 img.save(output_path, "PNG")
 print(f"Generated {output_path} successfully ({os.path.getsize(output_path)} bytes)")
+
