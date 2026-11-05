@@ -58,14 +58,28 @@ export interface AppContextType {
   stateCategory: string;
 }
 
+export interface AppProviderProps {
+  children: React.ReactNode;
+  initialRegionCode?: string;
+  initialFromUnitId?: string;
+  initialToUnitId?: string;
+  initialInputValue?: string;
+}
+
 const AppContext = createContext<AppContextType | null>(null);
 
-export function AppProvider({ children }: { children: React.ReactNode }) {
+export function AppProvider({
+  children,
+  initialRegionCode = "MH",
+  initialFromUnitId = "acre",
+  initialToUnitId = "guntha_mh",
+  initialInputValue = "1",
+}: AppProviderProps) {
   const [lang, setLangState] = useState<Lang>("en");
-  const [regionCode, setRegionCode] = useState<string>("MH"); // Default Maharashtra
-  const [fromUnitId, setFromUnitIdState] = useState<string>("acre");
-  const [toUnitId, setToUnitIdState] = useState<string>("guntha_mh");
-  const [inputValue, setInputValueState] = useState<string>("1");
+  const [regionCode, setRegionCode] = useState<string>(initialRegionCode);
+  const [fromUnitId, setFromUnitIdState] = useState<string>(initialFromUnitId);
+  const [toUnitId, setToUnitIdState] = useState<string>(initialToUnitId);
+  const [inputValue, setInputValueState] = useState<string>(initialInputValue);
   const [displayPrecision, setDisplayPrecision] = useState<number>(4);
   const [activeTab, setActiveTab] = useState<string>("All");
 
