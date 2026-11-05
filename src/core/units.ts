@@ -991,3 +991,4 @@ export function getUnitsForRegion(regionCode: string): LandUnit[] {
   const code = regionCode.toUpperCase();
   return ALL_UNITS.filter((u) => u.regionCode === "ALL" || u.regionCode === code);
 }
+

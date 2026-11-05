@@ -413,3 +413,4 @@ export const REGION_BY_NAME = new Map<string, Region>(
 export function getRegion(codeOrName: string): Region | undefined {
   return REGION_BY_CODE.get(codeOrName.toUpperCase()) || REGION_BY_NAME.get(codeOrName.toLowerCase());
 }
+
