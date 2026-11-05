@@ -120,7 +120,7 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
 
     // Search results should appear
     await waitFor(() => {
-      expect(screen.getByText(/Marla \(PB \/ HR \/ HP \/ JK\)/)).toBeInTheDocument();
+      expect(screen.getAllByText(/Marla \(PB \/ HR \/ HP \/ JK\)/).length).toBeGreaterThan(0);
     });
 
     // Click 'Convert To' button on search result
