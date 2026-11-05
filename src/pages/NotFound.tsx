@@ -1,10 +1,11 @@
 import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
+import { AppProvider } from "@/context/AppContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { ArrowLeft, Search, Compass } from "lucide-react";
+import { ArrowLeft, Compass } from "lucide-react";
 
-export default function NotFound() {
+function NotFoundContent() {
   const location = useLocation();
 
   useEffect(() => {
@@ -82,3 +83,12 @@ export default function NotFound() {
     </div>
   );
 }
+
+export default function NotFound() {
+  return (
+    <AppProvider>
+      <NotFoundContent />
+    </AppProvider>
+  );
+}
+
