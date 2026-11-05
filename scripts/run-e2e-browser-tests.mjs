@@ -808,6 +808,88 @@ async function main() {
     };
   });
 
+  // TEST 21: Raw HTML prerendering verification (No JS / curl simulation)
+  await runTest("TEST 21: Verify raw prerendered HTML without JavaScript execution", async () => {
+    const rawRes = await fetch(`${BASE_URL}/convert/acre-to-sqft`);
+    const rawHtml = await rawRes.text();
+    const hasH1 = rawHtml.includes("Convert Acre to Square Feet (sq ft)");
+    const hasFormula = rawHtml.includes("Area (sq ft) = Area (Acre) × 43,560");
+    const hasTable = rawHtml.includes("43,560");
+    const hasCanonical = rawHtml.includes('rel="canonical" href="https://bharatlandconverter.in/convert/acre-to-sqft"');
+
+    if (!hasH1 || !hasFormula || !hasTable || !hasCanonical) {
+      throw new Error(`Raw HTML missing prerendered elements: H1=${hasH1}, Formula=${hasFormula}, Table=${hasTable}, Canonical=${hasCanonical}`);
+    }
+    return { httpStatus: rawRes.status, hasH1, hasFormula, hasTable, hasCanonical, htmlBytes: rawHtml.length };
+  });
+
+  // TEST 22: Chromium navigation to /convert/acre-to-sqft and hydration
+  await runTest("TEST 22: Navigate to /convert/acre-to-sqft in Chromium and test hydration", async () => {
+    await cdp.send("Page.navigate", { url: `${BASE_URL}/convert/acre-to-sqft` });
+    await sleep(1000);
+    await injectHelper();
+
+    const title = await cdp.eval("document.title");
+    const h1 = await cdp.eval("document.querySelector('h1')?.textContent?.trim()");
+    const initialResult = await cdp.eval("document.querySelector('[data-testid=\"primary-result-value\"]')?.textContent?.trim()");
+
+    // Verify typing 2 immediately recalculates to 87,120
+    await cdp.eval(`window.__setReactInput('#area-input', '2')`);
+    await sleep(400);
+    const updatedResult = await cdp.eval("document.querySelector('[data-testid=\"primary-result-value\"]')?.textContent?.trim()");
+
+    if (updatedResult !== "87,120") {
+      throw new Error(`Expected 87,120 sq ft for 2 acres, got '${updatedResult}'`);
+    }
+
+    return { title, h1, initialResult, updatedResult, hydrated: true };
+  });
+
+  // TEST 23: Regional conversion landing page /convert/acre-to-guntha/maharashtra
+  await runTest("TEST 23: Navigate to /convert/acre-to-guntha/maharashtra", async () => {
+    await cdp.send("Page.navigate", { url: `${BASE_URL}/convert/acre-to-guntha/maharashtra` });
+    await sleep(1000);
+    await injectHelper();
+
+    const h1 = await cdp.eval("document.querySelector('h1')?.textContent?.trim()");
+    const initialResult = await cdp.eval("document.querySelector('[data-testid=\"primary-result-value\"]')?.textContent?.trim()");
+
+    if (initialResult !== "40") {
+      throw new Error(`Expected 40 Guntha for 1 Acre MH, got '${initialResult}'`);
+    }
+
+    return { h1, initialResult, verifiedState: "Maharashtra", stateRatio: "1 Acre = 40 Guntha" };
+  });
+
+  // TEST 24: Core static pages /about and /faq navigation
+  await runTest("TEST 24: Verify static rendering on /about and /faq", async () => {
+    await cdp.send("Page.navigate", { url: `${BASE_URL}/about` });
+    await sleep(800);
+    const aboutTitle = await cdp.eval("document.title");
+    const aboutH1 = await cdp.eval("document.querySelector('h1')?.textContent?.trim()");
+
+    await cdp.send("Page.navigate", { url: `${BASE_URL}/faq` });
+    await sleep(800);
+    const faqTitle = await cdp.eval("document.title");
+    const faqH1 = await cdp.eval("document.querySelector('h1')?.textContent?.trim()");
+
+    return { aboutTitle, aboutH1, faqTitle, faqH1 };
+  });
+
+  // TEST 25: 404 page navigation
+  await runTest("TEST 25: Verify 404 page rendering on unknown route", async () => {
+    await cdp.send("Page.navigate", { url: `${BASE_URL}/unknown-custom-route-test-404` });
+    await sleep(800);
+    const notFoundText = await cdp.eval("document.querySelector('h1')?.textContent?.trim()");
+    const hasBackLink = await cdp.eval("!!document.querySelector('a[href=\"/\"]')");
+
+    if (!notFoundText?.includes("Not Found")) {
+      throw new Error(`Expected 'Page Not Found', got '${notFoundText}'`);
+    }
+
+    return { notFoundText, hasBackLink };
+  });
+
   // Cleanup
   console.log("==================================================");
   console.log("E2E TESTS COMPLETE");
