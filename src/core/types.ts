@@ -85,3 +85,12 @@ export interface ValidationResult {
   errorMessageHi?: string;
 }
 
+export interface ConversionContext {
+  stateCode?: string;
+  district?: string;
+  variantId?: string;
+  measurementSystemId?: string;
+  customFactorSqFt?: number;
+}
+
+

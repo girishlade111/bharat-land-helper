@@ -1,4 +1,4 @@
-import type { LandUnit } from "./types";
+import type { LandUnit, ConversionContext } from "./types";
 
 const SQFT_TO_SQM = 0.09290304; // 1 ft = 0.3048 m exactly -> 0.3048^2 = 0.09290304 m^2
 const SQM_TO_SQFT = 1 / SQFT_TO_SQM; // 10.763910416709722 sq ft
@@ -267,6 +267,26 @@ export const ALL_UNITS: LandUnit[] = [
       confidence: "LOCAL_VARIANT",
     },
   },
+  {
+    id: "biswa_up_kaccha",
+    name: "Biswa (Western UP Kaccha)",
+    nameHi: "बिस्वा (पश्चिमी उ.प्र. कच्चा)",
+    aliases: ["kaccha biswa", "biswa kaccha up"],
+    category: "regional",
+    sqMeters: 453.75 * SQFT_TO_SQM,
+    sqFt: 453.75,
+    regionCode: "UP",
+    regionName: "Uttar Pradesh",
+    subdivision: { parentUnitId: "bigha_up_kaccha", factor: 20, name: "Bigha (Kaccha)", nameHi: "बीघा (कच्चा)" },
+    note: "1/20 Kaccha Bigha = 50.417 sq yd = 453.75 sq ft",
+    noteHi: "1/20 कच्चा बीघा = 50.42 वर्ग गज = 453.75 वर्ग फीट",
+    provenance: {
+      sourceName: "Western UP Customary Settlement Manual",
+      referenceDocument: "Meerut & Saharanpur District Gazetteers",
+      legalStatus: "Customary subdivision of Western UP Kaccha Bigha",
+      confidence: "LOCAL_VARIANT",
+    },
+  },
 
   // ==========================================
   // 4. BIHAR & JHARKHAND (Lagga Systems)
@@ -355,6 +375,50 @@ export const ALL_UNITS: LandUnit[] = [
       confidence: "LOCAL_VARIANT",
     },
   },
+  {
+    id: "kattha_bihar_6haath",
+    name: "Kattha (North Bihar / 6.0 Haath Lagga)",
+    nameHi: "कट्ठा (उत्तर बिहार / 6.0 हाथ लग्गी)",
+    aliases: ["kattha 6haath", "tirhut kattha"],
+    category: "regional",
+    sqMeters: 1620 * SQFT_TO_SQM,
+    sqFt: 1620,
+    regionCode: "BR",
+    regionName: "Bihar",
+    variantName: "6.0-Haath Lagga (1,620 sq ft)",
+    variantNameHi: "6.0 हाथ लग्गी (1,620 वर्ग फीट)",
+    subdivision: { parentUnitId: "bigha_bihar_6haath", factor: 20, name: "Bigha", nameHi: "बीघा" },
+    note: "1/20 Bigha = 20 Dhur = 180 sq yd = 1,620 sq ft (Lagga = 9 ft)",
+    noteHi: "1/20 बीघा = 20 धुर = 180 वर्ग गज = 1,620 वर्ग फीट",
+    provenance: {
+      sourceName: "North Bihar Cadastral Survey",
+      referenceDocument: "Darbhanga & Muzaffarpur Survey Manual",
+      legalStatus: "Customary subdivision of 6.0-haath Bigha",
+      confidence: "LOCAL_VARIANT",
+    },
+  },
+  {
+    id: "dhur_bihar_6haath",
+    name: "Dhur (North Bihar / 6.0 Haath Lagga)",
+    nameHi: "धुर (उत्तर बिहार / 6.0 हाथ लग्गी)",
+    aliases: ["dhur 6haath", "tirhut dhur"],
+    category: "regional",
+    sqMeters: 81 * SQFT_TO_SQM,
+    sqFt: 81,
+    regionCode: "BR",
+    regionName: "Bihar",
+    variantName: "6.0-Haath Lagga (81 sq ft)",
+    variantNameHi: "6.0 हाथ लग्गी (81 वर्ग फीट)",
+    subdivision: { parentUnitId: "kattha_bihar_6haath", factor: 20, name: "Kattha", nameHi: "कट्ठा" },
+    note: "1/20 Kattha = 1 sq lagga (9 ft × 9 ft) = 81 sq ft = 9 sq yd",
+    noteHi: "1/20 कट्ठा = 1 वर्ग लग्गी (9 फीट × 9 फीट) = 81 वर्ग फीट",
+    provenance: {
+      sourceName: "North Bihar Survey Manual",
+      referenceDocument: "Tirhut Settlement Records",
+      legalStatus: "Base customary unit of 6.0-haath lagga system",
+      confidence: "LOCAL_VARIANT",
+    },
+  },
 
   // ==========================================
   // 5. WEST BENGAL (Bengal System)
@@ -369,13 +433,15 @@ export const ALL_UNITS: LandUnit[] = [
     sqFt: 14400,
     regionCode: "WB",
     regionName: "West Bengal",
-    note: "120 ft × 120 ft = 1,600 sq yd = 14,400 sq ft (Exactly 1/3 Acre = 20 Kattha)",
-    noteHi: "120 फीट × 120 फीट = 1,600 वर्ग गज = 14,400 वर्ग फीट (1/3 एकड़ = 20 कट्ठा)",
+    note: "120 ft × 120 ft = 1,600 sq yd = 14,400 sq ft (20 Kattha; 40/121 Acre ≈ 0.33058 Acre, colloquially approximated as 1/3 Acre)",
+    noteHi: "120 फीट × 120 फीट = 1,600 वर्ग गज = 14,400 वर्ग फीट (20 कट्ठा; लगभग 0.3306 एकड़)",
     provenance: {
-      sourceName: "West Bengal Land Reforms Act, 1955",
+      sourceName: "Bengal Regulation VII of 1822 / WB Land Reforms Act 1955",
       referenceDocument: "Banglarbhumi Manual, Directorate of Land Records and Surveys WB",
-      legalStatus: "Statutory surveyed standard across West Bengal",
+      legalStatus: "Statutory surveyed standard across West Bengal (80 cubits square)",
       confidence: "OFFICIAL_STANDARD",
+      qualification: "Commonly approximated as 1/3 Acre, but 1/3 Acre is exactly 14,520 sq ft. The statutory surveyed Bengal standard is 14,400 sq ft (1,600 sq yd = 40/121 Acre).",
+      qualificationHi: "बोलचाल में इसे 1/3 एकड़ कहा जाता है, परंतु वास्तविक 1/3 एकड़ 14,520 वर्ग फीट होता है। बंगाल में वैधानिक मान 14,400 वर्ग फीट (1,600 वर्ग गज) है।",
     },
   },
   {
@@ -620,23 +686,46 @@ export const ALL_UNITS: LandUnit[] = [
   // ==========================================
   {
     id: "bigha_gj",
-    name: "Bigha / Vigha (Gujarat)",
-    nameHi: "बीघा / वीघा (गुजरात)",
-    aliases: ["vigha", "bigha gj", "gujarat bigha", "gujarat vigha"],
+    name: "Bigha / Vigha (Gujarat / Saurashtra 16-Guntha)",
+    nameHi: "बीघा / वीघा (गुजरात / सौराष्ट्र 16-गुंठा)",
+    aliases: ["vigha", "bigha gj", "gujarat bigha", "gujarat vigha", "saurashtra vigha"],
     category: "regional",
     sqMeters: 17424 * SQFT_TO_SQM, // 1,618.742584 m^2
     sqFt: 17424,
     regionCode: "GJ",
     regionName: "Gujarat",
-    note: "16 Guntha = 1,936 sq yd = 17,424 sq ft = Exactly 0.4 Acre (CORRECTED: 17,424 sq ft, not 17,427)",
-    noteHi: "16 गुंठा = 1,936 वर्ग गज = 17,424 वर्ग फीट = ठीक 0.4 एकड़ (सटीक मान)",
+    variantName: "16-Guntha Standard (Saurashtra & Western Gujarat)",
+    variantNameHi: "16-गुंठा मानक (सौराष्ट्र व पश्चिम गुजरात)",
+    note: "16 Guntha = 1,936 sq yd = 17,424 sq ft = Exactly 0.4 Acre (2.5 Vighas = 1 Acre)",
+    noteHi: "16 गुंठा = 1,936 वर्ग गज = 17,424 वर्ग फीट = ठीक 0.4 एकड़ (2.5 वीघा = 1 एकड़)",
     provenance: {
       sourceName: "Gujarat Land Revenue Rules",
       referenceDocument: "Revenue Department, Govt of Gujarat / AnyRoR Manual",
       legalStatus: "Standard customary unit in Gujarat agricultural land deals",
       confidence: "OFFICIAL_STANDARD",
-      qualification: "Audit corrected a 3 sq ft drift in previous codebase from 17,427 to the exact mathematically grounded 16 × 1,089 = 17,424 sq ft.",
+      qualification: "16 Guntha × 1,089 sq ft = 17,424 sq ft (0.4 Acre). Standard across Saurashtra and general agricultural deed practice in Gujarat.",
       qualificationHi: "16 गुंठा × 1,089 वर्ग फीट = ठीक 17,424 वर्ग फीट।",
+    },
+  },
+  {
+    id: "bigha_gj_20guntha",
+    name: "Vigha (Gujarat 20-Guntha / Central Gujarat)",
+    nameHi: "वीघा (गुजरात 20-गुंठा / मध्य गुजरात)",
+    aliases: ["vigha 20 guntha", "central gujarat vigha", "anand vigha", "kheda vigha"],
+    category: "regional",
+    sqMeters: 21780 * SQFT_TO_SQM, // 2,023.4282112 m^2
+    sqFt: 21780,
+    regionCode: "GJ",
+    regionName: "Gujarat",
+    variantName: "20-Guntha Customary (Central & North Gujarat)",
+    variantNameHi: "20-गुंठा पारंपरिक (मध्य व उत्तर गुजरात)",
+    note: "20 Guntha = 2,420 sq yd = 21,780 sq ft = Exactly 0.5 Acre (Common in Kheda, Anand, Vadodara rural)",
+    noteHi: "20 गुंठा = 2,420 वर्ग गज = 21,780 वर्ग फीट = ठीक 0.5 एकड़",
+    provenance: {
+      sourceName: "Central Gujarat Customary Settlement Records",
+      referenceDocument: "Bombay Land Revenue Code Historical Assessments in Gujarat",
+      legalStatus: "Customary variant in central and north Gujarat agricultural tracts",
+      confidence: "WIDELY_USED_CUSTOMARY",
     },
   },
   {
@@ -721,6 +810,29 @@ export const ALL_UNITS: LandUnit[] = [
       confidence: "OFFICIAL_STANDARD",
     },
   },
+  {
+    id: "chatak_assam",
+    name: "Chatak (Assam / Barak Valley)",
+    nameHi: "छटाक (असम / बराक घाटी)",
+    aliases: ["chatak assam", "cachar chatak", "barak chatak"],
+    category: "regional",
+    sqMeters: 45 * SQFT_TO_SQM,
+    sqFt: 45,
+    regionCode: "AS",
+    regionName: "Assam",
+    variantName: "Barak Valley Customary (45 sq ft)",
+    variantNameHi: "बराक घाटी पारंपरिक (45 वर्ग फीट)",
+    note: "1/16 Kattha = 45 sq ft (In Barak Valley/Cachar; 4 Chataks = 180 sq ft = 0.25 Kattha)",
+    noteHi: "1/16 कट्ठा = 45 वर्ग फीट (कछार/बराक घाटी; 4 छटाक = 180 वर्ग फीट = 0.25 कट्ठा)",
+    provenance: {
+      sourceName: "Cachar & Sylhet Tenancy Historical Settlement Rules",
+      referenceDocument: "Assam Land Records Glossary / Barak Valley Revenue Standard",
+      legalStatus: "Customary unit in Cachar, Hailakandi, and Karimganj districts",
+      confidence: "WIDELY_USED_CUSTOMARY",
+      qualification: "Casual internet tools often claim 1 Chatak = 180 sq ft in Assam. Primary records prove 180 sq ft is 1/4 Kattha (4 Chataks of 45 sq ft each). In Brahmaputra Valley, Katha is subdivided into 20 Lessas, not Chataks.",
+      qualificationHi: "इंटरनेट पर 180 वर्ग फीट की भ्रांति है जो वास्तव में 1/4 कट्ठा (4 छटाक = 180 वर्ग फीट) है। 1 छटाक = 45 वर्ग फीट होता है।",
+    },
+  },
 
   // ==========================================
   // 11. HIMACHAL PRADESH & UTTARAKHAND (Hill Units)
@@ -735,13 +847,17 @@ export const ALL_UNITS: LandUnit[] = [
     sqFt: 8712,
     regionCode: "HP",
     regionName: "Himachal Pradesh",
-    note: "10 Biswa = 968 sq yd = 8,712 sq ft (Exactly 0.2 Acre = 1/5 Acre)",
-    noteHi: "10 बिस्वा = 968 वर्ग गज = 8,712 वर्ग फीट (0.2 एकड़)",
+    variantName: "Standard 8,712 sq ft (5 Bigha = 1 Acre)",
+    variantNameHi: "मानक 8,712 वर्ग फीट (5 बीघा = 1 एकड़)",
+    note: "20 Biswa = 968 sq yd = 8,712 sq ft (Exactly 0.2 Acre = 1/5 Acre)",
+    noteHi: "20 बिस्वा = 968 वर्ग गज = 8,712 वर्ग फीट (0.2 एकड़)",
     provenance: {
       sourceName: "Himachal Pradesh Land Revenue Act 1954",
       referenceDocument: "HP Revenue Department / Himbhoomi",
-      legalStatus: "Statutory land unit in Shimla, Mandi, Solan, Kullu districts",
+      legalStatus: "Statutory land unit in Shimla, Mandi, Solan, Kullu, Bilaspur, Sirmaur districts",
       confidence: "OFFICIAL_STANDARD",
+      qualification: "Standard HP Bigha is 8,712 sq ft (1/5 Acre = 20 Biswa of 435.6 sq ft). Some border areas with Punjab historically referenced the 9,075 sq ft Punjab Bigha.",
+      qualificationHi: "मानक हिमाचल बीघा 8,712 वर्ग फीट (1/5 एकड़) है जिसमें 20 बिस्वा (435.6 वर्ग फीट प्रति बिस्वा) होते हैं।",
     },
   },
   {
@@ -750,18 +866,39 @@ export const ALL_UNITS: LandUnit[] = [
     nameHi: "बिस्वा (हिमाचल प्रदेश)",
     aliases: ["biswa hp", "himachal biswa"],
     category: "regional",
-    sqMeters: 871.2 * SQFT_TO_SQM,
-    sqFt: 871.2,
+    sqMeters: 435.6 * SQFT_TO_SQM,
+    sqFt: 435.6,
     regionCode: "HP",
     regionName: "Himachal Pradesh",
-    subdivision: { parentUnitId: "bigha_hp", factor: 10, name: "Bigha", nameHi: "बीघा" },
-    note: "1/10 HP Bigha = 96.8 sq yd = 871.2 sq ft",
-    noteHi: "1/10 हिमाचल बीघा = 96.8 वर्ग गज = 871.2 वर्ग फीट",
+    subdivision: { parentUnitId: "bigha_hp", factor: 20, name: "Bigha", nameHi: "बीघा" },
+    note: "1/20 HP Bigha = 48.4 sq yd = 435.6 sq ft (Equal to 1 Cent / 1 Decimal)",
+    noteHi: "1/20 हिमाचल बीघा = 48.4 वर्ग गज = 435.6 वर्ग फीट (1 सेंट / 1 डेसिमल के बराबर)",
     provenance: {
       sourceName: "HP Land Revenue Manual",
-      referenceDocument: "Himbhoomi Portal",
-      legalStatus: "Statutory subdivision of HP Bigha",
+      referenceDocument: "Himbhoomi Portal Land Glossary",
+      legalStatus: "Statutory subdivision of HP Bigha (20 Biswa = 1 Bigha)",
       confidence: "OFFICIAL_STANDARD",
+    },
+  },
+  {
+    id: "bigha_hp_punjabi",
+    name: "Bigha (HP Lower Hills / Paonta Customary)",
+    nameHi: "बीघा (हिमाचल तराई / पोंटा पारंपरिक)",
+    aliases: ["bigha hp punjabi", "paonta bigha", "una bigha"],
+    category: "regional",
+    sqMeters: 9075 * SQFT_TO_SQM,
+    sqFt: 9075,
+    regionCode: "HP",
+    regionName: "Himachal Pradesh",
+    variantName: "Traditional 9,075 sq ft (Punjab Karam standard)",
+    variantNameHi: "पारंपरिक 9,075 वर्ग फीट (पंजाब करम मानक)",
+    note: "20 Biswa = 1,008.33 sq yd = 9,075 sq ft (Customary in Una, Paonta Sahib, Nalagarh tracts)",
+    noteHi: "20 बिस्वा = 1,008.33 वर्ग गज = 9,075 वर्ग फीट (ऊना, पोंटा साहिब, नालागढ़ क्षेत्र)",
+    provenance: {
+      sourceName: "Punjab Land Administration Legacy in HP Merged Areas",
+      referenceDocument: "HP Settlement Operations in Transferred Territories 1966",
+      legalStatus: "Customary measurement in plains/lower hill tehsils adjoining Punjab/Haryana",
+      confidence: "LOCAL_VARIANT",
     },
   },
   {
@@ -991,4 +1128,128 @@ export function getUnitsForRegion(regionCode: string): LandUnit[] {
   const code = regionCode.toUpperCase();
   return ALL_UNITS.filter((u) => u.regionCode === "ALL" || u.regionCode === code);
 }
+
+/**
+ * Resolves a unit from an ID or legacy/generic identifier using an optional ConversionContext.
+ * Handles migration of legacy URL parameters ('bigha', 'katha', 'biswa', 'chatak', 'guntha')
+ * to exact regional unit definitions.
+ */
+export function resolveUnit(
+  unitOrId: string | LandUnit,
+  context?: ConversionContext,
+): LandUnit | undefined {
+  if (typeof unitOrId !== "string") return unitOrId;
+  const direct = getUnit(unitOrId);
+  if (direct) return direct;
+
+  const normalized = unitOrId.toLowerCase().trim();
+  const state = context?.stateCode?.toUpperCase();
+  const variant = context?.variantId?.toLowerCase();
+
+  // Legacy & generic unit mapping rules
+  switch (normalized) {
+    case "bigha": {
+      if (state === "UP") {
+        return variant === "kaccha" || variant === "kuchha"
+          ? getUnit("bigha_up_kaccha")
+          : getUnit("bigha_up_pucca");
+      }
+      if (state === "BR" || state === "JH") {
+        return variant === "6haath" || variant === "tirhut" || variant === "north"
+          ? getUnit("bigha_bihar_6haath")
+          : getUnit("bigha_bihar_standard");
+      }
+      if (state === "WB") return getUnit("bigha_wb");
+      if (state === "RJ") {
+        return variant === "kaccha" || variant === "kuchha"
+          ? getUnit("bigha_rj_kaccha")
+          : getUnit("bigha_rj_pucca");
+      }
+      if (state === "MP" || state === "CG") {
+        return variant === "gwalior"
+          ? getUnit("bigha_mp_gwalior")
+          : getUnit("bigha_mp_standard");
+      }
+      if (state === "GJ") {
+        return variant === "20guntha"
+          ? getUnit("bigha_gj_20guntha")
+          : getUnit("bigha_gj");
+      }
+      if (state === "AS") return getUnit("bigha_assam");
+      if (state === "HP" || state === "UK") {
+        return variant === "punjabi"
+          ? getUnit("bigha_hp_punjabi")
+          : getUnit("bigha_hp");
+      }
+      if (state === "MH") return getUnit("bigha_mh");
+      // Default fallback for bigha: UP/National Pucca Bigha (27,225 sq ft)
+      return getUnit("bigha_up_pucca");
+    }
+
+    case "katha":
+    case "kattha":
+    case "cottah": {
+      if (state === "BR" || state === "JH") {
+        return variant === "6haath" || variant === "tirhut" || variant === "north"
+          ? getUnit("kattha_bihar_6haath")
+          : getUnit("kattha_bihar_standard");
+      }
+      if (state === "WB") return getUnit("kattha_wb");
+      if (state === "AS") return getUnit("kattha_assam");
+      if (state === "UP") return getUnit("biswa_up_pucca");
+      return getUnit("kattha_bihar_standard");
+    }
+
+    case "dhur": {
+      if (state === "BR" || state === "JH") {
+        return variant === "6haath" || variant === "tirhut" || variant === "north"
+          ? getUnit("dhur_bihar_6haath")
+          : getUnit("dhur_bihar_standard");
+      }
+      return getUnit("dhur_bihar_standard");
+    }
+
+    case "biswa": {
+      if (state === "UP") {
+        return variant === "kaccha" || variant === "kuchha" ? getUnit("biswa_up_kaccha") : getUnit("biswa_up_pucca");
+      }
+      if (state === "HP") return getUnit("biswa_hp");
+      if (state === "RJ") return getUnit("biswa_rj_pucca");
+      if (state === "OD") return getUnit("biswa_od");
+      return getUnit("biswa_up_pucca");
+    }
+
+    case "chatak":
+    case "chhatak": {
+      if (state === "AS") return getUnit("chatak_assam");
+      return getUnit("chatak_wb");
+    }
+
+    case "guntha":
+    case "gunta": {
+      if (state === "OD") return getUnit("guntha_od");
+      return getUnit("guntha_mh");
+    }
+
+    case "ground": {
+      return getUnit("ground_tn");
+    }
+
+    case "cent":
+    case "decimal":
+    case "dismil": {
+      return getUnit("decimal_standard");
+    }
+
+    case "gaj":
+    case "gaz": {
+      return getUnit("sqyd");
+    }
+
+    default:
+      // Try alias match
+      return ALL_UNITS.find((u) => u.aliases.includes(normalized));
+  }
+}
+
 

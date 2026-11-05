@@ -3,8 +3,10 @@ import type {
   ConversionResult,
   OneToAllResult,
   OneToAllItem,
+  ConversionContext,
 } from "./types";
 import { formatIndianNumber } from "./formatter";
+import { resolveUnit } from "./units";
 
 export interface RateCalculationResult {
   totalValue: number;
@@ -16,17 +18,43 @@ export interface RateCalculationResult {
 }
 
 /**
- * Converts a numerical area value from one LandUnit to another.
+ * Converts a numerical area value from one LandUnit or Unit ID to another.
  * Pure mathematical function: zero DOM dependencies, zero side-effects.
+ * Supports explicit ConversionContext for state-specific and variant-specific resolution.
  */
 export function convertArea(
   value: number,
-  fromUnit: LandUnit,
-  toUnit: LandUnit,
-  precision: number = 4,
+  fromUnitOrId: LandUnit | string,
+  toUnitOrId: LandUnit | string,
+  optionsOrPrecision: number | { precision?: number; context?: ConversionContext } = 4,
 ): ConversionResult {
   if (value < 0) {
     throw new Error("Physical land area cannot be negative");
+  }
+
+  const precision =
+    typeof optionsOrPrecision === "number"
+      ? optionsOrPrecision
+      : optionsOrPrecision?.precision ?? 4;
+  const context =
+    typeof optionsOrPrecision === "object"
+      ? optionsOrPrecision?.context
+      : undefined;
+
+  const fromUnit =
+    typeof fromUnitOrId === "string"
+      ? resolveUnit(fromUnitOrId, context)
+      : fromUnitOrId;
+  const toUnit =
+    typeof toUnitOrId === "string"
+      ? resolveUnit(toUnitOrId, context)
+      : toUnitOrId;
+
+  if (!fromUnit) {
+    throw new Error(`Source unit '${String(fromUnitOrId)}' could not be resolved`);
+  }
+  if (!toUnit) {
+    throw new Error(`Target unit '${String(toUnitOrId)}' could not be resolved`);
   }
 
   // Handle same unit identity conversion

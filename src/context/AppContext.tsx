@@ -5,6 +5,7 @@ import {
   getRegion,
   getUnit,
   getUnitsForRegion,
+  resolveUnit,
   convertArea,
   convertOneToAll,
   parseAreaInput,
@@ -13,6 +14,7 @@ import {
   type ConversionResult,
   type OneToAllResult,
   type ValidationResult,
+  type ConversionContext,
 } from "@/core";
 import type { Lang } from "@/data/translations";
 
@@ -126,19 +128,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const to = params.get("to");
       const s = params.get("s");
       const l = params.get("lang");
+      const varId = params.get("var");
 
       if (v && parseAreaInput(v).isValid) {
         setInputValueState(v);
       }
+      let initialRegionCode = "MH";
       if (s) {
         const found = getRegion(s);
-        if (found) setRegionCode(found.code);
+        if (found) {
+          initialRegionCode = found.code;
+          setRegionCode(found.code);
+        }
       }
-      if (from && getUnit(from)) {
-        setFromUnitIdState(from);
+      const context: ConversionContext = {
+        stateCode: initialRegionCode,
+        variantId: varId || undefined,
+      };
+      if (from) {
+        const resolvedFrom = resolveUnit(from, context);
+        if (resolvedFrom) setFromUnitIdState(resolvedFrom.id);
       }
-      if (to && getUnit(to)) {
-        setToUnitIdState(to);
+      if (to) {
+        const resolvedTo = resolveUnit(to, context);
+        if (resolvedTo) setToUnitIdState(resolvedTo.id);
       }
       if (l === "hi" || l === "en") {
         setLangState(l);
@@ -192,16 +205,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const setSelectedRegionCode = useCallback((code: string) => {
     setRegionCode(code);
     const regionUnits = getUnitsForRegion(code);
-    // If toUnit is regional and not in the new region, update it
+    let nextFrom = fromUnitId;
+    let nextTo = toUnitId;
+
+    // If fromUnit is regional and not in the new region, safely transition
+    if (fromUnit.category === "regional" && !regionUnits.some((u) => u.id === fromUnit.id)) {
+      nextFrom = "acre";
+      setFromUnitIdState(nextFrom);
+    }
+
+    // If toUnit is regional and not in the new region, safely transition
     if (toUnit.category === "regional" && !regionUnits.some((u) => u.id === toUnit.id)) {
       const firstRegional = regionUnits.find((u) => u.category === "regional");
-      const nextTo = firstRegional ? firstRegional.id : "sqft";
+      nextTo = firstRegional ? firstRegional.id : "sqft";
       setToUnitIdState(nextTo);
-      updateUrl(inputValue, fromUnitId, nextTo, code, lang);
-    } else {
-      updateUrl(inputValue, fromUnitId, toUnitId, code, lang);
     }
-  }, [toUnit, inputValue, fromUnitId, toUnitId, lang, updateUrl]);
+
+    // Ensure from and to units are distinct after transition
+    if (nextFrom === nextTo) {
+      nextTo = nextFrom === "acre" ? "sqft" : "acre";
+      setToUnitIdState(nextTo);
+    }
+
+    updateUrl(inputValue, nextFrom, nextTo, code, lang);
+  }, [fromUnit, toUnit, fromUnitId, toUnitId, inputValue, lang, updateUrl]);
 
   const setSelectedState = useCallback((stateName: string) => {
     const r = getRegion(stateName);
