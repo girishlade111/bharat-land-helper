@@ -28,16 +28,18 @@ export default function ResultsGrid() {
   const handleCardClick = (unitId: string, formattedVal: string, unitName: string) => {
     setToUnitId(unitId);
     const textToCopy = `${formattedVal} ${unitName}`;
-    navigator.clipboard.writeText(textToCopy).then(() => {
-      setCopiedId(unitId);
-      toast({
-        title: t("copied", lang),
-        description: textToCopy,
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        setCopiedId(unitId);
+        toast({
+          title: t("copied", lang),
+          description: textToCopy,
+        });
+        setTimeout(() => setCopiedId(null), 2000);
+      }).catch(() => {
+        // Ignore clipboard permission issues
       });
-      setTimeout(() => setCopiedId(null), 2000);
-    }).catch(() => {
-      // Ignore clipboard permission issues
-    });
+    }
   };
 
   return (
