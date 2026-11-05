@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import ConverterInput from "@/components/ConverterInput";
 import Footer from "@/components/Footer";
 import { getConversionRouteByPath, ConversionRouteData } from "@/data/seoRoutes";
+import { SITE_URL } from "@/config/site";
 import NotFound from "./NotFound";
 import {
   ChevronRight,
@@ -27,13 +28,13 @@ function ConversionLandingContent({ route }: { route: ConversionRouteData }) {
         "@type": "ListItem",
         "position": 1,
         "name": "Home",
-        "item": "https://bharatlandconverter.in/",
+        "item": `${SITE_URL}/`,
       },
       {
         "@type": "ListItem",
         "position": 2,
         "name": "Conversions",
-        "item": "https://bharatlandconverter.in/",
+        "item": `${SITE_URL}/`,
       },
       {
         "@type": "ListItem",

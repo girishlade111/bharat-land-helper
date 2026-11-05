@@ -20,7 +20,7 @@ export default function PrivacyPolicy() {
             <h2 className="mb-3 text-base font-bold text-foreground">1. Introduction</h2>
             <p>
               Welcome to <strong>Bharat Land Converter</strong> ("we", "our", "us"), operated by <strong>Lade Stack</strong> (ladestack.in).
-              This Privacy Policy explains how we handle information when you use our website at bharatlandconverter.in (the "Service").
+              This Privacy Policy explains how we handle information when you use our website at land.ladestack.in (the "Service").
             </p>
             <p className="mt-2">
               We are committed to protecting your privacy. Our Service is designed to work entirely in your browser with

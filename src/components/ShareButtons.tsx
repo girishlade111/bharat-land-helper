@@ -47,7 +47,7 @@ export default function ShareButtons() {
       }
     });
 
-    msg += `\n_Free & Source-Backed: bharatlandconverter.in_`;
+    msg += `\n_Free & Source-Backed: land.ladestack.in_`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
   };
 

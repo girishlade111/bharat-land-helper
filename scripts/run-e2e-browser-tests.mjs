@@ -847,7 +847,7 @@ async function main() {
     const hasH1 = rawHtml.includes("Convert Acre to Square Feet (sq ft)");
     const hasFormula = rawHtml.includes("Area (sq ft) = Area (Acre) × 43,560");
     const hasTable = rawHtml.includes("43,560");
-    const hasCanonical = rawHtml.includes('rel="canonical" href="https://bharatlandconverter.in/convert/acre-to-sqft"');
+    const hasCanonical = rawHtml.includes('rel="canonical" href="https://land.ladestack.in/convert/acre-to-sqft"');
 
     if (!hasH1 || !hasFormula || !hasTable || !hasCanonical) {
       throw new Error(`Raw HTML missing prerendered elements: H1=${hasH1}, Formula=${hasFormula}, Table=${hasTable}, Canonical=${hasCanonical}`);

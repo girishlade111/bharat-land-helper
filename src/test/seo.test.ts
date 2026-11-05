@@ -24,7 +24,7 @@ describe("Bharat Land Converter — Phase 2A Technical SEO Tests", () => {
   it("SEO-TEST-001: Homepage HTML has unique title, description, and canonical", () => {
     const html = readDistFile("index.html");
     expect(html).toContain("<title>Bharat Land Converter | Bigha, Guntha, Acre, Hectare — All India</title>");
-    expect(html).toContain('<link rel="canonical" href="https://bharatlandconverter.in/"');
+    expect(html).toContain('<link rel="canonical" href="https://land.ladestack.in/"');
     expect(html).toContain('<meta name="description" content="Free Indian land area converter.');
     // Must contain server-rendered body content
     expect(html).not.toContain('<div id="root"></div>');
@@ -35,7 +35,7 @@ describe("Bharat Land Converter — Phase 2A Technical SEO Tests", () => {
   it("SEO-TEST-002: About page has route-specific title, description, and canonical", () => {
     const html = readDistFile("about/index.html");
     expect(html).toContain("<title>About Us | Bharat Land Converter</title>");
-    expect(html).toContain('<link rel="canonical" href="https://bharatlandconverter.in/about"');
+    expect(html).toContain('<link rel="canonical" href="https://land.ladestack.in/about"');
     expect(html).toContain("Our Mission");
     expect(html).toContain("About Bharat Land Converter");
   });
@@ -44,7 +44,7 @@ describe("Bharat Land Converter — Phase 2A Technical SEO Tests", () => {
   it("SEO-TEST-003: FAQ page has route-specific initial HTML", () => {
     const html = readDistFile("faq/index.html");
     expect(html).toContain("<title>Frequently Asked Questions | Bharat Land Converter</title>");
-    expect(html).toContain('<link rel="canonical" href="https://bharatlandconverter.in/faq"');
+    expect(html).toContain('<link rel="canonical" href="https://land.ladestack.in/faq"');
     expect(html).toContain("Frequently Asked Questions");
     expect(html).toContain("How many square feet in 1 Guntha?");
   });
@@ -53,7 +53,7 @@ describe("Bharat Land Converter — Phase 2A Technical SEO Tests", () => {
   it("SEO-TEST-004: Conversion page contains actual formula and relevant content before JavaScript execution", () => {
     const html = readDistFile("convert/acre-to-sqft/index.html");
     expect(html).toContain("<title>Convert Acre to Square Feet (sq ft) | Bharat Land Converter</title>");
-    expect(html).toContain('<link rel="canonical" href="https://bharatlandconverter.in/convert/acre-to-sqft"');
+    expect(html).toContain('<link rel="canonical" href="https://land.ladestack.in/convert/acre-to-sqft"');
     expect(html).toContain("Area (sq ft) = Area (Acre) × 43,560");
     expect(html).toContain("43,560");
     expect(html).toContain("Quick Reference Conversion Table");
@@ -90,16 +90,16 @@ describe("Bharat Land Converter — Phase 2A Technical SEO Tests", () => {
     const robots = fs.readFileSync(path.join(PUBLIC_DIR, "robots.txt"), "utf8");
     expect(robots).toContain("User-agent: *");
     expect(robots).toContain("Allow: /");
-    expect(robots).toContain("Sitemap: https://bharatlandconverter.in/sitemap.xml");
+    expect(robots).toContain("Sitemap: https://land.ladestack.in/sitemap.xml");
     expect(robots).not.toContain("Disallow: /");
   });
 
   // SEO-TEST-008
   it("SEO-TEST-008: sitemap.xml contains only canonical indexable URLs", () => {
     const sitemap = fs.readFileSync(path.join(PUBLIC_DIR, "sitemap.xml"), "utf8");
-    expect(sitemap).toContain("<loc>https://bharatlandconverter.in/</loc>");
-    expect(sitemap).toContain("<loc>https://bharatlandconverter.in/about</loc>");
-    expect(sitemap).toContain("<loc>https://bharatlandconverter.in/convert/acre-to-sqft</loc>");
+    expect(sitemap).toContain("<loc>https://land.ladestack.in/</loc>");
+    expect(sitemap).toContain("<loc>https://land.ladestack.in/about</loc>");
+    expect(sitemap).toContain("<loc>https://land.ladestack.in/convert/acre-to-sqft</loc>");
 
     // Exclude noindex / error pages
     expect(sitemap).not.toContain("/404");
@@ -115,7 +115,7 @@ describe("Bharat Land Converter — Phase 2A Technical SEO Tests", () => {
   // SEO-TEST-009
   it("SEO-TEST-009: No nonexistent pages appear in the sitemap", () => {
     const sitemap = fs.readFileSync(path.join(PUBLIC_DIR, "sitemap.xml"), "utf8");
-    const locs = Array.from(sitemap.matchAll(/<loc>(https:\/\/bharatlandconverter\.in(\/.*?|\/))<\/loc>/g)).map(
+    const locs = Array.from(sitemap.matchAll(/<loc>(https:\/\/land\.ladestack\.in(\/.*?|\/))<\/loc>/g)).map(
       (m) => m[2]
     );
 
@@ -197,10 +197,10 @@ describe("Bharat Land Converter — Phase 2A Technical SEO Tests", () => {
     for (const route of CORE_ROUTES) {
       if (route.path === "/") {
         const html = readDistFile("index.html");
-        expect(html).toContain('<link rel="canonical" href="https://bharatlandconverter.in/"');
+        expect(html).toContain('<link rel="canonical" href="https://land.ladestack.in/"');
       } else if (route.path === "/404") {
         const html = readDistFile("404.html");
-        expect(html).toContain('<link rel="canonical" href="https://bharatlandconverter.in/404"');
+        expect(html).toContain('<link rel="canonical" href="https://land.ladestack.in/404"');
       } else {
         const html = readDistFile(`${route.path.replace(/^\//, "")}/index.html`);
         expect(html).toContain(`<link rel="canonical" href="${route.canonical}"`);
@@ -290,6 +290,64 @@ describe("Bharat Land Converter — Phase 2A Technical SEO Tests", () => {
     expect(getCoreRouteByPath("/about")?.h1).toBe("About Bharat Land Converter");
     expect(getCoreRouteByPath("/404")?.noindex).toBe(true);
     expect(getConversionRouteByPath("/convert/guntha-to-sqft/maharashtra")?.factor).toBe(1089);
+  });
+
+  // SEO-TEST-021
+  it("SEO-TEST-021: Single source of truth config SITE_URL equals https://land.ladestack.in", async () => {
+    const { SITE_URL, buildCanonicalUrl, SITE_DOMAIN } = await import("../config/site");
+    expect(SITE_URL).toBe("https://land.ladestack.in");
+    expect(SITE_DOMAIN).toBe("land.ladestack.in");
+    expect(buildCanonicalUrl("/")).toBe("https://land.ladestack.in/");
+    expect(buildCanonicalUrl("/convert/acre-to-sqft")).toBe("https://land.ladestack.in/convert/acre-to-sqft");
+  });
+
+  // SEO-TEST-022
+  it("SEO-TEST-022: No generated HTML or public SEO asset contains bharatlandconverter.in", () => {
+    const filesToCheck = [
+      path.join(PUBLIC_DIR, "robots.txt"),
+      path.join(PUBLIC_DIR, "sitemap.xml"),
+      path.join(DIST_DIR, "index.html"),
+      path.join(DIST_DIR, "about/index.html"),
+      path.join(DIST_DIR, "faq/index.html"),
+      path.join(DIST_DIR, "404.html"),
+      path.join(DIST_DIR, "convert/acre-to-sqft/index.html"),
+      path.join(DIST_DIR, "convert/acre-to-guntha/maharashtra/index.html"),
+    ];
+
+    for (const f of filesToCheck) {
+      if (fs.existsSync(f)) {
+        const text = fs.readFileSync(f, "utf8");
+        expect(text).not.toContain("bharatlandconverter.in");
+      }
+    }
+  });
+
+  // SEO-TEST-023
+  it("SEO-TEST-023: Open Graph og:url and og:image use https://land.ladestack.in", () => {
+    const html = readDistFile("index.html");
+    expect(html).toContain('<meta property="og:url" content="https://land.ladestack.in/"');
+    expect(html).toContain('<meta property="og:image" content="https://land.ladestack.in/og-image.png"');
+    expect(html).toContain('<meta name="twitter:image" content="https://land.ladestack.in/og-image.png"');
+  });
+
+  // SEO-TEST-024
+  it("SEO-TEST-024: JSON-LD WebSite and SoftwareApplication use https://land.ladestack.in", () => {
+    const html = readDistFile("index.html");
+    expect(html).toContain('"url": "https://land.ladestack.in/"');
+    expect(html).toContain('"image": "https://land.ladestack.in/og-image.png"');
+  });
+
+  // SEO-TEST-025
+  it("SEO-TEST-025: Canonical URLs match sitemap loc URLs exactly", () => {
+    const sitemap = fs.readFileSync(path.join(PUBLIC_DIR, "sitemap.xml"), "utf8");
+    for (const route of CONVERSION_ROUTES) {
+      expect(sitemap).toContain(`<loc>${route.canonical}</loc>`);
+    }
+    for (const route of CORE_ROUTES) {
+      if (!route.noindex) {
+        expect(sitemap).toContain(`<loc>${route.canonical}</loc>`);
+      }
+    }
   });
 });
 

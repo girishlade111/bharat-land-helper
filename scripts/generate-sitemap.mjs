@@ -8,7 +8,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, "..");
 
-const DOMAIN = "https://bharatlandconverter.in";
+import { SITE_URL } from "../src/config/site.ts";
+
+const DOMAIN = SITE_URL;
 
 // 6 Core Canonical Routes (404 is excluded because it is noindex/error)
 const CORE_CANONICAL_PATHS = [

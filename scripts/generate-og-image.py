@@ -62,7 +62,7 @@ draw.text((100, 465), "[+] Live interactive calculations with land valuation rat
 draw.text((100, 505), "[+] 100% Free, offline-ready, no login, zero tracking", font=font_regular, fill=(203, 213, 225))
 
 # Footer Domain
-draw.text((width - 430, height - 100), "https://bharatlandconverter.in", font=font_bold_md, fill=(52, 211, 153))
+draw.text((width - 390, height - 100), "https://land.ladestack.in", font=font_bold_md, fill=(52, 211, 153))
 
 output_path = os.path.join("public", "og-image.png")
 img.save(output_path, "PNG")

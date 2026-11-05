@@ -24,7 +24,7 @@ export default function TermsOfService() {
               please do not use this Service.
             </p>
             <p className="mt-2">
-              These Terms of Service ("Terms") govern your use of our website at bharatlandconverter.in and any related services provided
+              These Terms of Service ("Terms") govern your use of our website at land.ladestack.in and any related services provided
               by Lade Stack.
             </p>
           </section>

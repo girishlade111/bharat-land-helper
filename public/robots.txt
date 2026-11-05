@@ -1,8 +1,8 @@
 # Bharat Land Converter - Production robots.txt
-# Domain: https://bharatlandconverter.in/
+# Domain: https://land.ladestack.in/
 
 User-agent: *
 Allow: /
 
 # Sitemap Index
-Sitemap: https://bharatlandconverter.in/sitemap.xml
+Sitemap: https://land.ladestack.in/sitemap.xml
