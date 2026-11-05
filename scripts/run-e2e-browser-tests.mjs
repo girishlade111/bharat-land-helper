@@ -141,11 +141,24 @@ async function main() {
       permissions: ["clipboardReadWrite", "clipboardSanitizedWrite"],
       origin: BASE_URL,
     });
-  } catch {
-    // Ignore if not supported in this Chromium version
-  }
+  } catch {}
 
   await sleep(1000);
+
+  // Inject React input setter helper into the page
+  const injectHelper = async () => {
+    await cdp.eval(`
+      window.__setReactInput = function(selector, value) {
+        const el = typeof selector === 'string' ? document.querySelector(selector) : selector;
+        if (!el) throw new Error('Element not found: ' + selector);
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+        setter.call(el, value);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      };
+    `);
+  };
+  await injectHelper();
 
   const results = [];
 
@@ -174,18 +187,8 @@ async function main() {
 
   // TEST 02: Enter 1 Acre and convert to Square Feet (expected 43,560)
   await runTest("TEST 02: Enter 1 Acre and convert to Square Feet", async () => {
-    await cdp.eval(`
-      (() => {
-        // Set From Unit = acre
-        const fromTrigger = document.querySelector('#from-unit-select');
-        // Set Input = 1
-        const input = document.querySelector('#area-input');
-        input.value = "1";
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-      })()
-    `);
-    await sleep(300);
+    await cdp.eval(`window.__setReactInput('#area-input', '1')`);
+    await sleep(200);
 
     // Click To Unit and choose Square Feet
     await cdp.eval(`
@@ -237,14 +240,7 @@ async function main() {
 
   // TEST 04: Change input from 1 to 5 (immediate recalculation)
   await runTest("TEST 04: Change input from 1 to 5 (immediate recalculation to 200 Guntha)", async () => {
-    await cdp.eval(`
-      (() => {
-        const input = document.querySelector('#area-input');
-        input.value = "5";
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-      })()
-    `);
+    await cdp.eval(`window.__setReactInput('#area-input', '5')`);
     await sleep(400);
 
     const resultVal = await cdp.eval(`document.querySelector('[data-testid="primary-result-value"]')?.textContent?.trim()`);
@@ -309,14 +305,7 @@ async function main() {
     `);
     await sleep(500);
 
-    // Set input to 1
-    await cdp.eval(`
-      (() => {
-        const input = document.querySelector('#area-input');
-        input.value = "1";
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-      })()
-    `);
+    await cdp.eval(`window.__setReactInput('#area-input', '1')`);
     await sleep(200);
 
     // Choose From = Chatak (WB), To = Square Feet
@@ -355,8 +344,7 @@ async function main() {
       throw new Error(`Expected 45 sq ft for WB Chatak, received '${resultVal}'`);
     }
 
-    const note = await cdp.eval(`document.querySelector('p.text-xs.text-muted-foreground.border-t')?.textContent?.trim() || ""`);
-    return { state: "West Bengal", unit: "Chatak", observedSqFt: resultVal, statutoryNotePresent: note.length > 0 };
+    return { state: "West Bengal", unit: "Chatak", observedSqFt: resultVal };
   });
 
   // TEST 07: Select Uttar Pradesh and change between supported Bigha variants
@@ -377,13 +365,12 @@ async function main() {
     `);
     await sleep(500);
 
+    await cdp.eval(`window.__setReactInput('#area-input', '1')`);
+    await sleep(200);
+
     // 1. Select Pucca Bigha -> Sq Ft
     await cdp.eval(`
       (() => {
-        const input = document.querySelector('#area-input');
-        input.value = "1";
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-
         const fromTrigger = document.querySelector('#from-unit-select');
         fromTrigger.click();
       })()
@@ -444,13 +431,12 @@ async function main() {
     `);
     await sleep(500);
 
+    await cdp.eval(`window.__setReactInput('#area-input', '1')`);
+    await sleep(200);
+
     // Standard 5.5-haath Bigha
     await cdp.eval(`
       (() => {
-        const input = document.querySelector('#area-input');
-        input.value = "1";
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-
         const fromTrigger = document.querySelector('#from-unit-select');
         fromTrigger.click();
       })()
@@ -529,15 +515,7 @@ async function main() {
 
   // TEST 10: Search for a unit and choose Set as From
   await runTest("TEST 10: Search for a unit and choose Set as From", async () => {
-    await cdp.eval(`
-      (() => {
-        const searchInput = document.querySelector('#interactive-unit-search') || document.querySelector('#unit-search-input');
-        if (searchInput) {
-          searchInput.value = "Hectare";
-          searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-      })()
-    `);
+    await cdp.eval(`window.__setReactInput('#interactive-unit-search', 'Hectare')`);
     await sleep(500);
 
     // Click "Set as From" on Hectare result card
@@ -558,15 +536,7 @@ async function main() {
 
   // TEST 11: Search for a unit and choose Convert To
   await runTest("TEST 11: Search for a unit and choose Convert To", async () => {
-    await cdp.eval(`
-      (() => {
-        const searchInput = document.querySelector('#interactive-unit-search') || document.querySelector('#unit-search-input');
-        if (searchInput) {
-          searchInput.value = "Gaj";
-          searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-      })()
-    `);
+    await cdp.eval(`window.__setReactInput('#interactive-unit-search', 'Gaj')`);
     await sleep(500);
 
     // Click "Convert To" on Square Yard / Gaj card
@@ -596,15 +566,7 @@ async function main() {
     `);
     await sleep(300);
 
-    await cdp.eval(`
-      (() => {
-        const priceInput = document.querySelector('#land-rate-input');
-        if (priceInput) {
-          priceInput.value = "2500";
-          priceInput.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-      })()
-    `);
+    await cdp.eval(`window.__setReactInput('#land-rate-input', '2500')`);
     await sleep(400);
 
     const totalVal = await cdp.eval(`document.querySelector('#rate-total-value')?.textContent?.trim()`);
@@ -625,13 +587,11 @@ async function main() {
     `);
     await sleep(300);
 
+    await cdp.eval(`window.__setReactInput('#parcel-name-input', 'Ancestral Farm')`);
+    await sleep(300);
+
     await cdp.eval(`
       (() => {
-        const nameInput = document.querySelector('#parcel-name-input');
-        if (nameInput) {
-          nameInput.value = "Ancestral Farm";
-          nameInput.dispatchEvent(new Event('input', { bubbles: true }));
-        }
         const saveBtn = document.querySelector('#save-parcel-btn');
         if (saveBtn) saveBtn.click();
       })()
@@ -647,6 +607,9 @@ async function main() {
     // Reload page to verify persistence across reloads
     await cdp.send("Page.reload");
     await sleep(1500);
+
+    // Re-inject helper after reload
+    await injectHelper();
 
     const persisted = await cdp.eval(`localStorage.getItem('bharat-land-parcels-v2')`);
     if (!persisted || !persisted.includes("Ancestral Farm")) {
@@ -666,12 +629,11 @@ async function main() {
     `);
     await sleep(400);
 
-    // Read clipboard via browser API
     let clipText = "";
     try {
       clipText = await cdp.eval(`navigator.clipboard.readText()`);
     } catch {
-      clipText = "Clipboard read permission handled by browser security";
+      clipText = "Protected by browser security model in headless mode";
     }
 
     const toast = await cdp.eval(`document.querySelector('[data-sonner-toast]')?.textContent || ""`);
@@ -710,13 +672,7 @@ async function main() {
   // TEST 16: Validate zero, negative, empty, invalid, and large numeric inputs
   await runTest("TEST 16: Validate zero, negative, empty, invalid, and large numeric inputs", async () => {
     // 1. Negative
-    await cdp.eval(`
-      (() => {
-        const input = document.querySelector('#area-input');
-        input.value = "-25";
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-      })()
-    `);
+    await cdp.eval(`window.__setReactInput('#area-input', '-25')`);
     await sleep(200);
     const negativeError = await cdp.eval(`document.querySelector('#input-error-msg')?.textContent?.trim()`);
     if (!negativeError?.includes("negative") && !negativeError?.includes("ऋणात्मक")) {
@@ -724,39 +680,31 @@ async function main() {
     }
 
     // 2. Zero
-    await cdp.eval(`
-      (() => {
-        const input = document.querySelector('#area-input');
-        input.value = "0";
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-      })()
-    `);
+    await cdp.eval(`window.__setReactInput('#area-input', '0')`);
     await sleep(200);
     const zeroResult = await cdp.eval(`document.querySelector('[data-testid="primary-result-value"]')?.textContent?.trim()`);
     if (zeroResult !== "0") throw new Error(`Expected '0', got '${zeroResult}'`);
 
     // 3. Large number
-    await cdp.eval(`
-      (() => {
-        const input = document.querySelector('#area-input');
-        input.value = "1000000";
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-      })()
-    `);
+    await cdp.eval(`window.__setReactInput('#area-input', '1000000')`);
     await sleep(200);
     const largeResult = await cdp.eval(`document.querySelector('[data-testid="primary-result-value"]')?.textContent?.trim()`);
     if (!largeResult || largeResult === "NaN") throw new Error("Large number evaluation failed");
+
+    // Restore clean value
+    await cdp.eval(`window.__setReactInput('#area-input', '1')`);
+    await sleep(200);
 
     return { negativeBanner: negativeError, zeroResult, largeResult };
   });
 
   // TEST 17: Verify English and Hindi text switching
   await runTest("TEST 17: Verify English and Hindi text toggle", async () => {
-    // Click Hindi button
+    // Click language toggle button
     await cdp.eval(`
       (() => {
-        const hiBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.trim() === 'हिन्दी');
-        if (hiBtn) hiBtn.click();
+        const btn = document.querySelector('#lang-toggle-btn');
+        if (btn) btn.click();
       })()
     `);
     await sleep(400);
@@ -767,8 +715,8 @@ async function main() {
     // Switch back to English
     await cdp.eval(`
       (() => {
-        const enBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.trim() === 'EN');
-        if (enBtn) enBtn.click();
+        const btn = document.querySelector('#lang-toggle-btn');
+        if (btn) btn.click();
       })()
     `);
     await sleep(400);
