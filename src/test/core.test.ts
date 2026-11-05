@@ -156,6 +156,58 @@ describe("Bharat Land Converter — Core Engine Tests", () => {
       expect(mutthi.sqFt).toBe(135);
       expect(convertArea(16, mutthi, nali).rawResult).toBe(1);
     });
+
+    it("verifies Himachal Pradesh Bigha (8,712 sq ft) has 20 Biswa (435.6 sq ft each)", () => {
+      const bighaHp = getUnit("bigha_hp")!;
+      const biswaHp = getUnit("biswa_hp")!;
+      const acre = getUnit("acre")!;
+
+      expect(bighaHp.sqFt).toBe(8712);
+      expect(biswaHp.sqFt).toBe(435.6);
+      expect(convertArea(1, bighaHp, acre).rawResult).toBe(0.2); // 5 Bigha = 1 Acre
+      expect(convertArea(20, biswaHp, bighaHp).rawResult).toBe(1); // 20 Biswa = 1 Bigha
+      expect(convertArea(100, biswaHp, acre).rawResult).toBe(1); // 100 Biswa = 1 Acre
+    });
+
+    it("verifies Himachal Pradesh Lower Hills customary Bigha (9,075 sq ft)", () => {
+      const bighaPunjabi = getUnit("bigha_hp_punjabi")!;
+      expect(bighaPunjabi.sqFt).toBe(9075);
+      expect(convertArea(1, bighaPunjabi, getUnit("sqft")!).rawResult).toBe(9075);
+    });
+
+    it("verifies Assam / Barak Valley Chatak is 45 sq ft (4 Chatak = 180 sq ft = 1/4 Kattha)", () => {
+      const chatakAs = getUnit("chatak_assam")!;
+      const sqft = getUnit("sqft")!;
+      expect(chatakAs.sqFt).toBe(45);
+      expect(convertArea(1, chatakAs, sqft).rawResult).toBe(45);
+      expect(convertArea(4, chatakAs, sqft).rawResult).toBe(180);
+    });
+
+    it("verifies Gujarat 20-Guntha customary Vigha (21,780 sq ft = 0.5 Acre)", () => {
+      const vigha20 = getUnit("bigha_gj_20guntha")!;
+      const guntha = getUnit("guntha_mh")!;
+      const acre = getUnit("acre")!;
+      expect(vigha20.sqFt).toBe(21780);
+      expect(convertArea(1, vigha20, guntha).rawResult).toBe(20);
+      expect(convertArea(1, vigha20, acre).rawResult).toBe(0.5);
+    });
+
+    it("verifies Bihar 6.0-haath Kattha (1,620 sq ft) and Dhur (81 sq ft)", () => {
+      const kattha6 = getUnit("kattha_bihar_6haath")!;
+      const dhur6 = getUnit("dhur_bihar_6haath")!;
+      const bigha6 = getUnit("bigha_bihar_6haath")!;
+      expect(kattha6.sqFt).toBe(1620);
+      expect(dhur6.sqFt).toBe(81);
+      expect(convertArea(20, dhur6, kattha6).rawResult).toBe(1);
+      expect(convertArea(20, kattha6, bigha6).rawResult).toBe(1);
+    });
+
+    it("verifies UP Western Kaccha Biswa is 453.75 sq ft (1/20 of 9,075 sq ft)", () => {
+      const biswaKaccha = getUnit("biswa_up_kaccha")!;
+      const bighaKaccha = getUnit("bigha_up_kaccha")!;
+      expect(biswaKaccha.sqFt).toBe(453.75);
+      expect(convertArea(20, biswaKaccha, bighaKaccha).rawResult).toBe(1);
+    });
   });
 
   describe("3. Round-Trip Reversibility and Mathematical Invariants", () => {
