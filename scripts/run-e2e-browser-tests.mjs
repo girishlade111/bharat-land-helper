@@ -3,6 +3,8 @@
 // Tests all 20 required E2E browser workflows on actual rendered Chromium
 
 import { spawn } from "child_process";
+import os from "os";
+import path from "path";
 
 const CHROME_PATH = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const PREVIEW_PORT = 4173;
@@ -106,12 +108,14 @@ async function main() {
   }
   console.log("Preview server is ready at " + BASE_URL);
 
-  // 2. Launch Chromium in headless mode with remote debugging
+  // 2. Launch Chromium in headless mode with remote debugging and isolated profile
+  const tempProfile = path.join(os.tmpdir(), `chrome-test-profile-${Date.now()}`);
   const chromeProcess = spawn(
     CHROME_PATH,
     [
       "--headless=new",
       "--remote-debugging-port=9222",
+      `--user-data-dir=${tempProfile}`,
       "--disable-gpu",
       "--no-first-run",
       "--no-default-browser-check",
@@ -120,7 +124,23 @@ async function main() {
     { stdio: "ignore" }
   );
 
-  await sleep(1500);
+  // Poll until remote debugging endpoint is responsive
+  let cdpReady = false;
+  for (let i = 0; i < 20; i++) {
+    await sleep(500);
+    try {
+      const verRes = await fetch("http://127.0.0.1:9222/json/version");
+      if (verRes.ok) {
+        cdpReady = true;
+        break;
+      }
+    } catch {}
+  }
+  if (!cdpReady) {
+    chromeProcess.kill();
+    previewProcess.kill();
+    throw new Error("Chromium CDP failed to start on port 9222 within timeout");
+  }
 
   // Create new target tab pointing to base URL
   const newTargetRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/`), {
