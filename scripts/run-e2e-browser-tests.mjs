@@ -531,14 +531,14 @@ async function main() {
   await runTest("TEST 10: Search for a unit and choose Set as From", async () => {
     await cdp.eval(`
       (() => {
-        const searchInput = document.querySelector('#unit-search-input');
+        const searchInput = document.querySelector('#interactive-unit-search') || document.querySelector('#unit-search-input');
         if (searchInput) {
           searchInput.value = "Hectare";
           searchInput.dispatchEvent(new Event('input', { bubbles: true }));
         }
       })()
     `);
-    await sleep(400);
+    await sleep(500);
 
     // Click "Set as From" on Hectare result card
     await cdp.eval(`
@@ -560,14 +560,14 @@ async function main() {
   await runTest("TEST 11: Search for a unit and choose Convert To", async () => {
     await cdp.eval(`
       (() => {
-        const searchInput = document.querySelector('#unit-search-input');
+        const searchInput = document.querySelector('#interactive-unit-search') || document.querySelector('#unit-search-input');
         if (searchInput) {
           searchInput.value = "Gaj";
           searchInput.dispatchEvent(new Event('input', { bubbles: true }));
         }
       })()
     `);
-    await sleep(400);
+    await sleep(500);
 
     // Click "Convert To" on Square Yard / Gaj card
     await cdp.eval(`
@@ -587,12 +587,18 @@ async function main() {
 
   // TEST 12: Calculate land valuation using different source and pricing units
   await runTest("TEST 12: Calculate land valuation (RateCalculator)", async () => {
-    // Scroll to RateCalculator
+    // Open RateCalculator collapsible
     await cdp.eval(`
       (() => {
-        const el = document.querySelector('#rate-calculator-card');
-        if (el) el.scrollIntoView();
-        const priceInput = document.querySelector('#rate-price-input');
+        const toggle = document.querySelector('#rate-calculator-toggle');
+        if (toggle) toggle.click();
+      })()
+    `);
+    await sleep(300);
+
+    await cdp.eval(`
+      (() => {
+        const priceInput = document.querySelector('#land-rate-input');
         if (priceInput) {
           priceInput.value = "2500";
           priceInput.dispatchEvent(new Event('input', { bubbles: true }));
@@ -610,6 +616,15 @@ async function main() {
 
   // TEST 13: Save a land parcel and reload the browser (local persistence)
   await runTest("TEST 13: Save a land parcel and verify localStorage persistence", async () => {
+    // Open MyLandList collapsible
+    await cdp.eval(`
+      (() => {
+        const toggle = document.querySelector('#my-lands-toggle');
+        if (toggle) toggle.click();
+      })()
+    `);
+    await sleep(300);
+
     await cdp.eval(`
       (() => {
         const nameInput = document.querySelector('#parcel-name-input');
@@ -624,7 +639,7 @@ async function main() {
     await sleep(400);
 
     // Check localStorage in browser
-    const stored = await cdp.eval(`localStorage.getItem('bharat_land_parcels')`);
+    const stored = await cdp.eval(`localStorage.getItem('bharat-land-parcels-v2')`);
     if (!stored || !stored.includes("Ancestral Farm")) {
       throw new Error("Parcel not found in localStorage after save");
     }
@@ -633,7 +648,7 @@ async function main() {
     await cdp.send("Page.reload");
     await sleep(1500);
 
-    const persisted = await cdp.eval(`localStorage.getItem('bharat_land_parcels')`);
+    const persisted = await cdp.eval(`localStorage.getItem('bharat-land-parcels-v2')`);
     if (!persisted || !persisted.includes("Ancestral Farm")) {
       throw new Error("Parcel lost after reload");
     }

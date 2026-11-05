@@ -116,12 +116,14 @@ export default function MyLandList() {
         {/* Save Form */}
         <div className="flex gap-2">
           <Input
+            id="parcel-name-input"
             value={landName}
             onChange={(e) => setLandName(e.target.value)}
             placeholder={t("landName", lang)}
             className="h-11 rounded-xl border-border/70 bg-background text-sm font-medium flex-1"
           />
           <Button
+            id="save-parcel-btn"
             type="button"
             onClick={handleSave}
             disabled={!validation.isValid || !landName.trim()}
