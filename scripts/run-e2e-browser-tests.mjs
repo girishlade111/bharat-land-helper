@@ -2,7 +2,7 @@
 // Real Chromium Browser Automation via Chrome DevTools Protocol (CDP)
 // Tests all 20 required E2E browser workflows on actual rendered Chromium
 
-import { spawn } from "child_process";
+import { spawn, execSync } from "child_process";
 import os from "os";
 import path from "path";
 
@@ -43,7 +43,8 @@ class CDPClient {
             this.consoleErrors.push(text);
           }
           if (data.method === "Runtime.exceptionThrown") {
-            this.consoleErrors.push(data.params.exceptionDetails?.text || "Unhandled exception");
+            const desc = data.params.exceptionDetails?.exception?.description || data.params.exceptionDetails?.text || "Unhandled exception";
+            this.consoleErrors.push(desc);
           }
         }
       };
@@ -177,6 +178,16 @@ async function main() {
         el.dispatchEvent(new Event('input', { bubbles: true }));
         el.dispatchEvent(new Event('change', { bubbles: true }));
       };
+
+      window.__clickRadix = function(el) {
+        if (!el) return;
+        el.focus();
+        el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+        el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+        el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true }));
+        el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+        el.click();
+      };
     `);
   };
   await injectHelper();
@@ -215,14 +226,14 @@ async function main() {
     await cdp.eval(`
       (() => {
         const toSelect = document.querySelector('#to-unit-select');
-        toSelect.click();
+        window.__clickRadix(toSelect);
       })()
     `);
-    await sleep(300);
+    await sleep(400);
     await cdp.eval(`
       (() => {
         const item = Array.from(document.querySelectorAll('[role="option"]')).find(el => el.textContent.includes('Square Feet') || el.textContent.includes('वर्ग फीट'));
-        if (item) item.click();
+        if (item) window.__clickRadix(item);
       })()
     `);
     await sleep(400);
@@ -921,8 +932,9 @@ async function main() {
   console.log("==================================================");
 
   cdp.close();
-  chromeProcess.kill();
-  previewProcess.kill();
+  try { chromeProcess.kill(); } catch {}
+  try { execSync(`taskkill /F /T /PID ${previewProcess.pid}`, { stdio: "ignore" }); } catch {}
+  try { previewProcess.kill(); } catch {}
 
   return results;
 }
