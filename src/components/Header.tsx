@@ -68,6 +68,7 @@ export default function Header() {
 
           {/* Language Switcher */}
           <Button
+            id="lang-toggle-btn"
             type="button"
             variant="outline"
             size="sm"
