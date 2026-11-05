@@ -348,5 +348,45 @@ describe("Bharat Land Converter — Core Engine Tests", () => {
       expect(bighaResult?.rawResult).toBe(1.6); // 1 Acre = 1.6 Pucca Bigha (43560 / 27225)
     });
   });
+
+  describe("9. Explicit Regional Variant Resolution & URL Compatibility", () => {
+    it("resolves legacy 'bigha' correctly across different state contexts", () => {
+      expect(resolveUnit("bigha", { stateCode: "UP" })?.id).toBe("bigha_up_pucca");
+      expect(resolveUnit("bigha", { stateCode: "UP", variantId: "kaccha" })?.id).toBe("bigha_up_kaccha");
+      expect(resolveUnit("bigha", { stateCode: "BR" })?.id).toBe("bigha_bihar_standard");
+      expect(resolveUnit("bigha", { stateCode: "BR", variantId: "6haath" })?.id).toBe("bigha_bihar_6haath");
+      expect(resolveUnit("bigha", { stateCode: "WB" })?.id).toBe("bigha_wb");
+      expect(resolveUnit("bigha", { stateCode: "GJ" })?.id).toBe("bigha_gj");
+      expect(resolveUnit("bigha", { stateCode: "GJ", variantId: "20guntha" })?.id).toBe("bigha_gj_20guntha");
+      expect(resolveUnit("bigha", { stateCode: "HP" })?.id).toBe("bigha_hp");
+      expect(resolveUnit("bigha", { stateCode: "HP", variantId: "punjabi" })?.id).toBe("bigha_hp_punjabi");
+    });
+
+    it("resolves legacy 'katha' and 'kattha' across states", () => {
+      expect(resolveUnit("kattha", { stateCode: "BR" })?.id).toBe("kattha_bihar_standard");
+      expect(resolveUnit("katha", { stateCode: "BR", variantId: "6haath" })?.id).toBe("kattha_bihar_6haath");
+      expect(resolveUnit("katha", { stateCode: "WB" })?.id).toBe("kattha_wb");
+      expect(resolveUnit("katha", { stateCode: "AS" })?.id).toBe("kattha_assam");
+    });
+
+    it("resolves legacy 'guntha' across MH and Odisha", () => {
+      expect(resolveUnit("guntha", { stateCode: "MH" })?.id).toBe("guntha_mh");
+      expect(resolveUnit("guntha", { stateCode: "OD" })?.id).toBe("guntha_od");
+    });
+
+    it("converts using string unit IDs and ConversionContext", () => {
+      const resUp = convertArea(1, "bigha", "sqft", { context: { stateCode: "UP" } });
+      expect(resUp.rawResult).toBe(27225);
+
+      const resUpKaccha = convertArea(1, "bigha", "sqft", { context: { stateCode: "UP", variantId: "kaccha" } });
+      expect(resUpKaccha.rawResult).toBe(9075);
+
+      const resWb = convertArea(1, "bigha", "sqft", { context: { stateCode: "WB" } });
+      expect(resWb.rawResult).toBe(14400);
+
+      const resBr6 = convertArea(1, "bigha", "sqft", { context: { stateCode: "BR", variantId: "6haath" } });
+      expect(resBr6.rawResult).toBe(32400);
+    });
+  });
 });
 
