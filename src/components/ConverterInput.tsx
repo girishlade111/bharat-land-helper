@@ -36,19 +36,21 @@ export default function ConverterInput() {
   const handleCopy = () => {
     if (!primaryResult) return;
     const textToCopy = `${primaryResult.formattedResult} ${lang === "hi" ? toUnit.nameHi : toUnit.name}`;
-    navigator.clipboard.writeText(textToCopy).then(() => {
-      setCopied(true);
-      toast({
-        title: t("copied", lang),
-        description: textToCopy,
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        setCopied(true);
+        toast({
+          title: t("copied", lang),
+          description: textToCopy,
+        });
+        setTimeout(() => setCopied(false), 2000);
+      }).catch(() => {
+        toast({
+          title: "Could not copy",
+          description: "Clipboard access was denied by your browser.",
+        });
       });
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {
-      toast({
-        title: "Could not copy",
-        description: "Clipboard access was denied by your browser.",
-      });
-    });
+    }
   };
 
   return (
