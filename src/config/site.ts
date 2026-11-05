@@ -20,3 +20,4 @@ export function buildCanonicalUrl(pathname: string = "/"): string {
   const cleanPath = pathname.startsWith("/") ? pathname : `/${pathname}`;
   return `${SITE_URL}${cleanPath.replace(/\/+$/, "")}`;
 }
+
