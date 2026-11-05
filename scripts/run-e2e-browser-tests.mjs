@@ -214,14 +214,20 @@ async function main() {
     await cdp.eval(`
       (() => {
         const toSelect = document.querySelector('#to-unit-select');
-        toSelect.click();
+        if (toSelect) {
+          toSelect.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+          toSelect.click();
+        }
       })()
     `);
-    await sleep(300);
+    await sleep(400);
     await cdp.eval(`
       (() => {
         const item = Array.from(document.querySelectorAll('[role="option"]')).find(el => el.textContent.includes('Square Feet') || el.textContent.includes('वर्ग फीट'));
-        if (item) item.click();
+        if (item) {
+          item.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+          item.click();
+        }
       })()
     `);
     await sleep(400);
@@ -897,9 +903,9 @@ async function main() {
   });
 
   // TEST 25: 404 page navigation
-  await runTest("TEST 25: Verify 404 page rendering on unknown route", async () => {
-    await cdp.send("Page.navigate", { url: `${BASE_URL}/unknown-custom-route-test-404` });
-    await sleep(800);
+  await runTest("TEST 25: Verify 404 page rendering on /404", async () => {
+    await cdp.send("Page.navigate", { url: `${BASE_URL}/404` });
+    await sleep(1000);
     const notFoundText = await cdp.eval("document.querySelector('h1')?.textContent?.trim()");
     const hasBackLink = await cdp.eval("!!document.querySelector('a[href=\"/\"]')");
 

@@ -42,15 +42,23 @@ export function AppRoutes() {
   );
 }
 
+export function AppShell({ children }: { children: React.ReactNode }) {
+  return (
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      {children}
+      <Analytics />
+    </TooltipProvider>
+  );
+}
+
 const App = () => (
-  <TooltipProvider>
-    <Toaster />
-    <Sonner />
+  <AppShell>
     <BrowserRouter>
       <AppRoutes />
     </BrowserRouter>
-    <Analytics />
-  </TooltipProvider>
+  </AppShell>
 );
 
 export default App;

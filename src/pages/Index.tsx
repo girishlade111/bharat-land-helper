@@ -19,6 +19,18 @@ function MainContent() {
 
   return (
     <main className="container max-w-4xl px-4 py-5 space-y-5 sm:py-6 sm:space-y-6">
+      {/* Primary Hero Heading for SEO and Hierarchy */}
+      <div className="space-y-1">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+          {lang === "hi" ? "भारत भूमि क्षेत्रफल परिवर्तक" : "Bharat Land Area Converter"}
+        </h1>
+        <p className="text-xs sm:text-sm text-muted-foreground">
+          {lang === "hi"
+            ? "बीघा, गुंठा, एकड़, हेक्टेयर, कनाल, मरला और 35+ इकाइयों का सटीक रूपांतरण"
+            : "Accurate land measurement converter for Bigha, Guntha, Acre, Hectare, Kanal, Marla, and 35+ units across all Indian states"}
+        </p>
+      </div>
+
       {/* Primary Converter (From/To, Direct Result, Formula, Confidence) */}
       <ConverterInput />
 

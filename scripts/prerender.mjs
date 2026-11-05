@@ -151,6 +151,11 @@ async function main() {
         fs.mkdirSync(routeSubdir, { recursive: true });
         const dest = path.join(routeSubdir, "index.html");
         fs.writeFileSync(dest, finalHtml, "utf8");
+
+        // Also write clean URL sibling file (e.g. dist/about.html) for static clean-URL servers
+        const siblingFile = path.join(DIST_DIR, `${route.path.replace(/^\//, "")}.html`);
+        fs.writeFileSync(siblingFile, finalHtml, "utf8");
+
         results.push({ path: route.path, file: `dist${route.path}/index.html`, size: fs.statSync(dest).size, status: "OK" });
       }
     } catch (err) {
@@ -169,6 +174,12 @@ async function main() {
       fs.mkdirSync(routeSubdir, { recursive: true });
       const dest = path.join(routeSubdir, "index.html");
       fs.writeFileSync(dest, finalHtml, "utf8");
+
+      // Also write clean URL sibling file (e.g. dist/convert/acre-to-sqft.html)
+      const siblingFile = path.join(DIST_DIR, `${route.path.replace(/^\//, "")}.html`);
+      fs.mkdirSync(path.dirname(siblingFile), { recursive: true });
+      fs.writeFileSync(siblingFile, finalHtml, "utf8");
+
       results.push({ path: route.path, file: `dist${route.path}/index.html`, size: fs.statSync(dest).size, status: "OK" });
     } catch (err) {
       console.error(`Failed to prerender conversion route: ${route.path}`, err);

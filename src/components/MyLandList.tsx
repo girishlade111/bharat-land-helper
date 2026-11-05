@@ -36,8 +36,13 @@ export default function MyLandList() {
   const { lang, fromUnit, validation, selectedRegion } = useApp();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [parcels, setParcels] = useState<SavedLand[]>(loadParcels);
+  const [parcels, setParcels] = useState<SavedLand[]>([]);
   const [landName, setLandName] = useState("");
+
+  // Safely load parcels after client hydration to prevent SSR mismatch
+  useEffect(() => {
+    setParcels(loadParcels());
+  }, []);
 
   useEffect(() => {
     try {

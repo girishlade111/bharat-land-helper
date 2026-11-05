@@ -19,9 +19,9 @@ export default function Header() {
             B
           </div>
           <div className="flex flex-col">
-            <h1 className="text-sm font-bold tracking-tight text-foreground sm:text-base leading-tight">
+            <span className="text-sm font-bold tracking-tight text-foreground sm:text-base leading-tight">
               {t("appTitle", lang)}
-            </h1>
+            </span>
             <span className="hidden text-[10px] font-medium text-muted-foreground sm:block leading-tight">
               {lang === "hi"
                 ? "28 राज्य और 8 केंद्र शासित प्रदेशों का सत्यापित भूमि मापक"
