@@ -163,7 +163,8 @@ async function main() {
     });
   } catch {}
 
-  await sleep(1000);
+  // Allow complete static hydration on initial render
+  await sleep(2500);
 
   // Inject React input setter helper into the page
   const injectHelper = async () => {
@@ -846,7 +847,8 @@ async function main() {
   // TEST 22: Chromium navigation to /convert/acre-to-sqft and hydration
   await runTest("TEST 22: Navigate to /convert/acre-to-sqft in Chromium and test hydration", async () => {
     await cdp.send("Page.navigate", { url: `${BASE_URL}/convert/acre-to-sqft` });
-    await sleep(1000);
+    // Allow complete static hydration on initial render
+  await sleep(2500);
     await injectHelper();
 
     const title = await cdp.eval("document.title");
@@ -868,7 +870,8 @@ async function main() {
   // TEST 23: Regional conversion landing page /convert/acre-to-guntha/maharashtra
   await runTest("TEST 23: Navigate to /convert/acre-to-guntha/maharashtra", async () => {
     await cdp.send("Page.navigate", { url: `${BASE_URL}/convert/acre-to-guntha/maharashtra` });
-    await sleep(1000);
+    // Allow complete static hydration on initial render
+  await sleep(2500);
     await injectHelper();
 
     const h1 = await cdp.eval("document.querySelector('h1')?.textContent?.trim()");
@@ -899,7 +902,8 @@ async function main() {
   // TEST 25: 404 page navigation
   await runTest("TEST 25: Verify 404 page rendering on /404", async () => {
     await cdp.send("Page.navigate", { url: `${BASE_URL}/404` });
-    await sleep(1000);
+    // Allow complete static hydration on initial render
+  await sleep(2500);
     const notFoundText = await cdp.eval("document.querySelector('h1')?.textContent?.trim()");
     const hasBackLink = await cdp.eval("!!document.querySelector('a[href=\"/\"]')");
 

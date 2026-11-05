@@ -118,7 +118,7 @@ export default function ConverterInput() {
             <div className="w-[140px] sm:w-[170px]">
               <Select value={fromUnit.id} onValueChange={setFromUnitId}>
                 <SelectTrigger id="from-unit-select" aria-label={t("fromUnit", lang)} className="h-12 rounded-xl border-border/70 bg-background text-xs sm:h-14 sm:text-sm font-medium">
-                  <SelectValue />
+                  <SelectValue placeholder={lang === "hi" ? fromUnit.nameHi : fromUnit.name} />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
                   {regionalUnits.length > 0 && (
@@ -171,7 +171,7 @@ export default function ConverterInput() {
           </label>
           <Select value={toUnit.id} onValueChange={setToUnitId}>
             <SelectTrigger id="to-unit-select" aria-label={t("toUnit", lang)} className="h-12 w-full rounded-xl border-border/70 bg-background text-xs sm:h-14 sm:text-sm font-medium">
-              <SelectValue />
+              <SelectValue placeholder={lang === "hi" ? toUnit.nameHi : toUnit.name} />
             </SelectTrigger>
             <SelectContent className="max-h-[300px]">
               {regionalUnits.length > 0 && (
