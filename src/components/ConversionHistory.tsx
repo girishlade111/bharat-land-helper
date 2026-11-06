@@ -107,6 +107,25 @@ export default function ConversionHistory({ onLoadConversion }: ConversionHistor
   };
 
   const handleReRun = (item: ConversionHistoryItem) => {
+    // Check if unit exists in canonical registry or custom presets
+    const resolvedFrom = getUnit(item.fromUnitId);
+    if (!resolvedFrom && item.isCustomUnit) {
+      // Custom unit was deleted after this calculation occurred
+      const sqFtValue = item.fromValue * (item.fromUnitSqFtSnapshot || 1);
+      setInputValue(String(sqFtValue));
+      setFromUnitId("sqft");
+      setToUnitId(item.toUnitId);
+      if (item.stateCode) setSelectedRegionCode(item.stateCode);
+      toast({
+        title: lang === "hi" ? "कस्टम इकाई उपलब्ध नहीं" : "Custom Unit Removed",
+        description:
+          lang === "hi"
+            ? "यह कस्टम इकाई हटा दी गई है। मूल क्षेत्रफल (वर्ग फीट) लोड किया गया।"
+            : `Custom unit '${item.fromUnitName}' was deleted. Loaded ${sqFtValue.toLocaleString("en-IN")} sq ft equivalent.`,
+      });
+      return;
+    }
+
     setInputValue(String(item.fromValue));
     setFromUnitId(item.fromUnitId);
     setToUnitId(item.toUnitId);
