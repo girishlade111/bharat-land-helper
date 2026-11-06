@@ -147,7 +147,9 @@ export function loadHistory(): ConversionHistoryItem[] {
             }
           });
         }
-      } catch {}
+      } catch (err) {
+        console.warn("Failed to parse v2 history item:", err);
+      }
     }
 
     // 2. Check legacy v1 storage (bharat_conversion_history_v1)
@@ -163,7 +165,9 @@ export function loadHistory(): ConversionHistoryItem[] {
             }
           });
         }
-      } catch {}
+      } catch (err) {
+        console.warn("Failed to parse v1 legacy history item:", err);
+      }
     }
 
     // 3. Check legacy alt storage (bharat_calc_history_v1)
@@ -179,7 +183,9 @@ export function loadHistory(): ConversionHistoryItem[] {
             }
           });
         }
-      } catch {}
+      } catch (err) {
+        console.warn("Failed to parse legacy alt history item:", err);
+      }
     }
 
     const merged = Array.from(itemsMap.values())
