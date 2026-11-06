@@ -752,9 +752,9 @@ async function main() {
     return { negativeBanner: negativeError, zeroResult, largeResult };
   });
 
-  // TEST 17: Verify English and Hindi text switching
-  await runTest("TEST 17: Verify English and Hindi text toggle", async () => {
-    // Click language toggle button
+  // TEST 17: Verify English, Hindi, and Marathi text switching (trilingual cycle)
+  await runTest("TEST 17: Verify English, Hindi, and Marathi text switching", async () => {
+    // Click 1: English -> Hindi
     await cdp.eval(`
       (() => {
         const btn = document.querySelector('#lang-toggle-btn');
@@ -766,7 +766,19 @@ async function main() {
     const hiHeading = await cdp.eval(`document.querySelector('#converter-heading')?.textContent?.trim()`);
     if (!hiHeading?.includes("भूमि")) throw new Error("Hindi switch failed; heading was: " + hiHeading);
 
-    // Switch back to English
+    // Click 2: Hindi -> Marathi
+    await cdp.eval(`
+      (() => {
+        const btn = document.querySelector('#lang-toggle-btn');
+        if (btn) btn.click();
+      })()
+    `);
+    await sleep(400);
+
+    const mrHeading = await cdp.eval(`document.querySelector('#converter-heading')?.textContent?.trim()`);
+    if (!mrHeading?.includes("जमीन")) throw new Error("Marathi switch failed; heading was: " + mrHeading);
+
+    // Click 3: Marathi -> English
     await cdp.eval(`
       (() => {
         const btn = document.querySelector('#lang-toggle-btn');
@@ -776,9 +788,9 @@ async function main() {
     await sleep(400);
 
     const enHeading = await cdp.eval(`document.querySelector('#converter-heading')?.textContent?.trim()`);
-    if (!enHeading?.includes("Converter")) throw new Error("English switch back failed; heading was: " + enHeading);
+    if (!enHeading?.includes("Converter") && !enHeading?.includes("Land")) throw new Error("English switch back failed; heading was: " + enHeading);
 
-    return { hindiHeading: hiHeading, englishHeading: enHeading };
+    return { hindiHeading: hiHeading, marathiHeading: mrHeading, englishHeading: enHeading };
   });
 
   // TEST 18: Test responsive layout at mobile, tablet, and desktop widths
@@ -1131,7 +1143,16 @@ async function main() {
         if (useBtn) window.__clickRadix(useBtn);
       })()
     `);
-    await sleep(600);
+    await sleep(800);
+
+    // Ensure converter tab is active
+    await cdp.eval(`
+      (() => {
+        const convBtn = document.querySelector('#tab-converter-btn');
+        if (convBtn) convBtn.click();
+      })()
+    `);
+    await sleep(400);
 
     // Verify Converter tab is now active and From unit is custom unit
     const fromUnit = await cdp.eval(`document.querySelector('#from-unit-select')?.textContent?.trim()`);

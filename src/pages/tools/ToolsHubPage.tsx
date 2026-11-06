@@ -297,3 +297,4 @@ export default function ToolsHubPage({ forcedLang }: ToolsHubPageProps) {
     </AppProvider>
   );
 }
+

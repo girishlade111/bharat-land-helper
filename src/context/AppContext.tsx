@@ -94,6 +94,22 @@ export function AppProvider({
   const [inputValue, setInputValueState] = useState<string>(initialInputValue);
   const [displayPrecision, setDisplayPrecision] = useState<number>(4);
   const [activeTab, setActiveTab] = useState<string>("All");
+  const [customUnitsVersion, setCustomUnitsVersion] = useState<number>(0);
+
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (!e.key || e.key === "bharat_custom_units_v1") {
+        setCustomUnitsVersion((v) => v + 1);
+      }
+    };
+    const handleCustomChange = () => setCustomUnitsVersion((v) => v + 1);
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("bharat_custom_units_updated", handleCustomChange);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("bharat_custom_units_updated", handleCustomChange);
+    };
+  }, []);
 
   // Selected region
   const selectedRegion = useMemo(() => {
@@ -103,7 +119,7 @@ export function AppProvider({
   // Available units for the region (Standard + Regional + Custom)
   const availableUnits = useMemo(() => {
     return getUnitsForRegion(selectedRegion.code);
-  }, [selectedRegion.code]);
+  }, [selectedRegion.code, customUnitsVersion, fromUnitId, toUnitId]);
 
   // From and To units
   const fromUnit = useMemo(() => {

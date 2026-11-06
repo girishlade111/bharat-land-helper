@@ -239,3 +239,4 @@ export default function CompoundConverterPage({ forcedLang }: ToolPageProps) {
     </AppProvider>
   );
 }
+

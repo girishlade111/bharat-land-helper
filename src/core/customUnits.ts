@@ -157,6 +157,9 @@ export function saveCustomPreset(
   const updated = [preset, ...existing.filter((p) => p.name.toLowerCase() !== preset.name.toLowerCase())];
   try {
     window.localStorage.setItem(CUSTOM_UNITS_STORAGE_KEY, JSON.stringify(updated));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("bharat_custom_units_updated"));
+    }
     return { success: true, preset };
   } catch {
     return { success: false, error: "Could not save to browser storage." };
@@ -171,6 +174,9 @@ export function deleteCustomPreset(id: string): CustomUnitPreset[] {
     const existing = loadCustomPresets();
     const filtered = existing.filter((p) => p.id !== id && `custom_${p.id}` !== id);
     window.localStorage.setItem(CUSTOM_UNITS_STORAGE_KEY, JSON.stringify(filtered));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("bharat_custom_units_updated"));
+    }
     return filtered;
   } catch {
     return [];

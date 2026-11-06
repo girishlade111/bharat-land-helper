@@ -276,3 +276,4 @@ export default function PlotAreaCalculatorPage({ forcedLang }: ToolPageProps) {
     </AppProvider>
   );
 }
+
