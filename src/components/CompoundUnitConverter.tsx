@@ -111,7 +111,17 @@ export default function CompoundUnitConverter({ onTransferToConverter }: Compoun
   };
 
   const handleTransfer = () => {
-    if (calculation.totalSqFt <= 0) return;
+    if (calculation.totalSqFt <= 0) {
+      toast({
+        title: lang === "hi" ? "अमान्य मान" : "Invalid Calculation",
+        description:
+          lang === "hi"
+            ? "कन्वर्टर में भेजने के लिए मान्य धनात्मक मान दर्ज करें।"
+            : "Enter valid positive values before transferring.",
+        variant: "destructive",
+      });
+      return;
+    }
     const rounded = Math.round(calculation.totalSqFt * 1000) / 1000;
 
     // Ensure To unit is not sqft so immediate conversion is meaningful
@@ -133,7 +143,7 @@ export default function CompoundUnitConverter({ onTransferToConverter }: Compoun
 
     toast({
       title: lang === "hi" ? "कन्वर्टर में भेजा गया" : "Transferred to Converter",
-      description: `${formatIndianNumber(rounded)} sq ft loaded into main converter.`,
+      description: `${formatIndianNumber(rounded)} sq ft ${lang === "hi" ? "मुख्य परिवर्तक में लोड किया गया।" : "loaded into main converter."}`,
     });
   };
 

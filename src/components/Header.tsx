@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
+import { buildConversionSearchParams } from "@/core";
 import { t, type Lang } from "@/data/translations";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -56,7 +57,16 @@ export function resolveLocalizedDestination(currentPathname: string, targetLang:
 }
 
 export default function Header() {
-  const { lang, setLang, selectedRegion, setSelectedRegionCode, availableRegions } = useApp();
+  const {
+    lang,
+    setLang,
+    selectedRegion,
+    setSelectedRegionCode,
+    availableRegions,
+    inputValue,
+    fromUnit,
+    toUnit,
+  } = useApp();
   const [isDark, setIsDark] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -107,10 +117,26 @@ export default function Header() {
     const pathname = location.pathname;
     const { targetPath, hasDedicatedPage } = resolveLocalizedDestination(pathname, nextLang);
 
+    // Build query string using the live, committed conversion state rather than stale location.search
+    const destinationSearch = buildConversionSearchParams(
+      {
+        value: inputValue,
+        fromUnitId: fromUnit?.id,
+        toUnitId: toUnit?.id,
+        regionCode: selectedRegion?.code,
+      },
+      typeof window !== "undefined" ? window.location.search : location.search,
+      {
+        defaultValue: "1",
+        defaultFromUnitId: "acre",
+        defaultRegionCode: "MH",
+      }
+    );
+
     if (hasDedicatedPage && targetPath !== pathname) {
       navigate({
         pathname: targetPath,
-        search: location.search,
+        search: destinationSearch,
       });
     }
   };

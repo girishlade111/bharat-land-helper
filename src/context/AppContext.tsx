@@ -15,7 +15,9 @@ import {
   type OneToAllResult,
   type ValidationResult,
   type ConversionContext,
+  buildConversionSearchParams,
 } from "@/core";
+import { toast } from "@/hooks/use-toast";
 import type { Lang } from "@/data/translations";
 
 export interface ConversionStateUpdates {
@@ -127,16 +129,22 @@ export function AppProvider({
   // Available units for the region (Standard + Regional + Custom)
   const availableUnits = useMemo(() => {
     return getUnitsForRegion(selectedRegion.code);
-  }, [selectedRegion.code, customUnitsVersion, fromUnitId, toUnitId]);
+  }, [selectedRegion.code, customUnitsVersion]);
 
   // From and To units
   const fromUnit = useMemo(() => {
-    return getUnit(fromUnitId) || ALL_UNITS.find((u) => u.id === "acre")!;
-  }, [fromUnitId]);
+    const candidate = getUnit(fromUnitId);
+    if (candidate && (!fromUnitId.startsWith("custom_") || availableUnits.some((u) => u.id === fromUnitId))) {
+      return candidate;
+    }
+    return ALL_UNITS.find((u) => u.id === "acre")!;
+  }, [fromUnitId, availableUnits]);
 
   const toUnit = useMemo(() => {
     const candidate = getUnit(toUnitId);
-    if (candidate) return candidate;
+    if (candidate && (!toUnitId.startsWith("custom_") || availableUnits.some((u) => u.id === toUnitId))) {
+      return candidate;
+    }
     // Default to the first regional unit, or sqft
     const regional = availableUnits.find((u) => u.category === "regional");
     return regional || ALL_UNITS.find((u) => u.id === "sqft")!;
@@ -204,14 +212,24 @@ export function AppProvider({
 
       if (from) {
         const resolvedFrom = resolveUnit(from, context);
-        if (resolvedFrom) setFromUnitIdState(resolvedFrom.id);
+        // Do not restore deleted custom units from URL
+        if (resolvedFrom && (!from.startsWith("custom_") || getUnit(from))) {
+          setFromUnitIdState(resolvedFrom.id);
+        } else {
+          setFromUnitIdState(initialFromUnitId);
+        }
       } else {
         setFromUnitIdState(initialFromUnitId);
       }
 
       if (to) {
         const resolvedTo = resolveUnit(to, context);
-        if (resolvedTo) setToUnitIdState(resolvedTo.id);
+        // Do not restore deleted custom units from URL
+        if (resolvedTo && (!to.startsWith("custom_") || getUnit(to))) {
+          setToUnitIdState(resolvedTo.id);
+        } else {
+          setToUnitIdState(initialToUnitId);
+        }
       } else {
         setToUnitIdState(initialToUnitId);
       }
@@ -244,18 +262,27 @@ export function AppProvider({
   const updateUrl = useCallback((val: string, fId: string, tId: string, rCode: string, lg: Lang) => {
     try {
       if (typeof window !== "undefined" && window.history?.replaceState) {
-        const params = new URLSearchParams();
-        if (val && val !== initialInputValue) params.set("v", val);
-        if (fId && fId !== initialFromUnitId) params.set("from", fId);
-        if (tId && tId !== initialToUnitId) params.set("to", tId);
-        if (rCode && rCode !== initialRegionCode) params.set("s", rCode);
-        const routeLang = getInitialLang();
-        if (lg && lg !== routeLang) params.set("lang", lg);
+        const newSearch = buildConversionSearchParams(
+          {
+            value: val,
+            fromUnitId: fId,
+            toUnitId: tId,
+            regionCode: rCode,
+            lang: lg,
+          },
+          window.location.search,
+          {
+            defaultValue: initialInputValue,
+            defaultFromUnitId: initialFromUnitId,
+            defaultToUnitId: initialToUnitId,
+            defaultRegionCode: initialRegionCode,
+            defaultLang: getInitialLang(),
+          }
+        );
 
-        const newSearch = params.toString();
-        const newUrl = newSearch ? `${window.location.pathname}?${newSearch}` : window.location.pathname;
+        const newUrl = newSearch ? `${window.location.pathname}${newSearch}` : window.location.pathname;
         const currentSearch = window.location.search || "";
-        const targetSearch = newSearch ? `?${newSearch}` : "";
+        const targetSearch = newSearch;
         if (currentSearch !== targetSearch) {
           window.history.replaceState(null, "", newUrl);
         }
@@ -333,6 +360,48 @@ export function AppProvider({
       setSelectedRegionCode(r.code);
     }
   }, [setSelectedRegionCode]);
+
+  // Safely recover if an active custom source or target unit is deleted
+  useEffect(() => {
+    let stateChanged = false;
+    let nextFrom = fromUnitId;
+    let nextTo = toUnitId;
+
+    if (fromUnitId.startsWith("custom_") || fromUnitId.startsWith("custom-")) {
+      const exists = availableUnits.some((u) => u.id === fromUnitId);
+      if (!exists) {
+        nextFrom = "acre";
+        setFromUnitIdState("acre");
+        stateChanged = true;
+      }
+    }
+
+    if (toUnitId.startsWith("custom_") || toUnitId.startsWith("custom-")) {
+      const exists = availableUnits.some((u) => u.id === toUnitId);
+      if (!exists) {
+        const regional = availableUnits.find((u) => u.category === "regional");
+        nextTo = regional ? regional.id : "sqft";
+        setToUnitIdState(nextTo);
+        stateChanged = true;
+      }
+    }
+
+    if (stateChanged) {
+      updateUrl(inputValue, nextFrom, nextTo, regionCode, lang);
+      try {
+        toast({
+          title: lang === "hi" ? "कस्टम इकाई उपलब्ध नहीं" : "Custom Unit Removed",
+          description:
+            lang === "hi"
+              ? "हटाए गए कस्टम माप को सुरक्षित मानक इकाई में पुनर्स्थापित किया गया।"
+              : "Deleted custom unit factor was recovered to safe standard unit.",
+          variant: "destructive",
+        });
+      } catch {
+        // Ignore in environments without toast provider
+      }
+    }
+  }, [availableUnits, fromUnitId, toUnitId, inputValue, regionCode, lang, updateUrl]);
 
   const setLang = useCallback((lg: Lang) => {
     setLangState(lg);

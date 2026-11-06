@@ -1,9 +1,10 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AppProvider, useApp } from "@/context/AppContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CustomUnitManager from "@/components/CustomUnitManager";
+import { buildConversionSearchParams, type CustomUnitPreset } from "@/core";
 import { SITE_URL } from "@/config/site";
 import { t } from "@/data/translations";
 import {
@@ -20,8 +21,24 @@ interface ToolPageProps {
 }
 
 function CustomUnitCalculatorContent() {
-  const { lang } = useApp();
+  const navigate = useNavigate();
+  const { lang, selectedRegion } = useApp();
   const langPrefix = lang === "hi" ? "/hi" : lang === "mr" ? "/mr" : "";
+
+  const handleApplyCustomUnit = (preset: CustomUnitPreset) => {
+    const customUnitId = preset.id.startsWith("custom_") ? preset.id : `custom_${preset.id}`;
+    const homePath = lang === "hi" ? "/hi" : lang === "mr" ? "/mr" : "/";
+    const search = buildConversionSearchParams({
+      value: "1",
+      fromUnitId: customUnitId,
+      toUnitId: "acre",
+      regionCode: selectedRegion.code,
+    });
+    navigate({
+      pathname: homePath,
+      search,
+    });
+  };
 
   const breadcrumbsSchema = {
     "@context": "https://schema.org",
@@ -118,7 +135,7 @@ function CustomUnitCalculatorContent() {
       </div>
 
       {/* Embedded Custom Unit Manager Component */}
-      <CustomUnitManager />
+      <CustomUnitManager onApplyCustomUnit={handleApplyCustomUnit} />
 
       {/* Legal & Usage Warnings */}
       <section aria-labelledby="custom-warning-heading" className="space-y-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 text-xs leading-relaxed">

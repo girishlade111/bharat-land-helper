@@ -89,6 +89,18 @@ export default function CustomUnitManager({ onApplyCustomUnit }: CustomUnitManag
   };
 
   const handleApplyPreset = (preset: CustomUnitPreset) => {
+    if (!preset || !preset.sqFtEquivalent || preset.sqFtEquivalent <= 0) {
+      toast({
+        title: lang === "hi" ? "अमान्य कस्टम इकाई" : "Invalid Custom Unit",
+        description:
+          lang === "hi"
+            ? "इस कस्टम इकाई में मान्य रूपांतरण कारक नहीं है।"
+            : "This custom unit preset lacks a valid positive conversion factor.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const customUnitId = preset.id.startsWith("custom_") ? preset.id : `custom_${preset.id}`;
     setConversionState({
       value: "1",

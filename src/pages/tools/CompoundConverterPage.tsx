@@ -1,9 +1,10 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AppProvider, useApp } from "@/context/AppContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CompoundUnitConverter from "@/components/CompoundUnitConverter";
+import { buildConversionSearchParams } from "@/core";
 import { SITE_URL } from "@/config/site";
 import { t } from "@/data/translations";
 import {
@@ -21,8 +22,28 @@ interface ToolPageProps {
 }
 
 function CompoundConverterContent() {
-  const { lang } = useApp();
+  const navigate = useNavigate();
+  const { lang, selectedRegion, toUnit, availableUnits } = useApp();
   const langPrefix = lang === "hi" ? "/hi" : lang === "mr" ? "/mr" : "";
+
+  const handleTransferToConverter = (totalSqFt: number) => {
+    let nextTo = toUnit.id;
+    if (nextTo === "sqft") {
+      const regional = availableUnits.find((u) => u.category === "regional");
+      nextTo = regional ? regional.id : "acre";
+    }
+    const homePath = lang === "hi" ? "/hi" : lang === "mr" ? "/mr" : "/";
+    const search = buildConversionSearchParams({
+      value: String(totalSqFt),
+      fromUnitId: "sqft",
+      toUnitId: nextTo,
+      regionCode: selectedRegion.code,
+    });
+    navigate({
+      pathname: homePath,
+      search,
+    });
+  };
 
   const breadcrumbsSchema = {
     "@context": "https://schema.org",
@@ -119,7 +140,7 @@ function CompoundConverterContent() {
       </div>
 
       {/* Embedded Converter Component */}
-      <CompoundUnitConverter />
+      <CompoundUnitConverter onTransferToConverter={handleTransferToConverter} />
 
       {/* Architectural & Domain Explanation */}
       <section aria-labelledby="systems-heading" className="space-y-4 rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-xs">

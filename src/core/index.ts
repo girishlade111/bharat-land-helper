@@ -7,3 +7,4 @@ export * from "./plotCalculator";
 export * from "./compoundUnits";
 export * from "./customUnits";
 export * from "./history";
+export * from "./urlState";

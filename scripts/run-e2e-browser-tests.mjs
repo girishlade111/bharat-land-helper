@@ -1374,6 +1374,194 @@ async function main() {
     return { mrLang, mrHomeH1: mrHeading, mrToolsH1 };
   });
 
+  // TEST 38: Live Language Switching with Live Conversion State Retention (EN -> HI -> MR)
+  await runTest("TEST 38: Live Language Switching with Live Conversion State Retention (EN -> HI -> MR)", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    // Enter 5 into the main input using React prototype value setter
+    await tabCdp.eval(`(() => {
+      const input = document.querySelector('#area-input') || document.querySelector('input[inputmode="decimal"]');
+      if (!input) throw new Error("Converter input not found");
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+      setter.call(input, "5");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    })()`);
+    await sleep(400);
+
+    // Verify URL was updated by updateUrl to /?v=5
+    const initialUrl = await tabCdp.eval("window.location.href");
+
+    // Click language toggle button to switch to Hindi
+    await tabCdp.eval("document.getElementById('lang-toggle-btn')?.click()");
+    await sleep(1000);
+
+    const hiUrl = await tabCdp.eval("window.location.href");
+    const hiInputVal = await tabCdp.eval("document.querySelector('#area-input')?.value || document.querySelector('input[inputmode=\"decimal\"]')?.value");
+    const hiLang = await tabCdp.eval("document.documentElement.lang");
+
+    if (!hiUrl.includes("/hi") || !hiUrl.includes("v=5")) {
+      throw new Error(`Expected Hindi URL to contain '/hi' and 'v=5', got '${hiUrl}'`);
+    }
+    if (hiInputVal !== "5") {
+      throw new Error(`Expected Hindi input value to be '5', got '${hiInputVal}'`);
+    }
+
+    // Click language toggle again to switch to Marathi
+    await tabCdp.eval("document.getElementById('lang-toggle-btn')?.click()");
+    await sleep(1000);
+
+    const mrUrl = await tabCdp.eval("window.location.href");
+    const mrInputVal = await tabCdp.eval("document.querySelector('#area-input')?.value || document.querySelector('input[inputmode=\"decimal\"]')?.value");
+    const mrLang = await tabCdp.eval("document.documentElement.lang");
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    if (!mrUrl.includes("/mr") || !mrUrl.includes("v=5")) {
+      throw new Error(`Expected Marathi URL to contain '/mr' and 'v=5', got '${mrUrl}'`);
+    }
+    if (mrInputVal !== "5") {
+      throw new Error(`Expected Marathi input value to be '5', got '${mrInputVal}'`);
+    }
+
+    return { initialUrl, hiUrl, hiInputVal, hiLang, mrUrl, mrInputVal, mrLang };
+  });
+
+  // TEST 39: Standalone Plot Area Calculator Transfer to Visible Converter
+  await runTest("TEST 39: Standalone Plot Area Calculator Transfer to Visible Converter", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/tools/plot-area-calculator`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    // Enter 200 ft length and 217.8 ft width (200 x 217.8 = 43,560 sq ft = 1 Acre)
+    await tabCdp.eval(`(() => {
+      const inputs = Array.from(document.querySelectorAll('input'));
+      const lenInput = inputs.find(i => i.id === 'plot-length' || i.getAttribute('aria-label')?.includes('Length') || i.previousElementSibling?.textContent?.includes('Length'));
+      const widInput = inputs.find(i => i.id === 'plot-width' || i.getAttribute('aria-label')?.includes('Width') || i.previousElementSibling?.textContent?.includes('Width'));
+      if (!lenInput || !widInput) throw new Error("Plot dimensions inputs not found");
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+      setter.call(lenInput, "200");
+      lenInput.dispatchEvent(new Event("input", { bubbles: true }));
+      lenInput.dispatchEvent(new Event("change", { bubbles: true }));
+      setter.call(widInput, "217.8");
+      widInput.dispatchEvent(new Event("input", { bubbles: true }));
+      widInput.dispatchEvent(new Event("change", { bubbles: true }));
+    })()`);
+    await sleep(500);
+
+    // Click the Transfer to Converter button
+    await tabCdp.eval(`(() => {
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const transferBtn = buttons.find(b => b.textContent.includes("Transfer to Converter") || b.textContent.includes("मुख्य कनवर्टर में भेजें"));
+      if (!transferBtn) throw new Error("Transfer button not found in PlotCalculator");
+      transferBtn.click();
+    })()`);
+    await sleep(1200);
+
+    const transferredUrl = await tabCdp.eval("window.location.href");
+    const transferredPath = await tabCdp.eval("window.location.pathname");
+    const converterVal = await tabCdp.eval("document.querySelector('input[inputmode=\"decimal\"]')?.value");
+
+    // Reload page to verify transferred calculation survives refresh
+    await tabCdp.send("Page.reload");
+    await sleep(1200);
+
+    const reloadedUrl = await tabCdp.eval("window.location.href");
+    const reloadedVal = await tabCdp.eval("document.querySelector('input[inputmode=\"decimal\"]')?.value");
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    if (transferredPath !== "/" && !transferredPath.endsWith("/")) {
+      throw new Error(`Expected transfer destination to be '/', got '${transferredPath}'`);
+    }
+    if (!transferredUrl.includes("v=43560")) {
+      throw new Error(`Expected transferred URL to contain 'v=43560', got '${transferredUrl}'`);
+    }
+    if (converterVal !== "43560") {
+      throw new Error(`Expected visible converter input to be '43560', got '${converterVal}'`);
+    }
+    if (reloadedVal !== "43560") {
+      throw new Error(`Expected reloaded converter input to retain '43560', got '${reloadedVal}'`);
+    }
+
+    return { transferredUrl, transferredPath, converterVal, reloadedUrl, reloadedVal };
+  });
+
+  // TEST 40: Custom Unit Lifecycle & Cache Invalidation in Real Browser
+  await runTest("TEST 40: Custom Unit Lifecycle & Cache Invalidation in Real Browser", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/tools/custom-land-unit-calculator`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    // Save custom unit into localStorage
+    await tabCdp.eval(`(() => {
+      const preset = {
+        id: "custom_cdp_test_10k",
+        name: "CDP Custom Bigha",
+        factor: 10000,
+        referenceUnit: "sqft",
+        sqFtEquivalent: 10000,
+        createdAt: new Date().toISOString()
+      };
+      window.localStorage.setItem("bharat_custom_units_v1", JSON.stringify([preset]));
+      window.dispatchEvent(new Event("bharat_custom_units_updated"));
+    })()`);
+    await sleep(500);
+
+    // Reload page to reflect saved custom preset in UI
+    await tabCdp.send("Page.reload");
+    await sleep(1000);
+
+    // Click 'Use' button to load the custom unit into main converter
+    await tabCdp.eval(`(() => {
+      const useBtn = document.querySelector('button[title="Load into Converter"]');
+      if (!useBtn) throw new Error("Load into Converter button not found");
+      useBtn.click();
+    })()`);
+    await sleep(1200);
+
+    const activeCustomUrl = await tabCdp.eval("window.location.href");
+    const activeFromUnit = await tabCdp.eval("document.querySelector('#from-unit-selector-trigger')?.textContent?.trim() || ''");
+
+    // Now delete custom unit from localStorage while user is on converter
+    await tabCdp.eval(`(() => {
+      window.localStorage.removeItem("bharat_custom_units_v1");
+      window.dispatchEvent(new StorageEvent("storage", { key: "bharat_custom_units_v1" }));
+    })()`);
+    await sleep(800);
+
+    const recoveredUrl = await tabCdp.eval("window.location.href");
+    const recoveredFromUnit = await tabCdp.eval("document.querySelector('#from-unit-selector-trigger')?.textContent?.trim() || ''");
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    if (!activeCustomUrl.includes("custom_cdp_test_10k")) {
+      throw new Error(`Expected active custom URL to contain preset id, got '${activeCustomUrl}'`);
+    }
+    if (recoveredUrl.includes("custom_cdp_test_10k")) {
+      throw new Error(`Expected recovered URL to clear deleted preset, got '${recoveredUrl}'`);
+    }
+
+    return { activeCustomUrl, activeFromUnit, recoveredUrl, recoveredFromUnit };
+  });
+
   // Cleanup
   console.log("==================================================");
   console.log("E2E TESTS COMPLETE");

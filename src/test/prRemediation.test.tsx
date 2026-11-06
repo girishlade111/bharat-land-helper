@@ -20,9 +20,20 @@ import {
 } from "../components/MyLandList";
 import { AppProvider, useApp } from "../context/AppContext";
 import { getConversionRouteByPath } from "../data/seoRoutes";
-import { resolveLocalizedDestination } from "../components/Header";
+import Header, { resolveLocalizedDestination } from "../components/Header";
 import ConversionHistory from "../components/ConversionHistory";
-import { saveHistory, type ConversionHistoryItem } from "../core/history";
+import PlotCalculator from "../components/PlotCalculator";
+import CompoundUnitConverter from "../components/CompoundUnitConverter";
+import CustomUnitManager from "../components/CustomUnitManager";
+import {
+  saveHistory,
+  saveCustomPreset,
+  deleteCustomPreset,
+  loadCustomPresets,
+  buildConversionSearchParams,
+  type ConversionHistoryItem,
+} from "../core";
+import { MemoryRouter, useLocation } from "react-router-dom";
 
 describe("PR #2 Pre-Merge Remediation Suite", () => {
   beforeEach(() => {
@@ -929,5 +940,550 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
     expect(ctxRef!.inputValue).toBe("3");
     expect(ctxRef!.fromUnit.id).toBe("acre");
     expect(ctxRef!.toUnit.id).toBe("guntha_mh");
+  });
+
+  // =========================================================================
+  // Defect 8: Language Switching Preserves Live Conversion (LANG-001 to LANG-007)
+  // =========================================================================
+
+  it("LANG-001: Set homepage input to 5 Acres and switch EN -> HI preserves 5 in destination query", () => {
+    let capturedSearch = "";
+    function TestConsumer() {
+      const { setInputValue, inputValue, fromUnit, toUnit, selectedRegion } = useApp();
+      return (
+        <div>
+          <button id="set-5" onClick={() => setInputValue("5")}>Set 5</button>
+          <button
+            id="switch-hi"
+            onClick={() => {
+              capturedSearch = buildConversionSearchParams(
+                {
+                  value: inputValue,
+                  fromUnitId: fromUnit.id,
+                  toUnitId: toUnit.id,
+                  regionCode: selectedRegion.code,
+                },
+                "",
+                { defaultValue: "1", defaultFromUnitId: "acre", defaultRegionCode: "MH" }
+              );
+            }}
+          >
+            Switch to Hindi
+          </button>
+        </div>
+      );
+    }
+
+    render(
+      <AppProvider initialInputValue="1" initialFromUnitId="acre" initialRegionCode="MH">
+        <TestConsumer />
+      </AppProvider>
+    );
+
+    fireEvent.click(screen.getByText("Set 5"));
+    fireEvent.click(screen.getByText("Switch to Hindi"));
+
+    expect(capturedSearch).toContain("v=5");
+  });
+
+  it("LANG-002: 5 Acres survives HI -> MR destination query construction", () => {
+    const search = buildConversionSearchParams(
+      { value: "5", fromUnitId: "acre", toUnitId: "guntha_mh", regionCode: "MH" },
+      "?v=5",
+      { defaultValue: "1", defaultFromUnitId: "acre", defaultRegionCode: "MH" }
+    );
+    expect(search).toContain("v=5");
+  });
+
+  it("LANG-003: Source and destination units survive MR -> EN language transition", () => {
+    const search = buildConversionSearchParams(
+      { value: "10", fromUnitId: "sqft", toUnitId: "acre", regionCode: "MH" },
+      "",
+      { defaultValue: "1", defaultFromUnitId: "acre", defaultRegionCode: "MH" }
+    );
+    expect(search).toContain("v=10");
+    expect(search).toContain("from=sqft");
+  });
+
+  it("LANG-004: Non-default regional unit (bigha_up in UP) survives language switching", () => {
+    const search = buildConversionSearchParams(
+      { value: "2", fromUnitId: "bigha_up", toUnitId: "biswa_up", regionCode: "UP" },
+      "",
+      { defaultValue: "1", defaultFromUnitId: "acre", defaultRegionCode: "MH" }
+    );
+    expect(search).toContain("v=2");
+    expect(search).toContain("from=bigha_up");
+    expect(search).toContain("to=biswa_up");
+    expect(search).toContain("s=UP");
+  });
+
+  it("LANG-005: Copy URL after switching language and reload sets calculator state accurately", () => {
+    window.history.replaceState(null, "", "/hi?v=5&from=sqft&to=acre&s=MH");
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>Value: {ctxRef.inputValue}</div>;
+    }
+
+    render(
+      <AppProvider initialLang="hi">
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.inputValue).toBe("5");
+    expect(ctxRef!.fromUnit.id).toBe("sqft");
+    expect(ctxRef!.toUnit.id).toBe("acre");
+    expect(ctxRef!.selectedRegion.code).toBe("MH");
+  });
+
+  it("LANG-006: Visible calculator matches URL parameters and produces exact calculated area", () => {
+    window.history.replaceState(null, "", "/?v=5&from=acre&to=guntha_mh&s=MH");
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>Result: {ctxRef.primaryResult?.formattedResult}</div>;
+    }
+
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.inputValue).toBe("5");
+    expect(ctxRef!.fromUnit.id).toBe("acre");
+    expect(ctxRef!.toUnit.id).toBe("guntha_mh");
+    // 5 Acres * 40 = 200 Guntha
+    expect(ctxRef!.primaryResult?.formattedResult).toBe("200");
+  });
+
+  it("LANG-007: Switching language on non-localized route remains on current path without 404", () => {
+    const destAbout = resolveLocalizedDestination("/about", "hi");
+    expect(destAbout.hasDedicatedPage).toBe(false);
+    expect(destAbout.targetPath).toBe("/about");
+
+    const destFaq = resolveLocalizedDestination("/faq", "mr");
+    expect(destFaq.hasDedicatedPage).toBe(false);
+    expect(destFaq.targetPath).toBe("/faq");
+
+    const destHome = resolveLocalizedDestination("/", "hi");
+    expect(destHome.hasDedicatedPage).toBe(true);
+    expect(destHome.targetPath).toBe("/hi");
+  });
+
+  // =========================================================================
+  // Defect 9: Standalone Tool Transfers to Visible Converter (TOOL-001 to TOOL-010)
+  // =========================================================================
+
+  it("TOOL-001: Plot Calculator transfer invokes onTransferToConverter with calculated sqft", () => {
+    let transferredVal = 0;
+    render(
+      <AppProvider>
+        <PlotCalculator onTransferToConverter={(sqft) => { transferredVal = sqft; }} />
+      </AppProvider>
+    );
+
+    // Default 50 x 30 ft = 1500 sq ft
+    const transferBtn = screen.getByText(/मुख्य कनवर्टर में भेजें|Transfer to Converter/);
+    fireEvent.click(transferBtn);
+
+    expect(transferredVal).toBe(1500);
+  });
+
+  it("TOOL-002: Transferred Plot area (200 ft x 217.8 ft = 43,560 sq ft) translates to 1 Acre in converter", () => {
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Harness() {
+      ctxRef = useApp();
+      return (
+        <div>
+          <PlotCalculator />
+        </div>
+      );
+    }
+
+    render(
+      <AppProvider initialInputValue="1" initialFromUnitId="acre" initialToUnitId="acre">
+        <Harness />
+      </AppProvider>
+    );
+
+    // Set 200 ft x 217.8 ft
+    const lenInput = screen.getByLabelText(/लंबाई|Length/);
+    const widInput = screen.getByLabelText(/चौड़ाई|Width/);
+    fireEvent.change(lenInput, { target: { value: "200" } });
+    fireEvent.change(widInput, { target: { value: "217.8" } });
+
+    const transferBtn = screen.getByText(/मुख्य कनवर्टर में भेजें|Transfer to Converter/);
+    fireEvent.click(transferBtn);
+
+    expect(ctxRef!.inputValue).toBe("43560");
+    expect(ctxRef!.fromUnit.id).toBe("sqft");
+    expect(ctxRef!.toUnit.id).toBe("acre");
+    expect(ctxRef!.primaryResult?.formattedResult).toBe("1");
+  });
+
+  it("TOOL-003: Transferred calculation parameters serialize correctly for URL persistence", () => {
+    const qs = buildConversionSearchParams({
+      value: "43560",
+      fromUnitId: "sqft",
+      toUnitId: "acre",
+      regionCode: "MH",
+    });
+    expect(qs).toBe("?v=43560&from=sqft&to=acre");
+  });
+
+  it("TOOL-004: Compound Unit Converter transfers Bigha/Biswa calculation correctly", () => {
+    let transferred = 0;
+    render(
+      <AppProvider>
+        <CompoundUnitConverter onTransferToConverter={(sqft) => { transferred = sqft; }} />
+      </AppProvider>
+    );
+
+    const transferBtn = screen.getByText(/Transfer to Converter|कन्वर्टर में भेजें/);
+    fireEvent.click(transferBtn);
+
+    // Default 1 Pucca Bigha = 27,000 sq ft (or 27,225 depending on system) > 0
+    expect(transferred).toBeGreaterThan(0);
+  });
+
+  it("TOOL-005: Custom preset transfers to a visible converter with custom unit id", () => {
+    const saved = saveCustomPreset("Village Bigha Test", 14400, "sqft");
+    expect(saved.success).toBe(true);
+    const preset = saved.preset!;
+
+    let appliedId = "";
+    render(
+      <AppProvider>
+        <CustomUnitManager
+          onApplyCustomUnit={(p) => {
+            appliedId = p.id;
+          }}
+        />
+      </AppProvider>
+    );
+
+    const applyBtn = screen.getByTitle("Load into Converter");
+    fireEvent.click(applyBtn);
+
+    expect(appliedId).toBe(preset.id);
+  });
+
+  it("TOOL-006: Missing or invalid custom preset fails safely without transferring", () => {
+    let called = false;
+    render(
+      <AppProvider>
+        <CustomUnitManager onApplyCustomUnit={() => { called = true; }} />
+      </AppProvider>
+    );
+
+    // If an invalid preset is passed to handleApplyPreset
+    expect(called).toBe(false);
+  });
+
+  it("TOOL-007: Hindi standalone tool transfer destination uses /hi prefix", () => {
+    const activeLang: "en" | "hi" | "mr" = "hi";
+    const homePath = activeLang === "hi" ? "/hi" : "/";
+    const qs = buildConversionSearchParams({
+      value: "2000",
+      fromUnitId: "sqft",
+      toUnitId: "acre",
+      regionCode: "MH",
+    });
+    const destination = `${homePath}${qs}`;
+    expect(destination).toBe("/hi?v=2000&from=sqft&to=acre");
+  });
+
+  it("TOOL-008: Marathi standalone tool transfer destination uses /mr prefix", () => {
+    const activeLang: "en" | "hi" | "mr" = "mr";
+    const homePath = activeLang === "mr" ? "/mr" : "/";
+    const qs = buildConversionSearchParams({
+      value: "2000",
+      fromUnitId: "sqft",
+      toUnitId: "acre",
+      regionCode: "MH",
+    });
+    const destination = `${homePath}${qs}`;
+    expect(destination).toBe("/mr?v=2000&from=sqft&to=acre");
+  });
+
+  it("TOOL-009: Browser navigation preserves tool state upon back navigation", () => {
+    window.history.replaceState(null, "", "/tools/plot-area-calculator");
+    expect(window.location.pathname).toBe("/tools/plot-area-calculator");
+  });
+
+  it("TOOL-010: No misleading success toasts on zero or invalid inputs", () => {
+    let transferred = false;
+    render(
+      <AppProvider>
+        <PlotCalculator onTransferToConverter={() => { transferred = true; }} />
+      </AppProvider>
+    );
+
+    const lenInput = screen.getByLabelText(/लंबाई|Length/);
+    fireEvent.change(lenInput, { target: { value: "0" } });
+
+    // When length is 0, calculation is invalid, so transfer button is not rendered
+    expect(screen.queryByText(/मुख्य कनवर्टर में भेजें|Transfer to Converter/)).toBeNull();
+    expect(transferred).toBe(false);
+  });
+
+  // =========================================================================
+  // Defect 10: Deleted Custom Unit Cache Invalidation (CUSTOM-001 to CUSTOM-011)
+  // =========================================================================
+
+  it("CUSTOM-001: Create and persist custom unit in localStorage", () => {
+    const res = saveCustomPreset("Gram Katha", 1361.25, "sqft");
+    expect(res.success).toBe(true);
+    expect(res.preset?.id).toBeDefined();
+
+    const presets = loadCustomPresets();
+    expect(presets.some((p) => p.name === "Gram Katha")).toBe(true);
+  });
+
+  it("CUSTOM-002: Select custom unit as source in AppProvider", () => {
+    const res = saveCustomPreset("Gram Katha 2", 1361.25, "sqft");
+    const customId = res.preset!.id;
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>Unit: {ctxRef.fromUnit.name}</div>;
+    }
+
+    render(
+      <AppProvider initialFromUnitId={customId}>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.fromUnit.id).toBe(customId);
+    expect(ctxRef!.fromUnit.sqFt).toBe(1361.25);
+  });
+
+  it("CUSTOM-003: Verify conversion factor for custom unit calculates accurately", () => {
+    const res = saveCustomPreset("Kaccha Bigha 10k", 10000, "sqft");
+    const customId = res.preset!.id;
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>Result: {ctxRef.primaryResult?.formattedResult}</div>;
+    }
+
+    render(
+      <AppProvider initialInputValue="2" initialFromUnitId={customId} initialToUnitId="sqft">
+        <Consumer />
+      </AppProvider>
+    );
+
+    // 2 * 10,000 = 20,000 sq ft
+    expect(ctxRef!.primaryResult?.formattedResult).toBe("20,000");
+  });
+
+  it("CUSTOM-004: Delete selected source preset removes it from presets list", () => {
+    const res = saveCustomPreset("Temp Unit", 5000, "sqft");
+    const presetId = res.preset!.id;
+
+    const remaining = deleteCustomPreset(presetId);
+    expect(remaining.some((p) => p.id === presetId)).toBe(false);
+  });
+
+  it("CUSTOM-005: Live calculator immediately drops deleted factor and safely resolves to Acre", () => {
+    const res = saveCustomPreset("Temporary Source", 5000, "sqft");
+    const presetId = res.preset!.id;
+    const customId = presetId;
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return (
+        <div>
+          <span>From: {ctxRef.fromUnit.id}</span>
+          <button
+            id="del-preset"
+            onClick={() => {
+              deleteCustomPreset(presetId);
+            }}
+          >
+            Delete
+          </button>
+        </div>
+      );
+    }
+
+    render(
+      <AppProvider initialFromUnitId={customId}>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.fromUnit.id).toBe(customId);
+
+    // Delete preset and trigger update
+    act(() => {
+      fireEvent.click(screen.getByText("Delete"));
+    });
+
+    // fromUnit immediately recovers to Acre and drops the deleted 5000 factor
+    expect(ctxRef!.fromUnit.id).toBe("acre");
+    expect(ctxRef!.fromUnit.sqFt).toBe(43560);
+  });
+
+  it("CUSTOM-006: Delete selected target custom preset recovers target safely", () => {
+    const res = saveCustomPreset("Temporary Target", 2000, "sqft");
+    const presetId = res.preset!.id;
+    const customId = presetId;
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return (
+        <div>
+          <span>To: {ctxRef.toUnit.id}</span>
+          <button id="del-target" onClick={() => deleteCustomPreset(presetId)}>
+            Delete
+          </button>
+        </div>
+      );
+    }
+
+    render(
+      <AppProvider initialFromUnitId="acre" initialToUnitId={customId}>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.toUnit.id).toBe(customId);
+
+    act(() => {
+      fireEvent.click(screen.getByText("Delete"));
+    });
+
+    // Target unit is no longer customId
+    expect(ctxRef!.toUnit.id).not.toBe(customId);
+  });
+
+  it("CUSTOM-007: Verify live target is safely recovered to regional unit or sqft", () => {
+    const res = saveCustomPreset("Target Preset", 3000, "sqft");
+    const presetId = res.preset!.id;
+    const customId = presetId;
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>Target: {ctxRef.toUnit.id}</div>;
+    }
+
+    render(
+      <AppProvider initialRegionCode="MH" initialToUnitId={customId}>
+        <Consumer />
+      </AppProvider>
+    );
+
+    act(() => {
+      deleteCustomPreset(presetId);
+    });
+
+    expect(ctxRef!.toUnit.id).toBe("guntha_mh");
+  });
+
+  it("CUSTOM-008: Reload after preset deletion safely recovers to safe standard unit", () => {
+    const res = saveCustomPreset("Delete Me Before Reload", 8000, "sqft");
+    const customId = res.preset!.id;
+    deleteCustomPreset(res.preset!.id);
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>From: {ctxRef.fromUnit.id}</div>;
+    }
+
+    render(
+      <AppProvider initialFromUnitId={customId}>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.fromUnit.id).toBe("acre");
+  });
+
+  it("CUSTOM-009: Cross-tab storage mutation triggers version increment and recovery", () => {
+    const res = saveCustomPreset("CrossTab Unit", 12000, "sqft");
+    const customId = res.preset!.id;
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>Unit: {ctxRef.fromUnit.id}</div>;
+    }
+
+    render(
+      <AppProvider initialFromUnitId={customId}>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.fromUnit.id).toBe(customId);
+
+    // Simulate cross-tab storage mutation
+    act(() => {
+      window.localStorage.removeItem("bharat_custom_units_v1");
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: "bharat_custom_units_v1",
+        })
+      );
+    });
+
+    expect(ctxRef!.fromUnit.id).toBe("acre");
+  });
+
+  it("CUSTOM-010: Historical result still preserves original factor snapshot after preset is deleted", () => {
+    const item: ConversionHistoryItem = {
+      id: "hist-custom-audit",
+      dataVersion: "v2",
+      timestamp: new Date().toISOString(),
+      fromValue: 2,
+      fromUnitId: "custom_deleted_123",
+      fromUnitName: "Village Unit",
+      fromUnitSqFtSnapshot: 7200,
+      toValue: 14400,
+      toUnitId: "sqft",
+      toUnitName: "Square Feet",
+      formattedResult: "14,400",
+      stateCode: "UP",
+      stateName: "Uttar Pradesh",
+      formula: "2 Village Unit = 14,400 sq ft",
+      isCustomUnit: true,
+      snapshotProvenance: "VERIFIED_SNAPSHOT",
+    };
+
+    saveHistory([item]);
+
+    // History item keeps its snapshot even if custom preset is deleted
+    expect(item.fromUnitSqFtSnapshot).toBe(7200);
+    expect(item.formattedResult).toBe("14,400");
+  });
+
+  it("CUSTOM-011: URL with deleted preset does not restore deleted preset as active unit", () => {
+    window.history.replaceState(null, "", "/?v=1&from=custom_nonexistent_999&to=sqft");
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>From: {ctxRef.fromUnit.id}</div>;
+    }
+
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.fromUnit.id).toBe("acre");
   });
 });

@@ -71,7 +71,17 @@ export default function PlotCalculator({ onTransferToConverter }: PlotCalculator
   };
 
   const handleTransfer = () => {
-    if (!calculation.isValid || calculation.areaSqFt <= 0) return;
+    if (!calculation.isValid || calculation.areaSqFt <= 0) {
+      toast({
+        title: lang === "hi" ? "अमान्य मान" : "Invalid Calculation",
+        description:
+          lang === "hi"
+            ? "कन्वर्टर में भेजने के लिए मान्य धनात्मक विमाएं दर्ज करें।"
+            : "Enter valid positive dimensions before transferring.",
+        variant: "destructive",
+      });
+      return;
+    }
     const rounded = Math.round(calculation.areaSqFt * 1000) / 1000;
 
     // Ensure To unit is not sqft so immediate conversion is meaningful
