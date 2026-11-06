@@ -36,12 +36,16 @@ export default function Header() {
         document.documentElement.classList.add("dark");
         try {
           window.localStorage?.setItem("bharat_theme", "dark");
-        } catch {}
+        } catch (_err) {
+          // ignore localStorage access errors
+        }
       } else {
         document.documentElement.classList.remove("dark");
         try {
           window.localStorage?.setItem("bharat_theme", "light");
-        } catch {}
+        } catch (_err) {
+          // ignore localStorage access errors
+        }
       }
     }
   };

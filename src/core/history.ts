@@ -35,7 +35,7 @@ export const MAX_HISTORY_ITEMS = 50;
 /**
  * Migrates a legacy v1 history item to the schema v2 structure.
  */
-function migrateV1Item(item: any): ConversionHistoryItem {
+function migrateV1Item(item: Record<string, unknown>): ConversionHistoryItem {
   return {
     id: String(item.id || `calc_${Date.now()}`),
     dataVersion: "v2",
@@ -215,14 +215,15 @@ export function sanitizeCsvField(val: string | number | boolean | undefined | nu
 
   // OWASP CSV Injection mitigation:
   // If text starts with =, +, -, @, \t, or \r, prefix with a single quote (') so spreadsheets treat it as plain text.
+  const rawFirstChar = str.charAt(0);
   const trimmed = str.trimStart();
   if (
+    rawFirstChar === "\t" ||
+    rawFirstChar === "\r" ||
     trimmed.startsWith("=") ||
     trimmed.startsWith("+") ||
     trimmed.startsWith("-") ||
-    trimmed.startsWith("@") ||
-    trimmed.startsWith("\t") ||
-    trimmed.startsWith("\r")
+    trimmed.startsWith("@")
   ) {
     str = `'${str}`;
   }

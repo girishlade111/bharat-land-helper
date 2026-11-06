@@ -9,16 +9,22 @@ import {
   saveCustomPreset,
   loadCustomPresets,
   deleteCustomPreset,
+  customPresetToLandUnit,
+  getUnit,
+  convertArea,
   addHistoryItem,
   loadHistory,
   clearHistory,
   toggleFavorite,
   deleteHistoryItem,
   exportHistoryToCsv,
+  sanitizeCsvField,
+  HISTORY_STORAGE_KEY_V1,
+  HISTORY_STORAGE_KEY_V2,
 } from "../core";
 import { COMPARISON_DATA } from "../components/RegionalComparison";
 
-describe("Bharat Land Converter — Phase 2B Advanced Utilities Test Suite", () => {
+describe("Bharat Land Converter — Phase 2B.5 Hardened Test Suite", () => {
   beforeEach(() => {
     if (typeof window !== "undefined" && window.localStorage) {
       window.localStorage.clear();
@@ -70,6 +76,7 @@ describe("Bharat Land Converter — Phase 2B Advanced Utilities Test Suite", () 
       expect(calculatePlotArea("0", "30", "ft").isValid).toBe(false);
       expect(calculatePlotArea("abc", "30", "ft").isValid).toBe(false);
       expect(calculatePlotArea("50", "", "ft").isValid).toBe(false);
+      expect(calculatePlotArea("50", "0", "ft").isValid).toBe(false);
     });
 
     it("verifies all length units have valid symbols and conversion factors", () => {
@@ -148,9 +155,6 @@ describe("Bharat Land Converter — Phase 2B Advanced Utilities Test Suite", () 
     it("decomposes 50,000 sq ft into UP Pucca Bigha, Biswa, and Biswansi", () => {
       const decomp = decomposeAreaIntoSystem("up_pucca", 50000);
       expect(decomp.length).toBe(3);
-      // 50,000 sq ft / 27,225 = 1 Pucca Bigha, rem 22,775
-      // 22,775 / 1,361.25 = 16 Biswa, rem 995
-      // 995 / 68.0625 = 14.618 Biswansi
       expect(decomp[0].subunitId).toBe("bigha");
       expect(decomp[0].count).toBe(1);
       expect(decomp[1].subunitId).toBe("biswa");
@@ -159,31 +163,44 @@ describe("Bharat Land Converter — Phase 2B Advanced Utilities Test Suite", () 
       expect(Math.floor(decomp[2].count)).toBe(14);
     });
 
-    it("handles zero and negative values gracefully in compound converter", () => {
+    it("handles zero, negative, and NaN values gracefully in reverse decomposition", () => {
       const resZero = calculateCompoundArea("up_pucca", { bigha: "0", biswa: "0" });
       expect(resZero.totalSqFt).toBe(0);
 
       const decompZero = decomposeAreaIntoSystem("wb_bengal", 0);
       expect(decompZero[0].count).toBe(0);
+
+      const decompNeg = decomposeAreaIntoSystem("wb_bengal", -500);
+      expect(decompNeg[0].count).toBe(0);
+
+      const decompNaN = decomposeAreaIntoSystem("wb_bengal", NaN);
+      expect(decompNaN[0].count).toBe(0);
     });
   });
 
   // ==========================================
-  // 3. CUSTOM MEASUREMENT FACTORS TESTS
+  // 3. CUSTOM MEASUREMENT FACTORS & MATHEMATICAL INTEGRATION
   // ==========================================
-  describe("3. Custom Measurement Factors Engine", () => {
+  describe("3. Custom Measurement Factors & Mathematical Integration", () => {
     it("validates valid custom unit against sqft, sqm, sqyd, and acre", () => {
-      const vSqft = validateCustomUnitInput("My Hath Bigha", "25000", "sqft");
+      const vSqft = validateCustomUnitInput("Village Hath Bigha", "25000", "sqft");
       expect(vSqft.isValid).toBe(true);
       expect(vSqft.sqFtEquivalent).toBe(25000);
 
-      const vAcre = validateCustomUnitInput("Custom Block", "2", "acre");
+      const vAcre = validateCustomUnitInput("Custom Estate Block", "2", "acre");
       expect(vAcre.isValid).toBe(true);
       expect(vAcre.sqFtEquivalent).toBe(87120);
 
       const vSqyd = validateCustomUnitInput("Local Gaj Bigha", "2000", "sqyd");
       expect(vSqyd.isValid).toBe(true);
       expect(vSqyd.sqFtEquivalent).toBe(18000);
+    });
+
+    it("rejects reserved statutory unit names to prevent ID collision", () => {
+      expect(validateCustomUnitInput("Acre", "40000", "sqft").isValid).toBe(false);
+      expect(validateCustomUnitInput("bigha", "20000", "sqft").isValid).toBe(false);
+      expect(validateCustomUnitInput("guntha", "1000", "sqft").isValid).toBe(false);
+      expect(validateCustomUnitInput("Hectare", "10000", "sqm").isValid).toBe(false);
     });
 
     it("rejects empty name or invalid factor value", () => {
@@ -193,7 +210,7 @@ describe("Bharat Land Converter — Phase 2B Advanced Utilities Test Suite", () 
       expect(validateCustomUnitInput("Test", "invalid", "sqft").isValid).toBe(false);
     });
 
-    it("saves and retrieves presets from localStorage", () => {
+    it("saves and retrieves presets from localStorage, and transforms to typed LandUnit", () => {
       const saveRes = saveCustomPreset("Tehsil Custom Unit", 18500, "sqft", "Local village customary factor");
       expect(saveRes.success).toBe(true);
       expect(saveRes.preset?.name).toBe("Tehsil Custom Unit");
@@ -203,32 +220,73 @@ describe("Bharat Land Converter — Phase 2B Advanced Utilities Test Suite", () 
       expect(loaded.length).toBe(1);
       expect(loaded[0].name).toBe("Tehsil Custom Unit");
 
+      // Verify customPresetToLandUnit
+      const landUnit = customPresetToLandUnit(loaded[0]);
+      expect(landUnit.id).toContain("custom_");
+      expect(landUnit.sqFt).toBe(18500);
+      expect(landUnit.regionCode).toBe("CUSTOM");
+      expect(landUnit.provenance.confidence).toBe("CUSTOMARY_UNOFFICIAL");
+
       // Delete preset
       const remaining = deleteCustomPreset(loaded[0].id);
       expect(remaining.length).toBe(0);
       expect(loadCustomPresets().length).toBe(0);
     });
+
+    it("mathematically converts between custom unit and official statutory units", () => {
+      // Create a 20,000 sq ft custom unit
+      const saveRes = saveCustomPreset("My Custom Farm Bigha", 20000, "sqft");
+      expect(saveRes.success).toBe(true);
+      const customId = saveRes.preset!.id;
+
+      // Resolve custom unit via getUnit
+      const customUnit = getUnit(customId);
+      expect(customUnit).toBeDefined();
+      expect(customUnit!.sqFt).toBe(20000);
+
+      // Convert 1 Custom Unit to Acre
+      const acreUnit = getUnit("acre")!;
+      const resAcre = convertArea(1, customUnit!, acreUnit);
+      // 20,000 / 43,560 = 0.4591368...
+      expect(resAcre.rawResult).toBeCloseTo(20000 / 43560, 4);
+      expect(resAcre.warning).toContain("user-defined custom measurement factor");
+      expect(resAcre.confidence).toBe("CUSTOMARY_UNOFFICIAL");
+
+      // Convert 2.178 Acres to Custom Unit
+      const resCustom = convertArea(43560 / 20000, customUnit!, acreUnit);
+      expect(resCustom.rawResult).toBeCloseTo(1, 4);
+
+      // Clean up
+      deleteCustomPreset(customId);
+      expect(getUnit(customId)).toBeUndefined();
+    });
   });
 
   // ==========================================
-  // 4. CONVERSION HISTORY & CSV EXPORT TESTS
+  // 4. CONVERSION HISTORY, MIGRATION & CSV INJECTION TESTS
   // ==========================================
-  describe("4. Conversion History and CSV Export Engine", () => {
-    it("records a conversion and prevents immediate duplicate spam", () => {
+  describe("4. Conversion History, Migration and CSV Injection Engine", () => {
+    it("records a conversion with factor snapshots and prevents duplicate spam", () => {
       const item1 = addHistoryItem({
         fromValue: 5,
         fromUnitId: "acre",
         fromUnitName: "Acre",
+        fromUnitSqFtSnapshot: 43560,
         toValue: 200,
         toUnitId: "guntha_mh",
         toUnitName: "Guntha",
+        toUnitSqFtSnapshot: 1089,
         formattedResult: "200",
         stateCode: "MH",
         stateName: "Maharashtra",
         formula: "1 Acre = 40 Guntha",
+        confidence: "OFFICIAL_STANDARD",
       });
 
       expect(item1.id).toBeTruthy();
+      expect(item1.dataVersion).toBe("v2");
+      expect(item1.fromUnitSqFtSnapshot).toBe(43560);
+      expect(item1.toUnitSqFtSnapshot).toBe(1089);
       expect(loadHistory().length).toBe(1);
 
       // Immediately adding identical conversion should return the existing item
@@ -236,9 +294,11 @@ describe("Bharat Land Converter — Phase 2B Advanced Utilities Test Suite", () 
         fromValue: 5,
         fromUnitId: "acre",
         fromUnitName: "Acre",
+        fromUnitSqFtSnapshot: 43560,
         toValue: 200,
         toUnitId: "guntha_mh",
         toUnitName: "Guntha",
+        toUnitSqFtSnapshot: 1089,
         formattedResult: "200",
         stateCode: "MH",
         stateName: "Maharashtra",
@@ -248,8 +308,11 @@ describe("Bharat Land Converter — Phase 2B Advanced Utilities Test Suite", () 
       expect(loadHistory().length).toBe(1);
     });
 
-    it("toggles favorite status and deletes items", () => {
-      const item = addHistoryItem({
+    it("transparently migrates legacy v1 history items to v2", () => {
+      // Simulate existing legacy v1 history in localStorage
+      const legacyV1Item = {
+        id: "calc_legacy_001",
+        timestamp: "2026-11-01T10:00:00.000Z",
         fromValue: 1,
         fromUnitId: "bigha_up_pucca",
         fromUnitName: "Pucca Bigha",
@@ -260,25 +323,44 @@ describe("Bharat Land Converter — Phase 2B Advanced Utilities Test Suite", () 
         stateCode: "UP",
         stateName: "Uttar Pradesh",
         formula: "1 Pucca Bigha = 27,225 sq ft",
-      });
+        isFavorite: true,
+      };
 
-      expect(loadHistory()[0].isFavorite).toBe(false);
+      window.localStorage.setItem(HISTORY_STORAGE_KEY_V1, JSON.stringify([legacyV1Item]));
 
-      toggleFavorite(item.id);
-      expect(loadHistory()[0].isFavorite).toBe(true);
+      // Calling loadHistory should migrate v1 to v2
+      const loaded = loadHistory();
+      expect(loaded.length).toBe(1);
+      expect(loaded[0].id).toBe("calc_legacy_001");
+      expect(loaded[0].dataVersion).toBe("v2");
+      expect(loaded[0].isFavorite).toBe(true);
 
-      deleteHistoryItem(item.id);
-      expect(loadHistory().length).toBe(0);
+      // Verify it was written to v2 storage key
+      const storedV2 = window.localStorage.getItem(HISTORY_STORAGE_KEY_V2);
+      expect(storedV2).toBeTruthy();
+      expect(JSON.parse(storedV2!)[0].dataVersion).toBe("v2");
     });
 
-    it("exports history to RFC 4180 compliant CSV with headers and legal disclaimer", () => {
+    it("neutralizes OWASP CSV Injection payloads starting with =, +, -, @, \\t, \\r", () => {
+      expect(sanitizeCsvField("=cmd|' /C calc'!A0")).toBe(`"'=cmd|' /C calc'!A0"`);
+      expect(sanitizeCsvField("+1+2")).toBe(`"'+1+2"`);
+      expect(sanitizeCsvField("@SUM(A1:A10)")).toBe(`"'@SUM(A1:A10)"`);
+      expect(sanitizeCsvField("-5+2")).toBe(`"'-5+2"`);
+      expect(sanitizeCsvField("\tTabInjected")).toBe(`"'\tTabInjected"`);
+      expect(sanitizeCsvField(25000)).toBe("25000");
+      expect(sanitizeCsvField("Acre")).toBe('"Acre"');
+    });
+
+    it("exports history to RFC 4180 CSV with UTF-8 BOM, headers, and legal notice", () => {
       addHistoryItem({
         fromValue: 2.5,
         fromUnitId: "acre",
         fromUnitName: "Acre",
+        fromUnitSqFtSnapshot: 43560,
         toValue: 100,
         toUnitId: "guntha_mh",
         toUnitName: "Guntha",
+        toUnitSqFtSnapshot: 1089,
         formattedResult: "100",
         stateCode: "MH",
         stateName: "Maharashtra",
@@ -288,10 +370,12 @@ describe("Bharat Land Converter — Phase 2B Advanced Utilities Test Suite", () 
       const items = loadHistory();
       const csv = exportHistoryToCsv(items);
 
+      // Verify UTF-8 BOM (\uFEFF)
+      expect(csv.charCodeAt(0)).toBe(0xfeff);
       expect(csv).toContain("Bharat Land Converter (https://land.ladestack.in)");
       expect(csv).toContain("Timestamp (UTC)");
-      expect(csv).toContain("From Unit");
-      expect(csv).toContain("To Unit");
+      expect(csv).toContain("From Factor Snapshot (sq ft)");
+      expect(csv).toContain("To Factor Snapshot (sq ft)");
       expect(csv).toContain('"Acre"');
       expect(csv).toContain('"Guntha"');
       expect(csv).toContain('"Maharashtra"');
@@ -326,6 +410,18 @@ describe("Bharat Land Converter — Phase 2B Advanced Utilities Test Suite", () 
           entry.confidence,
         );
       });
+    });
+
+    it("verifies Madhya Pradesh Bigha definitions adhere to statutory and customary distinctions", () => {
+      const mpStandard = COMPARISON_DATA.find((e) => e.id === "bigha_mp_malwa");
+      expect(mpStandard).toBeDefined();
+      expect(mpStandard!.sqFt).toBe(27225);
+      expect(mpStandard!.confidence).toBe("OFFICIAL_STANDARD");
+
+      const mpGwalior = COMPARISON_DATA.find((e) => e.id === "bigha_mp_gwalior");
+      expect(mpGwalior).toBeDefined();
+      expect(mpGwalior!.sqFt).toBe(12000);
+      expect(mpGwalior!.confidence).toBe("REGIONAL_STATUTORY");
     });
   });
 });

@@ -818,25 +818,44 @@ async function main() {
     return accessibleInputs;
   });
 
-  // TEST 20: Console errors check during normal workflows & Theme check
-  await runTest("TEST 20: Console errors check and theme control verification", async () => {
+  // TEST 20: Console errors check during normal workflows & Theme toggle verification
+  await runTest("TEST 20: Console errors check and dark/light theme toggle verification", async () => {
     const errorCount = cdp.consoleErrors.length;
-    // Inspect theme switcher presence
-    const themeControl = await cdp.eval(`
-      (() => {
-        const btn = document.querySelector('[data-testid="theme-toggle"], button[aria-label*="theme" i], button[title*="theme" i]');
-        return btn ? true : false;
-      })()
-    `);
-
     if (errorCount > 0) {
       throw new Error(`Detected ${errorCount} console errors: ${cdp.consoleErrors.join("; ")}`);
     }
 
+    // Inspect theme switcher presence and click it
+    const hasThemeBtn = await cdp.eval(`document.querySelector('#theme-toggle-btn') ? true : false`);
+    if (!hasThemeBtn) {
+      throw new Error("Theme toggle button (#theme-toggle-btn) missing from Header");
+    }
+
+    // Click toggle to switch to dark mode
+    await cdp.eval(`document.querySelector('#theme-toggle-btn').click()`);
+    await sleep(300);
+
+    const isDark = await cdp.eval(`document.documentElement.classList.contains('dark')`);
+    const savedTheme = await cdp.eval(`localStorage.getItem('bharat_theme')`);
+
+    // Click toggle again to switch back to light mode
+    await cdp.eval(`document.querySelector('#theme-toggle-btn').click()`);
+    await sleep(300);
+
+    const isLightAgain = !await cdp.eval(`document.documentElement.classList.contains('dark')`);
+    const finalSavedTheme = await cdp.eval(`localStorage.getItem('bharat_theme')`);
+
+    if (!isDark || !isLightAgain) {
+      throw new Error(`Theme toggle failed: dark=${isDark}, lightAgain=${isLightAgain}`);
+    }
+
     return {
       consoleErrors: 0,
-      themeSwitcherPresent: themeControl,
-      themeStatusNote: themeControl ? "Active" : "ABSENT in UI (no theme toggle button exists in codebase)",
+      themeSwitcherPresent: true,
+      toggledToDark: isDark,
+      persistedThemeDark: savedTheme,
+      toggledBackToLight: isLightAgain,
+      persistedThemeLight: finalSavedTheme
     };
   });
 
@@ -1034,6 +1053,69 @@ async function main() {
     }
 
     return { customFactorsVerified: hasCustomNotice, historyTabVerified: hasHistoryView };
+  });
+
+  // TEST 30: Custom unit creation and mathematical converter integration
+  await runTest("TEST 30: Custom unit creation and primary mathematical calculation", async () => {
+    // Switch to Custom Factor tab
+    await cdp.eval(`
+      (() => {
+        const btn = document.querySelector('#tab-custom-btn');
+        if (btn) btn.click();
+      })()
+    `);
+    await sleep(400);
+
+    // Fill form
+    await cdp.eval(`window.__setReactInput('#custom-unit-name', 'Village Test Bigha')`);
+    await sleep(200);
+    await cdp.eval(`window.__setReactInput('#custom-unit-factor', '20000')`);
+    await sleep(300);
+
+    // Submit form to save preset
+    await cdp.eval(`
+      (() => {
+        const saveBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Save Preset') || b.textContent.includes('प्रीसेट सहेजें'));
+        if (saveBtn) saveBtn.click();
+      })()
+    `);
+    await sleep(500);
+
+    // Verify localStorage has custom preset
+    const customPresetsJson = await cdp.eval(`localStorage.getItem('bharat_custom_units')`);
+    if (!customPresetsJson || !customPresetsJson.includes("Village Test Bigha")) {
+      throw new Error("Custom preset not found in localStorage after save");
+    }
+
+    // Click "Use" button on the newly saved preset card
+    await cdp.eval(`
+      (() => {
+        const useBtn = Array.from(document.querySelectorAll('button')).find(b => b.title === 'Load into Converter' || b.textContent.includes('Use'));
+        if (useBtn) useBtn.click();
+      })()
+    `);
+    await sleep(500);
+
+    // Verify Converter tab is now active and From unit is custom unit
+    const fromUnit = await cdp.eval(`document.querySelector('#from-unit-select')?.textContent?.trim()`);
+    const resultVal = await cdp.eval(`document.querySelector('[data-testid="primary-result-value"]')?.textContent?.trim()`);
+    const customNotice = await cdp.eval(`
+      document.body.innerText.includes('Customary Unofficial') || 
+      document.body.innerText.includes('User-defined custom factor') ||
+      document.body.innerText.includes('कस्टम')
+    `);
+
+    if (!fromUnit?.includes("Village Test Bigha")) {
+      throw new Error(`Expected From unit 'Village Test Bigha', got '${fromUnit}'`);
+    }
+
+    return {
+      customUnitName: "Village Test Bigha",
+      factorSqFt: "20,000",
+      activeFromUnit: fromUnit,
+      conversionResult: resultVal,
+      unverifiedNoticeDisplayed: customNotice
+    };
   });
 
   // Cleanup

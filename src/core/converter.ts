@@ -118,7 +118,7 @@ export function convertArea(
 
   let confidence = fromUnit.provenance.confidence;
   if (fromUnit.provenance.confidence === "CUSTOMARY_UNOFFICIAL" || toUnit.provenance.confidence === "CUSTOMARY_UNOFFICIAL") {
-    confidence = "CUSTOMARY_UNOFFICIAL" as any;
+    confidence = "CUSTOMARY_UNOFFICIAL";
   } else if (fromUnit.provenance.confidence === "OFFICIAL_STANDARD" && toUnit.provenance.confidence === "OFFICIAL_STANDARD") {
     confidence = "OFFICIAL_STANDARD";
   } else {
