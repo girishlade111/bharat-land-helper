@@ -18,6 +18,7 @@ import {
   buildConversionSearchParams,
   getLegacyUnitInfo,
   parseCustomSnapshotParam,
+  getEphemeralSnapshotUnit,
 } from "@/core";
 import { toast } from "@/hooks/use-toast";
 import type { Lang } from "@/data/translations";
@@ -321,6 +322,10 @@ export function AppProvider({
         }
       } else {
         setToUnitIdState(initialToUnitId);
+      }
+
+      if (snapshotFrom || snapshotTo) {
+        setCustomUnitsVersion((v) => v + 1);
       }
 
       if (l === "hi" || l === "en" || l === "mr") {
