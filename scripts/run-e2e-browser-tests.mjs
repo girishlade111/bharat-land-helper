@@ -1562,6 +1562,167 @@ async function main() {
     return { activeCustomUrl, activeFromUnit, recoveredUrl, recoveredFromUnit };
   });
 
+  // TEST 41: Shared Traditional Units in Real Browser (Haryana Kanal, Karnataka Guntha)
+  await runTest("TEST 41: Shared Traditional Units in Real Browser (Haryana Kanal, Karnataka Guntha)", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/?s=Haryana`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    // Open from-unit dropdown
+    await tabCdp.eval(`(() => {
+      const trigger = document.querySelector('#from-unit-select');
+      if (trigger) trigger.click();
+    })()`);
+    await sleep(400);
+
+    const hrOptions = await tabCdp.eval(`(() => {
+      return Array.from(document.querySelectorAll('[role="option"]')).map(el => el.textContent.trim());
+    })()`);
+
+    const hasKanal = hrOptions.some(t => t.includes("Kanal") || t.includes("कनाल"));
+    const hasMarla = hrOptions.some(t => t.includes("Marla") || t.includes("मरला"));
+
+    // Switch state to Karnataka
+    await tabCdp.eval(`(() => {
+      const trigger = document.querySelector('#state-selector-trigger');
+      if (trigger) trigger.click();
+    })()`);
+    await sleep(300);
+
+    await tabCdp.eval(`(() => {
+      const item = Array.from(document.querySelectorAll('[role="option"]')).find(el => el.textContent.includes('Karnataka') || el.textContent.includes('कर्नाटक'));
+      if (item) item.click();
+    })()`);
+    await sleep(500);
+
+    // Open from-unit dropdown in Karnataka
+    await tabCdp.eval(`(() => {
+      const trigger = document.querySelector('#from-unit-select');
+      if (trigger) trigger.click();
+    })()`);
+    await sleep(400);
+
+    const kaOptions = await tabCdp.eval(`(() => {
+      return Array.from(document.querySelectorAll('[role="option"]')).map(el => el.textContent.trim());
+    })()`);
+
+    const hasGuntha = kaOptions.some(t => t.includes("Guntha") || t.includes("गुंठा"));
+
+    // Close dropdown
+    await tabCdp.eval(`(() => {
+      const esc = new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true });
+      document.dispatchEvent(esc);
+    })()`);
+    await sleep(200);
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    if (!hasKanal) throw new Error("Expected Kanal to be available in Haryana units");
+    if (!hasMarla) throw new Error("Expected Marla to be available in Haryana units");
+    if (!hasGuntha) throw new Error("Expected Guntha to be available in Karnataka units");
+
+    return { hasKanal, hasMarla, hasGuntha };
+  });
+
+  // TEST 42: Legacy Concrete URL Parameters & Factor Disclosure in Real Browser
+  await runTest("TEST 42: Legacy Concrete URL Parameters & Factor Disclosure in Real Browser (/?v=1&u=bigha_up&s=Uttar%20Pradesh)", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/?v=1&u=bigha_up&s=Uttar%20Pradesh`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    const inputVal = await tabCdp.eval("document.querySelector('#area-input')?.value || document.querySelector('input[inputmode=\"decimal\"]')?.value");
+    const noticeText = await tabCdp.eval("document.querySelector('#legacy-unit-notice')?.textContent || ''");
+    const noticeExists = noticeText.length > 0;
+
+    const hasLegacyFactor = noticeText.includes("27,000") || noticeText.includes("27000");
+    const hasCanonicalFactor = noticeText.includes("27,225") || noticeText.includes("27225");
+
+    // Click dismiss button
+    await tabCdp.eval(`(() => {
+      const btn = document.querySelector('button[aria-label="Dismiss legacy notice"]');
+      if (btn) btn.click();
+    })()`);
+    await sleep(300);
+
+    const noticeAfterDismiss = await tabCdp.eval("!!document.querySelector('#legacy-unit-notice')");
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    if (inputVal !== "1") throw new Error(`Expected input value '1', got '${inputVal}'`);
+    if (!noticeExists) throw new Error("Expected #legacy-unit-notice to be rendered in DOM");
+    if (!hasLegacyFactor || !hasCanonicalFactor) {
+      throw new Error(`Expected notice to mention both 27,000 and 27,225 sq ft factors, got: '${noticeText}'`);
+    }
+    if (noticeAfterDismiss) throw new Error("Expected legacy notice to be dismissed after click");
+
+    return { inputVal, noticeExists, hasLegacyFactor, hasCanonicalFactor, dismissed: !noticeAfterDismiss };
+  });
+
+  // TEST 43: Legacy Saved Parcel Migration & Factor Safety in Real Browser
+  await runTest("TEST 43: Legacy Saved Parcel Migration & Factor Safety in Real Browser", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(800);
+
+    // Seed legacy parcel data before migration
+    await tabCdp.eval(`(() => {
+      localStorage.removeItem("bharat-land-parcels-v2");
+      localStorage.removeItem("bharat_parcels_migrated_v1");
+      localStorage.setItem("bharat-land-parcels", JSON.stringify([{
+        id: "cdp-legacy-p1",
+        name: "CDP Ancestral UP Plot",
+        value: 1,
+        unitId: "bigha_up",
+        state: "Uttar Pradesh",
+        sqftTotal: 27000
+      }]));
+    })()`);
+    await sleep(300);
+
+    // Reload page to run migration
+    await tabCdp.send("Page.reload");
+    await sleep(1000);
+
+    // Open My Lands collapsible
+    await tabCdp.eval(`(() => {
+      const toggle = document.querySelector('#my-lands-toggle');
+      if (toggle) toggle.click();
+    })()`);
+    await sleep(500);
+
+    const parcelContent = await tabCdp.eval(`(() => {
+      const el = document.querySelector('#my-lands-toggle')?.parentElement;
+      return el ? el.textContent : '';
+    })()`);
+
+    const hasParcelName = parcelContent.includes("CDP Ancestral UP Plot");
+    const hasPreservedSqft = parcelContent.includes("27,000") || parcelContent.includes("27000");
+    const hasLegacyNote = parcelContent.includes("Historical factor");
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    if (!hasParcelName) throw new Error(`Expected parcel name in My Lands, got content: '${parcelContent}'`);
+    if (!hasPreservedSqft) throw new Error(`Expected preserved 27,000 sq ft in My Lands, got content: '${parcelContent}'`);
+    if (!hasLegacyNote) throw new Error(`Expected legacy note in My Lands, got content: '${parcelContent}'`);
+
+    return { hasParcelName, hasPreservedSqft, hasLegacyNote };
+  });
+
   // Cleanup
   console.log("==================================================");
   console.log("E2E TESTS COMPLETE");
