@@ -85,7 +85,7 @@ export function AppProvider({
   initialInputValue = "1",
   initialLang,
 }: AppProviderProps) {
-  const getInitialLang = (): Lang => {
+  const getInitialLang = useCallback((): Lang => {
     if (initialLang) return initialLang;
     if (typeof window !== "undefined") {
       const p = window.location.pathname;
@@ -93,7 +93,7 @@ export function AppProvider({
       if (p.startsWith("/mr")) return "mr";
     }
     return "en";
-  };
+  }, [initialLang]);
 
   const [lang, setLangState] = useState<Lang>(getInitialLang);
   const [regionCode, setRegionCode] = useState<string>(initialRegionCode);
@@ -169,8 +169,8 @@ export function AppProvider({
     return convertOneToAll(val, fromUnit, availableUnits, displayPrecision);
   }, [validation, fromUnit, availableUnits, displayPrecision]);
 
-  // URL Query Parameters on mount
-  useEffect(() => {
+  // URL Query Parameters parsing helper
+  const parseUrlParamsIntoState = useCallback(() => {
     try {
       const params = new URLSearchParams(window.location.search);
       const v = params.get("v");
@@ -182,54 +182,88 @@ export function AppProvider({
 
       if (v && parseAreaInput(v).isValid) {
         setInputValueState(v);
+      } else {
+        setInputValueState(initialInputValue);
       }
-      let initialRegionCode = "MH";
+
+      let activeRegionCode = initialRegionCode;
       if (s) {
         const found = getRegion(s);
         if (found) {
-          initialRegionCode = found.code;
+          activeRegionCode = found.code;
           setRegionCode(found.code);
         }
+      } else {
+        setRegionCode(initialRegionCode);
       }
+
       const context: ConversionContext = {
-        stateCode: initialRegionCode,
+        stateCode: activeRegionCode,
         variantId: varId || undefined,
       };
+
       if (from) {
         const resolvedFrom = resolveUnit(from, context);
         if (resolvedFrom) setFromUnitIdState(resolvedFrom.id);
+      } else {
+        setFromUnitIdState(initialFromUnitId);
       }
+
       if (to) {
         const resolvedTo = resolveUnit(to, context);
         if (resolvedTo) setToUnitIdState(resolvedTo.id);
+      } else {
+        setToUnitIdState(initialToUnitId);
       }
-      if (l === "hi" || l === "en") {
+
+      if (l === "hi" || l === "en" || l === "mr") {
         setLangState(l);
+      } else {
+        setLangState(getInitialLang());
       }
     } catch {
       // Ignore URL parsing errors
     }
-  }, []);
+  }, [initialInputValue, initialRegionCode, initialFromUnitId, initialToUnitId, getInitialLang]);
 
-  // Update browser URL query string on state changes without reloading
+  // Initial mount URL parse
+  useEffect(() => {
+    parseUrlParamsIntoState();
+  }, [parseUrlParamsIntoState]);
+
+  // Synchronize on browser Back / Forward (popstate)
+  useEffect(() => {
+    const handlePopState = () => {
+      parseUrlParamsIntoState();
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [parseUrlParamsIntoState]);
+
+  // Update browser URL query string relative to CURRENT route's initial conversion defaults
   const updateUrl = useCallback((val: string, fId: string, tId: string, rCode: string, lg: Lang) => {
     try {
       if (typeof window !== "undefined" && window.history?.replaceState) {
         const params = new URLSearchParams();
-        if (val && val !== "1") params.set("v", val);
-        if (fId && fId !== "acre") params.set("from", fId);
-        if (tId && tId !== "guntha_mh") params.set("to", tId);
-        if (rCode && rCode !== "MH") params.set("s", rCode);
-        if (lg && lg !== "en") params.set("lang", lg);
+        if (val && val !== initialInputValue) params.set("v", val);
+        if (fId && fId !== initialFromUnitId) params.set("from", fId);
+        if (tId && tId !== initialToUnitId) params.set("to", tId);
+        if (rCode && rCode !== initialRegionCode) params.set("s", rCode);
+        const routeLang = getInitialLang();
+        if (lg && lg !== routeLang) params.set("lang", lg);
 
         const newSearch = params.toString();
         const newUrl = newSearch ? `${window.location.pathname}?${newSearch}` : window.location.pathname;
-        window.history.replaceState(null, "", newUrl);
+        const currentSearch = window.location.search || "";
+        const targetSearch = newSearch ? `?${newSearch}` : "";
+        if (currentSearch !== targetSearch) {
+          window.history.replaceState(null, "", newUrl);
+        }
       }
     } catch {
       // Ignore
     }
-  }, []);
+  }, [initialInputValue, initialFromUnitId, initialToUnitId, initialRegionCode, getInitialLang]);
 
   // Atomic conversion state and URL updater to eliminate stale URL parameters and transition races
   const setConversionState = useCallback((updates: ConversionStateUpdates) => {
