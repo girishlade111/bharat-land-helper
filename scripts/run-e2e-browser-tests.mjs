@@ -91,9 +91,16 @@ async function main() {
     stdio: "pipe",
   });
 
+  previewProcess.stderr.on("data", (d) => {
+    const errText = d.toString().trim();
+    if (errText && !errText.includes("DeprecationWarning")) {
+      console.warn("Preview server stderr:", errText);
+    }
+  });
+
   // Wait for preview server to be responsive
   let previewReady = false;
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < 60; i++) {
     try {
       const res = await fetch(`${BASE_URL}/`);
       if (res.ok) {
@@ -104,7 +111,8 @@ async function main() {
     await sleep(300);
   }
   if (!previewReady) {
-    previewProcess.kill();
+    try { execSync(`taskkill /F /T /PID ${previewProcess.pid}`, { stdio: "ignore" }); } catch {}
+    try { previewProcess.kill(); } catch {}
     throw new Error("Preview server failed to start within timeout");
   }
   console.log("Preview server is ready at " + BASE_URL);
