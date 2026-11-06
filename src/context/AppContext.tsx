@@ -16,6 +16,7 @@ import {
   type ValidationResult,
   type ConversionContext,
   buildConversionSearchParams,
+  getLegacyUnitInfo,
 } from "@/core";
 import { toast } from "@/hooks/use-toast";
 import type { Lang } from "@/data/translations";
@@ -25,6 +26,17 @@ export interface ConversionStateUpdates {
   fromUnitId?: string;
   toUnitId?: string;
   regionCode?: string;
+}
+
+export interface LegacyNotice {
+  legacyUnitId: string;
+  legacyName: string;
+  legacySqFt: number;
+  canonicalUnitId: string;
+  canonicalName: string;
+  canonicalSqFt: number;
+  factorDiffers: boolean;
+  notes: string;
 }
 
 export interface AppContextType {
@@ -60,6 +72,10 @@ export interface AppContextType {
   // Calculated Results
   primaryResult: ConversionResult | null;
   oneToAllResult: OneToAllResult;
+
+  // Legacy notice and compatibility
+  legacyNotice?: LegacyNotice | null;
+  dismissLegacyNotice?: () => void;
 
   // Legacy compatibility helpers
   selectedState: string;
@@ -105,6 +121,11 @@ export function AppProvider({
   const [displayPrecision, setDisplayPrecision] = useState<number>(4);
   const [activeTab, setActiveTab] = useState<string>("All");
   const [customUnitsVersion, setCustomUnitsVersion] = useState<number>(0);
+  const [legacyNotice, setLegacyNotice] = useState<LegacyNotice | null>(null);
+
+  const dismissLegacyNotice = useCallback(() => {
+    setLegacyNotice(null);
+  }, []);
 
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
@@ -211,10 +232,23 @@ export function AppProvider({
       };
 
       if (from) {
+        const legacyFrom = getLegacyUnitInfo(from);
         const resolvedFrom = resolveUnit(from, context);
         // Do not restore deleted custom units from URL
         if (resolvedFrom && (!from.startsWith("custom_") || getUnit(from))) {
           setFromUnitIdState(resolvedFrom.id);
+          if (legacyFrom && legacyFrom.factorDiffers) {
+            setLegacyNotice({
+              legacyUnitId: legacyFrom.legacyId,
+              legacyName: legacyFrom.name,
+              legacySqFt: legacyFrom.legacySqFt,
+              canonicalUnitId: resolvedFrom.id,
+              canonicalName: resolvedFrom.name,
+              canonicalSqFt: resolvedFrom.sqFt,
+              factorDiffers: true,
+              notes: legacyFrom.notes,
+            });
+          }
         } else {
           setFromUnitIdState(initialFromUnitId);
         }
@@ -223,10 +257,23 @@ export function AppProvider({
       }
 
       if (to) {
+        const legacyTo = getLegacyUnitInfo(to);
         const resolvedTo = resolveUnit(to, context);
         // Do not restore deleted custom units from URL
         if (resolvedTo && (!to.startsWith("custom_") || getUnit(to))) {
           setToUnitIdState(resolvedTo.id);
+          if (legacyTo && legacyTo.factorDiffers) {
+            setLegacyNotice((prev) => prev || {
+              legacyUnitId: legacyTo.legacyId,
+              legacyName: legacyTo.name,
+              legacySqFt: legacyTo.legacySqFt,
+              canonicalUnitId: resolvedTo.id,
+              canonicalName: resolvedTo.name,
+              canonicalSqFt: resolvedTo.sqFt,
+              factorDiffers: true,
+              notes: legacyTo.notes,
+            });
+          }
         } else {
           setToUnitIdState(initialToUnitId);
         }
@@ -433,6 +480,8 @@ export function AppProvider({
     setActiveTab,
     primaryResult,
     oneToAllResult,
+    legacyNotice,
+    dismissLegacyNotice,
     // Legacy support
     selectedState: selectedRegion.name,
     setSelectedState,

@@ -1,5 +1,7 @@
 import type { LandUnit, ConversionContext } from "./types";
 import { loadCustomPresets, customPresetToLandUnit, getCustomLandUnits } from "./customUnits";
+import { getRegion } from "./regions";
+import { LEGACY_UNIT_MAP } from "./legacyUnits";
 
 const SQFT_TO_SQM = 0.09290304; // 1 ft = 0.3048 m exactly -> 0.3048^2 = 0.09290304 m^2
 const SQM_TO_SQFT = 1 / SQFT_TO_SQM; // 10.763910416709722 sq ft
@@ -1134,6 +1136,7 @@ export const UNIT_BY_ID = new Map<string, LandUnit>(
 );
 
 export function getUnit(id: string): LandUnit | undefined {
+  if (!id) return undefined;
   const direct = UNIT_BY_ID.get(id);
   if (direct) return direct;
 
@@ -1145,18 +1148,60 @@ export function getUnit(id: string): LandUnit | undefined {
       return customPresetToLandUnit(preset);
     }
   }
+
+  // Resolve legacy concrete unit identifier
+  const legacy = LEGACY_UNIT_MAP.get(id.toLowerCase().trim());
+  if (legacy) {
+    return UNIT_BY_ID.get(legacy.canonicalUnitId);
+  }
+
   return undefined;
 }
 
 /**
  * Returns units available for a given region code.
  * Standard units are always included, plus user-defined custom units.
+ * Includes declared shared traditional units from the region's metadata.
  */
 export function getUnitsForRegion(regionCode: string): LandUnit[] {
   const code = regionCode.toUpperCase();
+  const region = getRegion(code);
+
+  // Units native to ALL or this specific region
   const base = ALL_UNITS.filter((u) => u.regionCode === "ALL" || u.regionCode === code);
+
+  // Declared shared traditional units from region metadata
+  const sharedUnits: LandUnit[] = [];
+  if (region && Array.isArray(region.primaryTraditionalUnits)) {
+    for (const unitId of region.primaryTraditionalUnits) {
+      const unit = getUnit(unitId) || resolveUnit(unitId, { stateCode: code });
+      if (unit && unit.regionCode !== "ALL" && unit.regionCode !== code) {
+        sharedUnits.push(unit);
+      }
+    }
+  }
+
+  // Deduplicate by canonical unit ID
+  const seenIds = new Set<string>();
+  const combined: LandUnit[] = [];
+
+  for (const u of [...base, ...sharedUnits]) {
+    if (!seenIds.has(u.id)) {
+      seenIds.add(u.id);
+      combined.push(u);
+    }
+  }
+
+  // User-defined custom units
   const custom = getCustomLandUnits();
-  return [...base, ...custom];
+  for (const c of custom) {
+    if (!seenIds.has(c.id)) {
+      seenIds.add(c.id);
+      combined.push(c);
+    }
+  }
+
+  return combined;
 }
 
 /**
@@ -1175,6 +1220,13 @@ export function resolveUnit(
   const normalized = unitOrId.toLowerCase().trim();
   const state = context?.stateCode?.toUpperCase();
   const variant = context?.variantId?.toLowerCase();
+
+  // Check concrete legacy ID map
+  const legacy = LEGACY_UNIT_MAP.get(normalized);
+  if (legacy) {
+    const canonical = UNIT_BY_ID.get(legacy.canonicalUnitId);
+    if (canonical) return canonical;
+  }
 
   // Legacy & generic unit mapping rules
   switch (normalized) {
