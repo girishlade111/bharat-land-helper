@@ -6,6 +6,7 @@ import {
   toggleFavorite,
   clearHistory,
   downloadHistoryCsv,
+  getUnit,
   type ConversionHistoryItem,
 } from "@/core";
 import { Button } from "@/components/ui/button";
