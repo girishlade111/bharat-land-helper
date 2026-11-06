@@ -10,13 +10,27 @@ export default function ShareButtons() {
   const { toast } = useToast();
 
   const isValid = validation.isValid && validation.parsedValue > 0;
+  const isCustomFrom = fromUnit.regionCode === "CUSTOM" || fromUnit.id.startsWith("custom");
+  const isCustomTo = toUnit.regionCode === "CUSTOM" || toUnit.id.startsWith("custom");
+  const isCustom = isCustomFrom || isCustomTo;
 
   const handleShare = () => {
-    const url = `${window.location.origin}${window.location.pathname}?v=${inputValue}&from=${fromUnit.id}&to=${toUnit.id}&s=${selectedRegion.code}`;
+    let url = `${window.location.origin}${window.location.pathname}?v=${inputValue}&from=${fromUnit.id}&to=${toUnit.id}&s=${selectedRegion.code}`;
+    if (isCustomFrom) {
+      const cleanName = fromUnit.name.replace(/\s*\(Custom.*?\)/, "").trim();
+      url += `&from_sqft=${fromUnit.sqFt}&from_name=${encodeURIComponent(cleanName)}`;
+    }
+    if (isCustomTo) {
+      const cleanName = toUnit.name.replace(/\s*\(Custom.*?\)/, "").trim();
+      url += `&to_sqft=${toUnit.sqFt}&to_name=${encodeURIComponent(cleanName)}`;
+    }
+
     navigator.clipboard.writeText(url).then(() => {
       toast({
         title: t("copied", lang),
-        description: url,
+        description: isCustom
+          ? `Link copied with portable ${fromUnit.name} factor snapshot`
+          : url,
       });
     }).catch(() => {
       toast({
@@ -37,6 +51,14 @@ export default function ShareButtons() {
     msg += `📍 ${formatIndianNumber(validation.parsedValue)} ${fromUnit.name} (${selectedRegion.name})\n\n`;
     msg += `👉 *Result:* ${primaryResult.formattedResult} ${toUnit.name}\n`;
     msg += `📐 *Formula:* ${primaryResult.formula}\n\n`;
+
+    if (isCustomFrom) {
+      msg += `ℹ️ _Custom Unit Factor: 1 ${fromUnit.name} = ${formatIndianNumber(fromUnit.sqFt)} sq ft_\n\n`;
+    }
+    if (isCustomTo) {
+      msg += `ℹ️ _Custom Unit Factor: 1 ${toUnit.name} = ${formatIndianNumber(toUnit.sqFt)} sq ft_\n\n`;
+    }
+
     msg += `*Key Equivalents:*\n`;
 
     summaryUnits.forEach((u) => {

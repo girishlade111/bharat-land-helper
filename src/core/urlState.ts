@@ -6,6 +6,10 @@ export interface ConversionQueryState {
   toUnitId?: string;
   regionCode?: string;
   lang?: Lang;
+  fromSqFt?: number;
+  fromName?: string;
+  toSqFt?: number;
+  toName?: string;
 }
 
 export interface ConversionQueryDefaults {
@@ -67,6 +71,27 @@ export function buildConversionSearchParams(
     params.set("lang", state.lang);
   } else {
     params.delete("lang");
+  }
+
+  // Custom unit snapshot parameters (for portable cross-browser sharing)
+  if (state.fromSqFt && state.fromUnitId && (state.fromUnitId.startsWith("custom") || state.fromUnitId === "custom")) {
+    params.set("from_sqft", String(state.fromSqFt));
+    if (state.fromName) {
+      params.set("from_name", state.fromName);
+    }
+  } else {
+    params.delete("from_sqft");
+    params.delete("from_name");
+  }
+
+  if (state.toSqFt && state.toUnitId && (state.toUnitId.startsWith("custom") || state.toUnitId === "custom")) {
+    params.set("to_sqft", String(state.toSqFt));
+    if (state.toName) {
+      params.set("to_name", state.toName);
+    }
+  } else {
+    params.delete("to_sqft");
+    params.delete("to_name");
   }
 
   const qs = params.toString();

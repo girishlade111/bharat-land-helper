@@ -1,5 +1,5 @@
 import type { LandUnit, ConversionContext } from "./types";
-import { loadCustomPresets, customPresetToLandUnit, getCustomLandUnits } from "./customUnits";
+import { loadCustomPresets, customPresetToLandUnit, getCustomLandUnits, getEphemeralSnapshotUnit } from "./customUnits";
 import { getRegion } from "./regions";
 import { LEGACY_UNIT_MAP } from "./legacyUnits";
 
@@ -699,6 +699,66 @@ export const ALL_UNITS: LandUnit[] = [
       lastVerifiedDate: "2026-11-06",
     },
   },
+  {
+    id: "biswa_mp_gwalior",
+    name: "Biswa (MP Gwalior / Chambal Customary)",
+    nameHi: "बिस्वा (म.प्र. ग्वालियर / चंबल पारंपरिक)",
+    nameMr: "बिस्वा (म.प्र. ग्वाल्हेर / चंबळ पारंपरिक)",
+    aliases: ["biswa mp", "gwalior biswa", "chambal biswa", "biswa_mp"],
+    category: "regional",
+    sqMeters: 600 * SQFT_TO_SQM,
+    sqFt: 600,
+    regionCode: "MP",
+    regionName: "Madhya Pradesh",
+    variantName: "600 Sq Ft (1/20 Gwalior Bigha)",
+    variantNameHi: "600 वर्ग फीट (1/20 ग्वालियर बीघा)",
+    variantNameMr: "600 चौ. फूट (1/20 ग्वाल्हेर बीघा)",
+    subdivision: { parentUnitId: "bigha_mp_gwalior", factor: 20, name: "Biswa", nameHi: "बिस्वा" },
+    note: "1/20 Gwalior Bigha = 600 sq ft = 66.67 sq yd (Historical Gwalior/Morena/Bhind customary division).",
+    noteHi: "1/20 ग्वालियर बीघा = 600 वर्ग फीट (ग्वालियर, मुरैना, भिंड पारंपरिक रियासती माप)।",
+    noteMr: "1/20 ग्वाल्हेर बीघा = 600 चौ. फूट (ग्वाल्हेर, मुरैना, भिंड पारंपरिक माप).",
+    provenance: {
+      sourceName: "Northern MP / Gwalior Princely State Customary Standard",
+      referenceDocument: "Historical Gwalior Revenue Settlement customs (20 Biswa = 12,000 sq ft)",
+      legalStatus: "Historical customary benchmark recognized in Gwalior and Chambal divisions; modern revenue records use Hectares",
+      confidence: "WIDELY_USED_CUSTOMARY",
+      evidenceClassification: "LOCAL_REVENUE_CUSTOM",
+      qualification: "Historical customary variant preserved from Gwalior State tenure settlement. 1 Biswa = 600 sq ft (1/20 of 12,000 sq ft Gwalior Bigha).",
+      qualificationHi: "ग्वालियर रियासत कालीन बंदोबस्त से चली आ रही पारंपरिक इकाई (1 बिस्वा = 600 वर्ग फीट)। आधुनिक रिकॉर्ड हेक्टेयर में दर्ज होते हैं।",
+      qualificationMr: "ग्वाल्हेर संस्थान काळातील बंदोबस्तातील पारंपरिक पद्धत (1 बिस्वा = 600 चौ. फूट).",
+      lastVerifiedDate: "2026-11-06",
+    },
+  },
+  {
+    id: "biswa_mp_standard",
+    name: "Biswa (MP Standard / Malwa)",
+    nameHi: "बिस्वा (म.प्र. मानक / मालवा)",
+    nameMr: "बिस्वा (म.प्र. प्रमाण / माळवा)",
+    aliases: ["biswa mp standard", "malwa biswa"],
+    category: "regional",
+    sqMeters: 1361.25 * SQFT_TO_SQM,
+    sqFt: 1361.25,
+    regionCode: "MP",
+    regionName: "Madhya Pradesh",
+    variantName: "1,361.25 Sq Ft (1/20 Malwa Bigha)",
+    variantNameHi: "1,361.25 वर्ग फीट (1/20 मालवा बीघा)",
+    variantNameMr: "1,361.25 चौ. फूट (1/20 माळवा बीघा)",
+    subdivision: { parentUnitId: "bigha_mp_standard", factor: 20, name: "Biswa", nameHi: "बिस्वा" },
+    note: "1/20 Malwa Bigha = 1,361.25 sq ft = 151.25 sq yd (Standard customary benchmark in Indore, Ujjain, Bhopal).",
+    noteHi: "1/20 मालवा बीघा = 1,361.25 वर्ग फीट = 151.25 वर्ग गज (इंदौर, उज्जैन, भोपाल पारंपरिक माप)।",
+    noteMr: "1/20 माळवा बीघा = 1,361.25 चौ. फूट = 151.25 चौ. गज (इंदूर, उज्जैन, भोपाळ पारंपरिक माप).",
+    provenance: {
+      sourceName: "Central India Customary Settlement Benchmark",
+      referenceDocument: "Traditional 55 x 55 yard standard (1/20 Bigha = 151.25 sq yd)",
+      legalStatus: "Widely used customary agricultural benchmark across Western & Central MP; modern MP Bhulekh uses Metric Hectares",
+      confidence: "WIDELY_USED_CUSTOMARY",
+      evidenceClassification: "LOCAL_REVENUE_CUSTOM",
+      qualification: "Customary subdivision of Central MP / Malwa standard Bigha (1 Biswa = 1,361.25 sq ft).",
+      qualificationHi: "मध्य प्रदेश / मालवा के मानक बीघा का 1/20 भाग (1 बिस्वा = 1,361.25 वर्ग फीट)।",
+      qualificationMr: "मध्य प्रदेश / माळवा प्रमाण बीघ्याचा 1/20 भाग (1 बिस्वा = 1,361.25 चौ. फूट).",
+      lastVerifiedDate: "2026-11-06",
+    },
+  },
 
   // ==========================================
   // 9. GUJARAT
@@ -1141,6 +1201,10 @@ export function getUnit(id: string): LandUnit | undefined {
   if (direct) return direct;
 
   if (typeof id === "string" && (id.startsWith("custom_") || id.startsWith("custom-"))) {
+    // Check ephemeral snapshots first
+    const snap = getEphemeralSnapshotUnit(id);
+    if (snap) return snap;
+
     const presets = loadCustomPresets();
     const cleanId = id.replace(/^custom_/, "");
     const preset = presets.find((p) => p.id === id || p.id === cleanId || `custom_${p.id}` === id);
@@ -1298,6 +1362,9 @@ export function resolveUnit(
       if (state === "HP") return getUnit("biswa_hp");
       if (state === "RJ") return getUnit("biswa_rj_pucca");
       if (state === "OD") return getUnit("biswa_od");
+      if (state === "MP" || state === "CG") {
+        return variant === "gwalior" ? getUnit("biswa_mp_gwalior") : getUnit("biswa_mp_standard");
+      }
       return getUnit("biswa_up_pucca");
     }
 

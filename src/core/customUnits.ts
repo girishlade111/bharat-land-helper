@@ -217,9 +217,97 @@ export function customPresetToLandUnit(preset: CustomUnitPreset): LandUnit {
 }
 
 /**
- * Returns all active custom units transformed into LandUnit objects.
+ * Ephemeral in-memory store for validated custom-unit snapshots extracted from shared links.
+ * Enables portable calculation across separate browser sessions without requiring local persistence.
+ */
+export const EPHEMERAL_SNAPSHOT_CACHE = new Map<string, LandUnit>();
+
+export function getEphemeralSnapshotUnit(id: string): LandUnit | undefined {
+  if (!id) return undefined;
+  if (EPHEMERAL_SNAPSHOT_CACHE.has(id)) {
+    return EPHEMERAL_SNAPSHOT_CACHE.get(id);
+  }
+  const match = id.match(/^custom_snap_([0-9.]+)/);
+  if (match) {
+    const factor = parseFloat(match[1]);
+    if (!isNaN(factor) && isFinite(factor) && factor > 0 && factor <= 10_000_000) {
+      return parseCustomSnapshotParam(factor);
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Parses and safely validates custom unit snapshot parameters from a shared URL.
+ * Sanitizes all input strings, enforces positive finite bounded factors, and produces
+ * an immutable ephemeral LandUnit without writing to browser localStorage.
+ */
+export function parseCustomSnapshotParam(
+  factorInput: string | number | null | undefined,
+  nameInput?: string | null
+): LandUnit | null {
+  if (factorInput === null || factorInput === undefined || factorInput === "") return null;
+  const num = typeof factorInput === "number" ? factorInput : parseFloat(String(factorInput).trim().replace(/,/g, ""));
+  if (isNaN(num) || !isFinite(num) || num <= 0 || num > 10_000_000) {
+    return null;
+  }
+
+  const rawName = (nameInput || "Custom Unit").trim();
+  // Strip HTML tags, quotes, control characters, and limit to 50 characters
+  const cleanName =
+    rawName
+      .replace(/<[^>]*>?/gm, "")
+      .replace(/[^\w\s\u0900-\u097F.-]/g, "")
+      .trim()
+      .slice(0, 50) || "Custom Unit";
+
+  const snapId = `custom_snap_${Math.round(num * 1000) / 1000}`;
+
+  const unit: LandUnit = {
+    id: snapId,
+    name: `${cleanName} (Custom Snapshot)`,
+    nameHi: `${cleanName} (कस्टम स्नैपशॉट)`,
+    aliases: [cleanName.toLowerCase(), snapId],
+    category: "regional",
+    sqFt: num,
+    sqMeters: num * 0.09290304,
+    regionCode: "CUSTOM",
+    regionName: "Custom Local Measurement",
+    variantName: `Snapshot: 1 = ${num} sq ft`,
+    variantNameHi: `स्नैपशॉट: 1 = ${num} वर्ग फीट`,
+    note: `Shared custom snapshot: 1 ${cleanName} = ${num.toLocaleString("en-IN")} sq ft`,
+    noteHi: `साझा कस्टम स्नैपशॉट: 1 ${cleanName} = ${num.toLocaleString("en-IN")} वर्ग फीट`,
+    provenance: {
+      sourceName: "Shared Custom Unit Snapshot",
+      referenceDocument: `URL Snapshot: 1 Unit = ${num} sq ft`,
+      legalStatus: "Unverified private customary definition; snapshot from shared URL",
+      confidence: "CUSTOMARY_UNOFFICIAL",
+      evidenceClassification: "CUSTOMARY_UNOFFICIAL",
+      qualification: "Ephemeral custom unit snapshot preserved from a shared calculation link.",
+      lastVerifiedDate: "2026-11-06",
+    },
+  };
+
+  EPHEMERAL_SNAPSHOT_CACHE.set(snapId, unit);
+  return unit;
+}
+
+/**
+ * Returns all active custom units transformed into LandUnit objects,
+ * including both persisted local presets and active ephemeral link snapshots.
  */
 export function getCustomLandUnits(): LandUnit[] {
   const presets = loadCustomPresets();
-  return presets.map(customPresetToLandUnit);
+  const presetUnits = presets.map(customPresetToLandUnit);
+  const seenIds = new Set(presetUnits.map((u) => u.id));
+  const result = [...presetUnits];
+
+  for (const [id, ephemeral] of EPHEMERAL_SNAPSHOT_CACHE.entries()) {
+    if (!seenIds.has(id)) {
+      result.push(ephemeral);
+      seenIds.add(id);
+    }
+  }
+
+  return result;
 }

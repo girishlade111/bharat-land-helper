@@ -335,10 +335,10 @@ export const LEGACY_UNIT_INVENTORY: LegacyUnitRecord[] = [
     category: "MP",
     stateCode: "MP",
     legacySqFt: 600,
-    canonicalUnitId: "bigha_mp_gwalior",
-    canonicalSqFt: 12000,
+    canonicalUnitId: "biswa_mp_gwalior",
+    canonicalSqFt: 600,
     factorDiffers: false,
-    notes: "Historical Gwalior Biswa: 1/20 of 12,000 = 600 sq ft.",
+    notes: "Historical Gwalior Biswa: 1/20 of 12,000 sq ft Gwalior Bigha = 600 sq ft.",
   },
 
   // 9. Gujarat
@@ -426,9 +426,9 @@ export const LEGACY_UNIT_INVENTORY: LegacyUnitRecord[] = [
     stateCode: "HP",
     legacySqFt: 871.2,
     canonicalUnitId: "biswa_hp",
-    canonicalSqFt: 871.2,
-    factorDiffers: false,
-    notes: "Exact statutory match (1/10 Bigha = 871.2 sq ft).",
+    canonicalSqFt: 435.6,
+    factorDiffers: true,
+    notes: "Legacy benchmark assumed 1/10 Bigha (871.2 sq ft). Statutory HP Revenue standard defines 1 Bigha = 20 Biswa = 8,712 sq ft, so 1 statutory Biswa is 435.6 sq ft (1 Cent / 1 Decimal).",
   },
   {
     legacyId: "nali_uk",
