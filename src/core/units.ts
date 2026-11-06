@@ -1118,16 +1118,29 @@ export const UNIT_BY_ID = new Map<string, LandUnit>(
 );
 
 export function getUnit(id: string): LandUnit | undefined {
-  return UNIT_BY_ID.get(id);
+  const direct = UNIT_BY_ID.get(id);
+  if (direct) return direct;
+
+  if (typeof id === "string" && (id.startsWith("custom_") || id.startsWith("custom-"))) {
+    const presets = loadCustomPresets();
+    const cleanId = id.replace(/^custom_/, "");
+    const preset = presets.find((p) => p.id === id || p.id === cleanId || `custom_${p.id}` === id);
+    if (preset) {
+      return customPresetToLandUnit(preset);
+    }
+  }
+  return undefined;
 }
 
 /**
  * Returns units available for a given region code.
- * Standard units are always included.
+ * Standard units are always included, plus user-defined custom units.
  */
 export function getUnitsForRegion(regionCode: string): LandUnit[] {
   const code = regionCode.toUpperCase();
-  return ALL_UNITS.filter((u) => u.regionCode === "ALL" || u.regionCode === code);
+  const base = ALL_UNITS.filter((u) => u.regionCode === "ALL" || u.regionCode === code);
+  const custom = getCustomLandUnits();
+  return [...base, ...custom];
 }
 
 /**

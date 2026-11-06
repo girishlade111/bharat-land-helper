@@ -102,9 +102,11 @@ export function convertArea(
   // Build step-by-step breakdown
   const stepCalculation = `${formatIndianNumber(value)} ${fromUnit.name} × ${fromUnit.sqFt} sq ft ÷ ${toUnit.sqFt} sq ft = ${formattedResult} ${toUnit.name}`;
 
-  // Check if warning is warranted (e.g. comparing different state regional units)
+  // Check if warning is warranted (e.g. custom user factors or inter-state customary units)
   let warning: string | undefined;
-  if (
+  if (fromUnit.regionCode === "CUSTOM" || toUnit.regionCode === "CUSTOM") {
+    warning = "Notice: Calculating using user-defined custom measurement factor. This is a private, unverified definition and is not recognized by government revenue departments.";
+  } else if (
     fromUnit.category === "regional" &&
     toUnit.category === "regional" &&
     fromUnit.regionCode !== toUnit.regionCode &&
@@ -112,6 +114,15 @@ export function convertArea(
     toUnit.regionCode !== "ALL"
   ) {
     warning = `Notice: Converting between ${fromUnit.regionName || fromUnit.regionCode} and ${toUnit.regionName || toUnit.regionCode} customary units. Traditional units vary by locality; verify with local revenue office before registration.`;
+  }
+
+  let confidence = fromUnit.provenance.confidence;
+  if (fromUnit.provenance.confidence === "CUSTOMARY_UNOFFICIAL" || toUnit.provenance.confidence === "CUSTOMARY_UNOFFICIAL") {
+    confidence = "CUSTOMARY_UNOFFICIAL" as any;
+  } else if (fromUnit.provenance.confidence === "OFFICIAL_STANDARD" && toUnit.provenance.confidence === "OFFICIAL_STANDARD") {
+    confidence = "OFFICIAL_STANDARD";
+  } else {
+    confidence = "WIDELY_USED_CUSTOMARY";
   }
 
   return {
@@ -124,11 +135,7 @@ export function convertArea(
     stepCalculation,
     isSameUnit: false,
     warning,
-    confidence:
-      fromUnit.provenance.confidence === "OFFICIAL_STANDARD" &&
-      toUnit.provenance.confidence === "OFFICIAL_STANDARD"
-        ? "OFFICIAL_STANDARD"
-        : "WIDELY_USED_CUSTOMARY",
+    confidence,
   };
 }
 

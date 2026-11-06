@@ -4,7 +4,8 @@ export type ConfidenceLevel =
   | "OFFICIAL_STANDARD"      // Defined in statutory acts or official state land record manuals
   | "WIDELY_USED_CUSTOMARY"  // Accepted standard across revenue tehsils and deeds
   | "LOCAL_VARIANT"          // Specific to certain districts, subdivisions, or lagga lengths
-  | "HISTORICAL_CUSTOMARY";  // Documented historical tenure unit; modern registry prefers metric
+  | "HISTORICAL_CUSTOMARY"   // Documented historical tenure unit; modern registry prefers metric
+  | "CUSTOMARY_UNOFFICIAL";  // User-defined or informal customary unit
 
 export interface Region {
   code: string;

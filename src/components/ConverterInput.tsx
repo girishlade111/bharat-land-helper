@@ -30,9 +30,10 @@ export default function ConverterInput() {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
 
-  // Group units into Standard and Regional for clean dropdown UX
+  // Group units into Standard, Regional, and Custom for clean dropdown UX
   const standardUnits = availableUnits.filter((u) => u.category === "standard");
-  const regionalUnits = availableUnits.filter((u) => u.category === "regional");
+  const customUnits = availableUnits.filter((u) => u.regionCode === "CUSTOM");
+  const regionalUnits = availableUnits.filter((u) => u.category === "regional" && u.regionCode !== "CUSTOM");
 
   const handleCopy = () => {
     if (!primaryResult) return;
@@ -62,13 +63,24 @@ export default function ConverterInput() {
           fromValue: primaryResult.inputValue,
           fromUnitId: fromUnit.id,
           fromUnitName: lang === "hi" ? fromUnit.nameHi : fromUnit.name,
+          fromUnitSqFtSnapshot: fromUnit.sqFt,
           toValue: primaryResult.rawResult,
           toUnitId: toUnit.id,
           toUnitName: lang === "hi" ? toUnit.nameHi : toUnit.name,
+          toUnitSqFtSnapshot: toUnit.sqFt,
           formattedResult: primaryResult.formattedResult,
           stateCode: selectedRegion.code,
           stateName: lang === "hi" ? selectedRegion.nameHi : selectedRegion.name,
           formula: primaryResult.formula,
+          isCustomUnit: fromUnit.regionCode === "CUSTOM" || toUnit.regionCode === "CUSTOM",
+          customFactorSnapshot:
+            fromUnit.regionCode === "CUSTOM"
+              ? fromUnit.sqFt
+              : toUnit.regionCode === "CUSTOM"
+              ? toUnit.sqFt
+              : undefined,
+          confidence: primaryResult.confidence,
+          sourceClassification: fromUnit.provenance.sourceName,
         });
       }, 1500);
       return () => clearTimeout(timer);
@@ -143,6 +155,18 @@ export default function ConverterInput() {
                   <SelectValue placeholder={lang === "hi" ? fromUnit.nameHi : fromUnit.name} />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
+                  {customUnits.length > 0 && (
+                    <SelectGroup>
+                      <SelectLabel className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                        {lang === "hi" ? "कस्टम इकाइयाँ" : "Custom Units"}
+                      </SelectLabel>
+                      {customUnits.map((u) => (
+                        <SelectItem key={u.id} value={u.id}>
+                          {lang === "hi" ? u.nameHi : u.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  )}
                   {regionalUnits.length > 0 && (
                     <SelectGroup>
                       <SelectLabel className="text-[10px] font-bold uppercase tracking-wider text-primary">
@@ -196,6 +220,18 @@ export default function ConverterInput() {
               <SelectValue placeholder={lang === "hi" ? toUnit.nameHi : toUnit.name} />
             </SelectTrigger>
             <SelectContent className="max-h-[300px]">
+              {customUnits.length > 0 && (
+                <SelectGroup>
+                  <SelectLabel className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                    {lang === "hi" ? "कस्टम इकाइयाँ" : "Custom Units"}
+                  </SelectLabel>
+                  {customUnits.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {lang === "hi" ? u.nameHi : u.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              )}
               {regionalUnits.length > 0 && (
                 <SelectGroup>
                   <SelectLabel className="text-[10px] font-bold uppercase tracking-wider text-primary">

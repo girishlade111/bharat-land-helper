@@ -89,16 +89,18 @@ export default function CustomUnitManager({ onApplyCustomUnit }: CustomUnitManag
   };
 
   const handleApplyPreset = (preset: CustomUnitPreset) => {
+    const customUnitId = preset.id.startsWith("custom_") ? preset.id : `custom_${preset.id}`;
     setInputValue("1");
-    setFromUnitId("sqft");
+    setFromUnitId(customUnitId);
+    setToUnitId("acre");
 
     if (onApplyCustomUnit) {
       onApplyCustomUnit(preset);
     }
 
     toast({
-      title: lang === "hi" ? "लागू किया गया" : "Preset Applied",
-      description: `${preset.name} = ${formatIndianNumber(preset.sqFtEquivalent)} sq ft loaded.`,
+      title: lang === "hi" ? "कस्टम इकाई लागू" : "Custom Unit Applied",
+      description: `${preset.name} (${formatIndianNumber(preset.sqFtEquivalent)} sq ft) ${lang === "hi" ? "मुख्य परिवर्तक में लोड किया गया।" : "loaded into main converter."}`,
     });
   };
 

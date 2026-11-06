@@ -133,3 +133,51 @@
     to { opacity: 1; transform: translateY(0); }
   }
 }
+
+/* ==========================================
+   PRINT STYLESHEET (Phase 2B.5 Clean Memo Export)
+   ========================================== */
+@media print {
+  /* Hide navigation, buttons, selectors and non-print UI */
+  header,
+  footer,
+  nav,
+  button,
+  input,
+  select,
+  .no-print,
+  #state-selector-trigger,
+  #lang-toggle-btn,
+  #theme-toggle-btn {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+    font-size: 11pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .printable-memo {
+    display: block !important;
+    border: 1.5pt solid #d1d5db !important;
+    border-radius: 8pt !important;
+    padding: 16pt !important;
+    margin: 12pt 0 !important;
+    page-break-inside: avoid;
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+}
