@@ -665,20 +665,6 @@ async function main() {
     // Re-inject helper after reload
     await injectHelper();
 
-  // Active hydration handshake: ensure React is interactive before running tests
-  for (let i = 0; i < 30; i++) {
-    await sleep(250);
-    try {
-      await cdp.eval(`window.__setReactInput('#area-input', '2')`);
-      const val = await cdp.eval(`document.querySelector('[data-testid="primary-result-value"]')?.textContent?.trim()`);
-      if (val === "80") {
-        await cdp.eval(`window.__setReactInput('#area-input', '1')`);
-        await sleep(200);
-        break;
-      }
-    } catch {}
-  }
-
     const persisted = await cdp.eval(`localStorage.getItem('bharat-land-parcels-v2')`);
     if (!persisted || !persisted.includes("Ancestral Farm")) {
       throw new Error("Parcel lost after reload");
@@ -927,20 +913,6 @@ async function main() {
   await sleep(2500);
     await injectHelper();
 
-  // Active hydration handshake: ensure React is interactive before running tests
-  for (let i = 0; i < 30; i++) {
-    await sleep(250);
-    try {
-      await cdp.eval(`window.__setReactInput('#area-input', '2')`);
-      const val = await cdp.eval(`document.querySelector('[data-testid="primary-result-value"]')?.textContent?.trim()`);
-      if (val === "80") {
-        await cdp.eval(`window.__setReactInput('#area-input', '1')`);
-        await sleep(200);
-        break;
-      }
-    } catch {}
-  }
-
     const title = await cdp.eval("document.title");
     const h1 = await cdp.eval("document.querySelector('h1')?.textContent?.trim()");
     const initialResult = await cdp.eval("document.querySelector('[data-testid=\"primary-result-value\"]')?.textContent?.trim()");
@@ -963,20 +935,6 @@ async function main() {
     // Allow complete static hydration on initial render
   await sleep(2500);
     await injectHelper();
-
-  // Active hydration handshake: ensure React is interactive before running tests
-  for (let i = 0; i < 30; i++) {
-    await sleep(250);
-    try {
-      await cdp.eval(`window.__setReactInput('#area-input', '2')`);
-      const val = await cdp.eval(`document.querySelector('[data-testid="primary-result-value"]')?.textContent?.trim()`);
-      if (val === "80") {
-        await cdp.eval(`window.__setReactInput('#area-input', '1')`);
-        await sleep(200);
-        break;
-      }
-    } catch {}
-  }
 
     const h1 = await cdp.eval("document.querySelector('h1')?.textContent?.trim()");
     const initialResult = await cdp.eval("document.querySelector('[data-testid=\"primary-result-value\"]')?.textContent?.trim()");
@@ -1023,20 +981,6 @@ async function main() {
     await cdp.send("Page.navigate", { url: `${BASE_URL}/` });
     await sleep(1500);
     await injectHelper();
-
-  // Active hydration handshake: ensure React is interactive before running tests
-  for (let i = 0; i < 30; i++) {
-    await sleep(250);
-    try {
-      await cdp.eval(`window.__setReactInput('#area-input', '2')`);
-      const val = await cdp.eval(`document.querySelector('[data-testid="primary-result-value"]')?.textContent?.trim()`);
-      if (val === "80") {
-        await cdp.eval(`window.__setReactInput('#area-input', '1')`);
-        await sleep(200);
-        break;
-      }
-    } catch {}
-  }
 
     // Switch to Plot Dimensions tab
     await cdp.eval(`
