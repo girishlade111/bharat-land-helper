@@ -286,6 +286,7 @@ export default function ConversionLanding() {
 
   return (
     <AppProvider
+      key={route.path}
       initialRegionCode={route.stateCode}
       initialFromUnitId={route.fromUnit}
       initialToUnitId={route.toUnit}

@@ -18,6 +18,13 @@ import {
 } from "@/core";
 import type { Lang } from "@/data/translations";
 
+export interface ConversionStateUpdates {
+  value?: string;
+  fromUnitId?: string;
+  toUnitId?: string;
+  regionCode?: string;
+}
+
 export interface AppContextType {
   // Localization
   lang: Lang;
@@ -35,6 +42,7 @@ export interface AppContextType {
   setFromUnitId: (id: string) => void;
   setToUnitId: (id: string) => void;
   swapUnits: () => void;
+  setConversionState: (updates: ConversionStateUpdates) => void;
 
   // Input & Validation
   inputValue: string;
@@ -223,54 +231,67 @@ export function AppProvider({
     }
   }, []);
 
+  // Atomic conversion state and URL updater to eliminate stale URL parameters and transition races
+  const setConversionState = useCallback((updates: ConversionStateUpdates) => {
+    const nextValue = updates.value !== undefined ? updates.value : inputValue;
+    const nextRegion = updates.regionCode !== undefined ? updates.regionCode : regionCode;
+    let nextFrom = updates.fromUnitId !== undefined ? updates.fromUnitId : fromUnitId;
+    let nextTo = updates.toUnitId !== undefined ? updates.toUnitId : toUnitId;
+
+    // If region changed and units were NOT explicitly provided, apply safe transitions
+    if (updates.regionCode !== undefined && updates.regionCode !== regionCode) {
+      const regionUnits = getUnitsForRegion(nextRegion);
+
+      if (updates.fromUnitId === undefined) {
+        const currentFrom = getUnit(nextFrom);
+        if (currentFrom?.category === "regional" && !regionUnits.some((u) => u.id === currentFrom.id)) {
+          nextFrom = "acre";
+        }
+      }
+
+      if (updates.toUnitId === undefined) {
+        const currentTo = getUnit(nextTo);
+        if (currentTo?.category === "regional" && !regionUnits.some((u) => u.id === currentTo.id)) {
+          const firstRegional = regionUnits.find((u) => u.category === "regional");
+          nextTo = firstRegional ? firstRegional.id : "sqft";
+        }
+      }
+
+      if (nextFrom === nextTo) {
+        nextTo = nextFrom === "acre" ? "sqft" : "acre";
+      }
+    }
+
+    if (updates.value !== undefined) setInputValueState(nextValue);
+    if (updates.regionCode !== undefined) setRegionCode(nextRegion);
+    if (updates.fromUnitId !== undefined || nextFrom !== fromUnitId) setFromUnitIdState(nextFrom);
+    if (updates.toUnitId !== undefined || nextTo !== toUnitId) setToUnitIdState(nextTo);
+
+    updateUrl(nextValue, nextFrom, nextTo, nextRegion, lang);
+  }, [inputValue, fromUnitId, toUnitId, regionCode, lang, updateUrl]);
+
   const setInputValue = useCallback((val: string) => {
-    setInputValueState(val);
-    updateUrl(val, fromUnitId, toUnitId, regionCode, lang);
-  }, [fromUnitId, toUnitId, regionCode, lang, updateUrl]);
+    setConversionState({ value: val });
+  }, [setConversionState]);
 
   const setFromUnitId = useCallback((id: string) => {
-    setFromUnitIdState(id);
-    updateUrl(inputValue, id, toUnitId, regionCode, lang);
-  }, [inputValue, toUnitId, regionCode, lang, updateUrl]);
+    setConversionState({ fromUnitId: id });
+  }, [setConversionState]);
 
   const setToUnitId = useCallback((id: string) => {
-    setToUnitIdState(id);
-    updateUrl(inputValue, fromUnitId, id, regionCode, lang);
-  }, [inputValue, fromUnitId, regionCode, lang, updateUrl]);
+    setConversionState({ toUnitId: id });
+  }, [setConversionState]);
 
   const swapUnits = useCallback(() => {
-    setFromUnitIdState(toUnit.id);
-    setToUnitIdState(fromUnit.id);
-    updateUrl(inputValue, toUnit.id, fromUnit.id, regionCode, lang);
-  }, [fromUnit.id, toUnit.id, inputValue, regionCode, lang, updateUrl]);
+    setConversionState({
+      fromUnitId: toUnit.id,
+      toUnitId: fromUnit.id,
+    });
+  }, [toUnit.id, fromUnit.id, setConversionState]);
 
   const setSelectedRegionCode = useCallback((code: string) => {
-    setRegionCode(code);
-    const regionUnits = getUnitsForRegion(code);
-    let nextFrom = fromUnitId;
-    let nextTo = toUnitId;
-
-    // If fromUnit is regional and not in the new region, safely transition
-    if (fromUnit.category === "regional" && !regionUnits.some((u) => u.id === fromUnit.id)) {
-      nextFrom = "acre";
-      setFromUnitIdState(nextFrom);
-    }
-
-    // If toUnit is regional and not in the new region, safely transition
-    if (toUnit.category === "regional" && !regionUnits.some((u) => u.id === toUnit.id)) {
-      const firstRegional = regionUnits.find((u) => u.category === "regional");
-      nextTo = firstRegional ? firstRegional.id : "sqft";
-      setToUnitIdState(nextTo);
-    }
-
-    // Ensure from and to units are distinct after transition
-    if (nextFrom === nextTo) {
-      nextTo = nextFrom === "acre" ? "sqft" : "acre";
-      setToUnitIdState(nextTo);
-    }
-
-    updateUrl(inputValue, nextFrom, nextTo, code, lang);
-  }, [fromUnit, toUnit, fromUnitId, toUnitId, inputValue, lang, updateUrl]);
+    setConversionState({ regionCode: code });
+  }, [setConversionState]);
 
   const setSelectedState = useCallback((stateName: string) => {
     const r = getRegion(stateName);
@@ -299,6 +320,7 @@ export function AppProvider({
     setFromUnitId,
     setToUnitId,
     swapUnits,
+    setConversionState,
     inputValue,
     setInputValue,
     validation,

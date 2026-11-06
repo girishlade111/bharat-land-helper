@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useApp } from "@/context/AppContext";
-import { getUnit, formatIndianNumber } from "@/core";
+import { getUnit, formatIndianNumber, getRegion, ALL_REGIONS, resolveUnit } from "@/core";
 import { t } from "@/data/translations";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Bookmark, ChevronDown, Trash2, Upload, Plus } from "lucide-react";
 
-interface SavedLand {
+export interface SavedLand {
   id: string;
   name: string;
   value: number;
@@ -19,17 +19,106 @@ interface SavedLand {
   date: string;
 }
 
-const STORAGE_KEY = "bharat-land-parcels-v2";
+interface LegacySavedLand {
+  id?: string;
+  name?: string;
+  value?: number;
+  unitId?: string;
+  state?: string;
+  stateName?: string;
+  stateCode?: string;
+  sqftTotal?: number;
+  date?: string;
+}
 
-function loadParcels(): SavedLand[] {
+export const STORAGE_KEY = "bharat-land-parcels-v2";
+export const LEGACY_STORAGE_KEY = "bharat-land-parcels";
+export const PARCELS_MIGRATION_FLAG = "bharat_parcels_migrated_v1";
+
+export function migrateLegacyParcels(): SavedLand[] {
   if (typeof window === "undefined") {
     return [];
   }
+
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    const isMigrated = localStorage.getItem(PARCELS_MIGRATION_FLAG);
+    const v2Raw = localStorage.getItem(STORAGE_KEY);
+    const existingV2: SavedLand[] = v2Raw ? JSON.parse(v2Raw) : [];
+
+    if (isMigrated === "true") {
+      return Array.isArray(existingV2) ? existingV2 : [];
+    }
+
+    const legacyRaw = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (!legacyRaw) {
+      localStorage.setItem(PARCELS_MIGRATION_FLAG, "true");
+      return Array.isArray(existingV2) ? existingV2 : [];
+    }
+
+    let legacyItems: LegacySavedLand[] = [];
+    try {
+      legacyItems = JSON.parse(legacyRaw);
+    } catch {
+      legacyItems = [];
+    }
+
+    if (!Array.isArray(legacyItems) || legacyItems.length === 0) {
+      localStorage.setItem(PARCELS_MIGRATION_FLAG, "true");
+      return Array.isArray(existingV2) ? existingV2 : [];
+    }
+
+    const migrated: SavedLand[] = [];
+    for (const item of legacyItems) {
+      if (!item || typeof item !== "object") continue;
+
+      const rawState = item.state || item.stateName || item.stateCode || "MH";
+      const region = getRegion(rawState) || ALL_REGIONS.find((r) => r.code === "MH")!;
+      const stateCode = region.code;
+      const stateName = region.name;
+
+      const unit = resolveUnit(item.unitId, { stateCode }) || getUnit(item.unitId);
+      const unitId = unit ? unit.id : (item.unitId || "sqft");
+      const unitSqFt = unit ? unit.sqFt : 1;
+      const value = typeof item.value === "number" && !isNaN(item.value) ? item.value : 0;
+      const sqftTotal = typeof item.sqftTotal === "number" && !isNaN(item.sqftTotal)
+        ? item.sqftTotal
+        : value * unitSqFt;
+
+      migrated.push({
+        id: String(item.id || Date.now() + Math.random()),
+        name: String(item.name || "Untitled Land"),
+        value,
+        unitId,
+        stateCode,
+        stateName,
+        sqftTotal,
+        date: String(item.date || new Date().toLocaleDateString("en-IN")),
+      });
+    }
+
+    // Merge migrated items with any existing v2 items (avoiding duplicates by id)
+    const existingIds = new Set(existingV2.map((p) => p.id));
+    const combined = [...existingV2];
+    for (const m of migrated) {
+      if (!existingIds.has(m.id)) {
+        combined.push(m);
+        existingIds.add(m.id);
+      }
+    }
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(combined));
+    localStorage.setItem(PARCELS_MIGRATION_FLAG, "true");
+    return combined;
   } catch {
     return [];
   }
+}
+
+export function loadParcels(): SavedLand[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+  return migrateLegacyParcels();
 }
 
 export default function MyLandList() {
@@ -38,13 +127,16 @@ export default function MyLandList() {
   const [open, setOpen] = useState(false);
   const [parcels, setParcels] = useState<SavedLand[]>([]);
   const [landName, setLandName] = useState("");
+  const isLoadedRef = useRef(false);
 
-  // Safely load parcels after client hydration to prevent SSR mismatch
+  // Safely load parcels and migrate legacy records after client hydration
   useEffect(() => {
     setParcels(loadParcels());
+    isLoadedRef.current = true;
   }, []);
 
   useEffect(() => {
+    if (!isLoadedRef.current) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(parcels));
     } catch {

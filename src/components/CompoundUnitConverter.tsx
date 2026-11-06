@@ -28,7 +28,7 @@ interface CompoundUnitConverterProps {
 }
 
 export default function CompoundUnitConverter({ onTransferToConverter }: CompoundUnitConverterProps) {
-  const { lang, setInputValue, setFromUnitId, toUnit, setToUnitId, availableUnits } = useApp();
+  const { lang, toUnit, availableUnits, setConversionState } = useApp();
   const { toast } = useToast();
 
   const [selectedSystemId, setSelectedSystemId] = useState<string>("up_pucca");
@@ -113,14 +113,19 @@ export default function CompoundUnitConverter({ onTransferToConverter }: Compoun
   const handleTransfer = () => {
     if (calculation.totalSqFt <= 0) return;
     const rounded = Math.round(calculation.totalSqFt * 1000) / 1000;
-    setInputValue(String(rounded));
-    setFromUnitId("sqft");
 
     // Ensure To unit is not sqft so immediate conversion is meaningful
+    let nextTo = toUnit.id;
     if (toUnit.id === "sqft") {
       const regional = availableUnits.find((u) => u.category === "regional");
-      setToUnitId(regional ? regional.id : "acre");
+      nextTo = regional ? regional.id : "acre";
     }
+
+    setConversionState({
+      value: String(rounded),
+      fromUnitId: "sqft",
+      toUnitId: nextTo,
+    });
 
     if (onTransferToConverter) {
       onTransferToConverter(rounded);

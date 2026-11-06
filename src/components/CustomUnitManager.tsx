@@ -31,7 +31,7 @@ interface CustomUnitManagerProps {
 }
 
 export default function CustomUnitManager({ onApplyCustomUnit }: CustomUnitManagerProps) {
-  const { lang, setInputValue, setFromUnitId, setToUnitId } = useApp();
+  const { lang, setConversionState } = useApp();
   const { toast } = useToast();
 
   const [name, setName] = useState<string>("");
@@ -90,9 +90,11 @@ export default function CustomUnitManager({ onApplyCustomUnit }: CustomUnitManag
 
   const handleApplyPreset = (preset: CustomUnitPreset) => {
     const customUnitId = preset.id.startsWith("custom_") ? preset.id : `custom_${preset.id}`;
-    setInputValue("1");
-    setFromUnitId(customUnitId);
-    setToUnitId("acre");
+    setConversionState({
+      value: "1",
+      fromUnitId: customUnitId,
+      toUnitId: "acre",
+    });
 
     if (onApplyCustomUnit) {
       onApplyCustomUnit(preset);

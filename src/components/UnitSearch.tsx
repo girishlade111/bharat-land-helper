@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, X, ArrowRight, CornerDownRight } from "lucide-react";
 
 export default function UnitSearch() {
-  const { lang, setFromUnitId, setToUnitId, setSelectedRegionCode } = useApp();
+  const { lang, setConversionState } = useApp();
   const [query, setQuery] = useState("");
 
   const searchResults = useMemo(() => {
@@ -26,16 +26,23 @@ export default function UnitSearch() {
   }, [query]);
 
   const handleSelectUnit = (unit: LandUnit, role: "to" | "from") => {
-    // If unit is regional, switch region if needed
+    const updates: {
+      fromUnitId?: string;
+      toUnitId?: string;
+      regionCode?: string;
+    } = {};
+
     if (unit.category === "regional" && unit.regionCode !== "ALL") {
-      setSelectedRegionCode(unit.regionCode);
+      updates.regionCode = unit.regionCode;
     }
 
     if (role === "from") {
-      setFromUnitId(unit.id);
+      updates.fromUnitId = unit.id;
     } else {
-      setToUnitId(unit.id);
+      updates.toUnitId = unit.id;
     }
+
+    setConversionState(updates);
     setQuery("");
   };
 

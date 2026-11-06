@@ -28,7 +28,7 @@ interface ConversionHistoryProps {
 }
 
 export default function ConversionHistory({ onLoadConversion }: ConversionHistoryProps) {
-  const { lang, setInputValue, setFromUnitId, setToUnitId, setSelectedRegionCode } = useApp();
+  const { lang, setConversionState } = useApp();
   const { toast } = useToast();
 
   const [historyItems, setHistoryItems] = useState<ConversionHistoryItem[]>([]);
@@ -113,10 +113,12 @@ export default function ConversionHistory({ onLoadConversion }: ConversionHistor
     if (!resolvedFrom && item.isCustomUnit) {
       // Custom unit was deleted after this calculation occurred
       const sqFtValue = item.fromValue * (item.fromUnitSqFtSnapshot || 1);
-      setInputValue(String(sqFtValue));
-      setFromUnitId("sqft");
-      setToUnitId(item.toUnitId);
-      if (item.stateCode) setSelectedRegionCode(item.stateCode);
+      setConversionState({
+        value: String(sqFtValue),
+        fromUnitId: "sqft",
+        toUnitId: item.toUnitId,
+        regionCode: item.stateCode || undefined,
+      });
       toast({
         title: lang === "hi" ? "कस्टम इकाई उपलब्ध नहीं" : "Custom Unit Removed",
         description:
@@ -127,12 +129,12 @@ export default function ConversionHistory({ onLoadConversion }: ConversionHistor
       return;
     }
 
-    setInputValue(String(item.fromValue));
-    setFromUnitId(item.fromUnitId);
-    setToUnitId(item.toUnitId);
-    if (item.stateCode) {
-      setSelectedRegionCode(item.stateCode);
-    }
+    setConversionState({
+      value: String(item.fromValue),
+      fromUnitId: item.fromUnitId,
+      toUnitId: item.toUnitId,
+      regionCode: item.stateCode || undefined,
+    });
     if (onLoadConversion) {
       onLoadConversion(item);
     }

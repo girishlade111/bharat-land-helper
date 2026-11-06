@@ -27,7 +27,7 @@ interface PlotCalculatorProps {
 }
 
 export default function PlotCalculator({ onTransferToConverter }: PlotCalculatorProps) {
-  const { lang, selectedRegion, setInputValue, setFromUnitId, toUnit, setToUnitId, availableUnits } = useApp();
+  const { lang, selectedRegion, toUnit, availableUnits, setConversionState } = useApp();
   const { toast } = useToast();
 
   const [lengthStr, setLengthStr] = useState<string>("50");
@@ -73,14 +73,19 @@ export default function PlotCalculator({ onTransferToConverter }: PlotCalculator
   const handleTransfer = () => {
     if (!calculation.isValid || calculation.areaSqFt <= 0) return;
     const rounded = Math.round(calculation.areaSqFt * 1000) / 1000;
-    setInputValue(String(rounded));
-    setFromUnitId("sqft");
 
     // Ensure To unit is not sqft so immediate conversion is meaningful
+    let nextTo = toUnit.id;
     if (toUnit.id === "sqft") {
       const regional = availableUnits.find((u) => u.category === "regional");
-      setToUnitId(regional ? regional.id : "acre");
+      nextTo = regional ? regional.id : "acre";
     }
+
+    setConversionState({
+      value: String(rounded),
+      fromUnitId: "sqft",
+      toUnitId: nextTo,
+    });
 
     if (onTransferToConverter) {
       onTransferToConverter(rounded);
