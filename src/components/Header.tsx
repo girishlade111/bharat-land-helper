@@ -6,6 +6,55 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGr
 import { Button } from "@/components/ui/button";
 import { Globe, MapPin, Moon, Sun, Wrench } from "lucide-react";
 
+export function resolveLocalizedDestination(currentPathname: string, targetLang: Lang): {
+  targetPath: string;
+  hasDedicatedPage: boolean;
+} {
+  // Strip existing locale prefix to get the canonical English path
+  let canonicalPath = currentPathname;
+  if (canonicalPath.startsWith("/hi")) {
+    canonicalPath = canonicalPath.replace(/^\/hi(\/|$)/, "/") || "/";
+  } else if (canonicalPath.startsWith("/mr")) {
+    canonicalPath = canonicalPath.replace(/^\/mr(\/|$)/, "/") || "/";
+  }
+
+  // Canonical paths with dedicated localized static routes in Hindi and Marathi
+  const LOCALIZED_CANONICAL_PATHS = new Set([
+    "/",
+    "/tools",
+    "/tools/plot-area-calculator",
+    "/tools/compound-land-unit-converter",
+    "/tools/land-unit-comparison",
+    "/tools/custom-land-unit-calculator",
+  ]);
+
+  if (LOCALIZED_CANONICAL_PATHS.has(canonicalPath)) {
+    if (targetLang === "hi") {
+      return {
+        targetPath: canonicalPath === "/" ? "/hi" : `/hi${canonicalPath}`,
+        hasDedicatedPage: true,
+      };
+    }
+    if (targetLang === "mr") {
+      return {
+        targetPath: canonicalPath === "/" ? "/mr" : `/mr${canonicalPath}`,
+        hasDedicatedPage: true,
+      };
+    }
+    return {
+      targetPath: canonicalPath,
+      hasDedicatedPage: true,
+    };
+  }
+
+  // Route does NOT have a dedicated localized page (e.g., /convert/*, /about, /faq, /privacy, /terms).
+  // Stay on current path to avoid generating 404 routes.
+  return {
+    targetPath: canonicalPath,
+    hasDedicatedPage: false,
+  };
+}
+
 export default function Header() {
   const { lang, setLang, selectedRegion, setSelectedRegionCode, availableRegions } = useApp();
   const [isDark, setIsDark] = useState(false);
@@ -56,22 +105,13 @@ export default function Header() {
   const handleLangChange = (nextLang: Lang) => {
     setLang(nextLang);
     const pathname = location.pathname;
-    let cleanPath = pathname;
-    if (cleanPath.startsWith("/hi")) {
-      cleanPath = cleanPath.replace(/^\/hi/, "") || "/";
-    } else if (cleanPath.startsWith("/mr")) {
-      cleanPath = cleanPath.replace(/^\/mr/, "") || "/";
-    }
+    const { targetPath, hasDedicatedPage } = resolveLocalizedDestination(pathname, nextLang);
 
-    let targetPath = cleanPath;
-    if (nextLang === "hi") {
-      targetPath = cleanPath === "/" ? "/hi" : `/hi${cleanPath}`;
-    } else if (nextLang === "mr") {
-      targetPath = cleanPath === "/" ? "/mr" : `/mr${cleanPath}`;
-    }
-
-    if (targetPath !== pathname) {
-      navigate(targetPath);
+    if (hasDedicatedPage && targetPath !== pathname) {
+      navigate({
+        pathname: targetPath,
+        search: location.search,
+      });
     }
   };
 

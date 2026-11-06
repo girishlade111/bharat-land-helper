@@ -9,7 +9,7 @@
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import React from "react";
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, fireEvent } from "@testing-library/react";
 import {
   migrateLegacyParcels,
   loadParcels,
@@ -20,6 +20,9 @@ import {
 } from "../components/MyLandList";
 import { AppProvider, useApp } from "../context/AppContext";
 import { getConversionRouteByPath } from "../data/seoRoutes";
+import { resolveLocalizedDestination } from "../components/Header";
+import ConversionHistory from "../components/ConversionHistory";
+import { saveHistory, type ConversionHistoryItem } from "../core/history";
 
 describe("PR #2 Pre-Merge Remediation Suite", () => {
   beforeEach(() => {
@@ -297,13 +300,12 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
     expect(screen.getByTestId("to").textContent).toBe("bigha_up_pucca");
   });
 
-  it("REM-009: Unkeyed AppProvider would fail to reinitialize props on route change", () => {
+  it("REM-009: AppProvider re-synchronizes props on rerender or key change", () => {
     function TestConsumer() {
       const { selectedRegion } = useApp();
       return <span data-testid="region">{selectedRegion.code}</span>;
     }
 
-    // Without key, React reuses same provider state
     const { rerender } = render(
       <AppProvider initialRegionCode="MH">
         <TestConsumer />
@@ -316,8 +318,7 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
         <TestConsumer />
       </AppProvider>
     );
-    // Notice: without key, useState initial value is ignored on rerender!
-    expect(screen.getByTestId("region").textContent).toBe("MH");
+    expect(screen.getByTestId("region").textContent).toBe("UP");
   });
 
   // =========================================================================
@@ -531,5 +532,402 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
     // Incompatible MH Guntha must safely transition to standard 'acre'
     expect(ctxRef!.fromUnit.id).toBe("acre");
     expect(ctxRef!.toUnit.id).toBe("sqft");
+  });
+
+  // =========================================================================
+  // Defect 5: Route-Aware Default URL Serialization (REM-016 to REM-019)
+  // =========================================================================
+
+  it("REM-016: Landing route (/convert/hectare-to-acre) serializes from=acre when user changes source", () => {
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+
+    function TestHarness() {
+      ctxRef = useApp();
+      return null;
+    }
+
+    render(
+      <AppProvider initialRegionCode="MH" initialFromUnitId="hectare" initialToUnitId="acre" initialInputValue="1">
+        <TestHarness />
+      </AppProvider>
+    );
+
+    const replaceSpy = vi.spyOn(window.history, "replaceState");
+
+    // Change source from route default 'hectare' to 'acre'
+    act(() => {
+      ctxRef!.setConversionState({ fromUnitId: "acre" });
+    });
+
+    expect(ctxRef!.fromUnit.id).toBe("acre");
+    expect(replaceSpy).toHaveBeenCalled();
+    const lastUrl = replaceSpy.mock.calls[replaceSpy.mock.calls.length - 1][2] as string;
+    // Must NOT omit from=acre because route default is hectare!
+    expect(lastUrl).toContain("from=acre");
+
+    replaceSpy.mockRestore();
+  });
+
+  it("REM-017: Landing route mount restores from=acre from URL query string over route default", () => {
+    window.history.replaceState(null, "", "/convert/hectare-to-acre?from=acre");
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+
+    function TestHarness() {
+      ctxRef = useApp();
+      return null;
+    }
+
+    render(
+      <AppProvider initialRegionCode="MH" initialFromUnitId="hectare" initialToUnitId="acre" initialInputValue="1">
+        <TestHarness />
+      </AppProvider>
+    );
+
+    // fromUnit must be 'acre' from URL, NOT 'hectare'
+    expect(ctxRef!.fromUnit.id).toBe("acre");
+    expect(ctxRef!.toUnit.id).toBe("acre");
+  });
+
+  it("REM-018: Resetting unit back to route default removes parameter from URL", () => {
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+
+    function TestHarness() {
+      ctxRef = useApp();
+      return null;
+    }
+
+    render(
+      <AppProvider initialRegionCode="MH" initialFromUnitId="hectare" initialToUnitId="acre" initialInputValue="1">
+        <TestHarness />
+      </AppProvider>
+    );
+
+    const replaceSpy = vi.spyOn(window.history, "replaceState");
+
+    // Change to 'sqyd' -> from is serialized
+    act(() => {
+      ctxRef!.setConversionState({ fromUnitId: "sqyd" });
+    });
+    let lastUrl = replaceSpy.mock.calls[replaceSpy.mock.calls.length - 1][2] as string;
+    expect(lastUrl).toContain("from=sqyd");
+
+    // Change back to route default 'hectare' -> from is omitted
+    act(() => {
+      ctxRef!.setConversionState({ fromUnitId: "hectare" });
+    });
+    lastUrl = replaceSpy.mock.calls[replaceSpy.mock.calls.length - 1][2] as string;
+    expect(lastUrl).not.toContain("from=");
+
+    replaceSpy.mockRestore();
+  });
+
+  it("REM-019: Popstate event (browser Back/Forward) re-synchronizes AppContext state", () => {
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+
+    function TestHarness() {
+      ctxRef = useApp();
+      return null;
+    }
+
+    render(
+      <AppProvider initialRegionCode="MH" initialFromUnitId="acre" initialToUnitId="guntha_mh" initialInputValue="1">
+        <TestHarness />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.inputValue).toBe("1");
+
+    // Simulate browser Back button navigating to ?v=50&from=sqyd
+    window.history.replaceState(null, "", "/?v=50&from=sqyd");
+    act(() => {
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+
+    expect(ctxRef!.inputValue).toBe("50");
+    expect(ctxRef!.fromUnit.id).toBe("sqyd");
+  });
+
+  // =========================================================================
+  // Defect 6: Safe Multilingual Route Navigation (REM-020 to REM-025)
+  // =========================================================================
+
+  it("REM-020: Resolves homepage locale switches cleanly (en -> hi -> mr -> en)", () => {
+    expect(resolveLocalizedDestination("/", "hi")).toEqual({
+      targetPath: "/hi",
+      hasDedicatedPage: true,
+    });
+    expect(resolveLocalizedDestination("/hi", "mr")).toEqual({
+      targetPath: "/mr",
+      hasDedicatedPage: true,
+    });
+    expect(resolveLocalizedDestination("/mr", "en")).toEqual({
+      targetPath: "/",
+      hasDedicatedPage: true,
+    });
+  });
+
+  it("REM-021: Resolves tools hub locale switches cleanly", () => {
+    expect(resolveLocalizedDestination("/tools", "hi")).toEqual({
+      targetPath: "/hi/tools",
+      hasDedicatedPage: true,
+    });
+    expect(resolveLocalizedDestination("/hi/tools", "mr")).toEqual({
+      targetPath: "/mr/tools",
+      hasDedicatedPage: true,
+    });
+    expect(resolveLocalizedDestination("/mr/tools", "en")).toEqual({
+      targetPath: "/tools",
+      hasDedicatedPage: true,
+    });
+  });
+
+  it("REM-022: Resolves dedicated tool page locale switches cleanly", () => {
+    expect(resolveLocalizedDestination("/tools/plot-area-calculator", "hi")).toEqual({
+      targetPath: "/hi/tools/plot-area-calculator",
+      hasDedicatedPage: true,
+    });
+    expect(resolveLocalizedDestination("/hi/tools/plot-area-calculator", "mr")).toEqual({
+      targetPath: "/mr/tools/plot-area-calculator",
+      hasDedicatedPage: true,
+    });
+    expect(resolveLocalizedDestination("/mr/tools/plot-area-calculator", "en")).toEqual({
+      targetPath: "/tools/plot-area-calculator",
+      hasDedicatedPage: true,
+    });
+  });
+
+  it("REM-023: Never fabricates non-existent /hi/convert/* or /mr/convert/* landing routes", () => {
+    const landingPath = "/convert/acre-to-sqft";
+    expect(resolveLocalizedDestination(landingPath, "hi")).toEqual({
+      targetPath: "/convert/acre-to-sqft",
+      hasDedicatedPage: false,
+    });
+    expect(resolveLocalizedDestination(landingPath, "mr")).toEqual({
+      targetPath: "/convert/acre-to-sqft",
+      hasDedicatedPage: false,
+    });
+  });
+
+  it("REM-024: Keeps canonical path on English-only informational pages (about, faq, privacy, terms)", () => {
+    for (const p of ["/about", "/faq", "/privacy", "/terms", "/contact"]) {
+      expect(resolveLocalizedDestination(p, "hi")).toEqual({
+        targetPath: p,
+        hasDedicatedPage: false,
+      });
+      expect(resolveLocalizedDestination(p, "mr")).toEqual({
+        targetPath: p,
+        hasDedicatedPage: false,
+      });
+    }
+  });
+
+  it("REM-025: Strips subpath prefixes correctly when switching from localized tool pages", () => {
+    expect(resolveLocalizedDestination("/hi/tools/land-unit-comparison", "mr")).toEqual({
+      targetPath: "/mr/tools/land-unit-comparison",
+      hasDedicatedPage: true,
+    });
+    expect(resolveLocalizedDestination("/mr/tools/compound-land-unit-converter", "en")).toEqual({
+      targetPath: "/tools/compound-land-unit-converter",
+      hasDedicatedPage: true,
+    });
+  });
+
+  // =========================================================================
+  // Defect 7: Custom Target History Restoration (REM-026 to REM-029)
+  // =========================================================================
+
+  it("REM-026: Restoring history with deleted custom target unit alerts user and falls back safely", () => {
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+
+    function TestHarness() {
+      ctxRef = useApp();
+      return (
+        <div>
+          <ConversionHistory />
+        </div>
+      );
+    }
+
+    const itemWithDeletedTarget: ConversionHistoryItem = {
+      id: "hist-del-target",
+      dataVersion: "v2",
+      timestamp: new Date().toISOString(),
+      fromValue: 2,
+      fromUnitId: "acre",
+      fromUnitName: "Acre",
+      fromUnitSqFtSnapshot: 43560,
+      toValue: 80,
+      toUnitId: "custom_deleted_plot", // deleted custom unit!
+      toUnitName: "My Family Plot",
+      toUnitSqFtSnapshot: 1089,
+      formattedResult: "80",
+      stateCode: "MH",
+      stateName: "Maharashtra",
+      formula: "2 Acre = 80 My Family Plot",
+      isCustomUnit: true,
+      snapshotProvenance: "VERIFIED_SNAPSHOT",
+    };
+
+    saveHistory([itemWithDeletedTarget]);
+
+    render(
+      <AppProvider initialRegionCode="MH" initialFromUnitId="acre" initialToUnitId="guntha_mh" initialInputValue="1">
+        <TestHarness />
+      </AppProvider>
+    );
+
+    // Click rerun button
+    const rerunBtn = screen.getByTitle(/पुनः लोड करें|Re-run calculation/);
+    fireEvent.click(rerunBtn);
+
+    // Source unit is loaded
+    expect(ctxRef!.inputValue).toBe("2");
+    expect(ctxRef!.fromUnit.id).toBe("acre");
+    // Target must NOT silently become regional fallback while claiming success;
+    // target is safely set to standard 'sqft'
+    expect(ctxRef!.toUnit.id).toBe("sqft");
+  });
+
+  it("REM-027: Restoring history with both custom units deleted loads sqft equivalent into Acre", () => {
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+
+    function TestHarness() {
+      ctxRef = useApp();
+      return (
+        <div>
+          <ConversionHistory />
+        </div>
+      );
+    }
+
+    const itemBothDeleted: ConversionHistoryItem = {
+      id: "hist-both-deleted",
+      dataVersion: "v2",
+      timestamp: new Date().toISOString(),
+      fromValue: 10,
+      fromUnitId: "custom_farm_block", // deleted
+      fromUnitName: "Farm Block",
+      fromUnitSqFtSnapshot: 5000,
+      toValue: 25,
+      toUnitId: "custom_parcel_sub", // deleted
+      toUnitName: "Parcel Sub",
+      toUnitSqFtSnapshot: 2000,
+      formattedResult: "25",
+      stateCode: "MH",
+      stateName: "Maharashtra",
+      formula: "10 Farm Block = 25 Parcel Sub",
+      isCustomUnit: true,
+      snapshotProvenance: "VERIFIED_SNAPSHOT",
+    };
+
+    saveHistory([itemBothDeleted]);
+
+    render(
+      <AppProvider initialRegionCode="MH" initialFromUnitId="acre" initialToUnitId="guntha_mh" initialInputValue="1">
+        <TestHarness />
+      </AppProvider>
+    );
+
+    const rerunBtn = screen.getByTitle(/पुनः लोड करें|Re-run calculation/);
+    fireEvent.click(rerunBtn);
+
+    // Converted to total sqft: 10 * 5000 = 50,000 sq ft into Acre
+    expect(ctxRef!.inputValue).toBe("50000");
+    expect(ctxRef!.fromUnit.id).toBe("sqft");
+    expect(ctxRef!.toUnit.id).toBe("acre");
+  });
+
+  it("REM-028: Restoring history with deleted custom source recovers sqft equivalent into target", () => {
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+
+    function TestHarness() {
+      ctxRef = useApp();
+      return (
+        <div>
+          <ConversionHistory />
+        </div>
+      );
+    }
+
+    const itemSourceDeleted: ConversionHistoryItem = {
+      id: "hist-source-deleted",
+      dataVersion: "v2",
+      timestamp: new Date().toISOString(),
+      fromValue: 5,
+      fromUnitId: "custom_village_katha", // deleted
+      fromUnitName: "Village Katha",
+      fromUnitSqFtSnapshot: 1500,
+      toValue: 7500,
+      toUnitId: "sqft", // active valid target!
+      toUnitName: "Square Feet",
+      formattedResult: "7,500",
+      stateCode: "UP",
+      stateName: "Uttar Pradesh",
+      formula: "5 Village Katha = 7,500 sq ft",
+      isCustomUnit: true,
+      snapshotProvenance: "VERIFIED_SNAPSHOT",
+    };
+
+    saveHistory([itemSourceDeleted]);
+
+    render(
+      <AppProvider initialRegionCode="UP" initialFromUnitId="acre" initialToUnitId="sqft" initialInputValue="1">
+        <TestHarness />
+      </AppProvider>
+    );
+
+    const rerunBtn = screen.getByTitle(/पुनः लोड करें|Re-run calculation/);
+    fireEvent.click(rerunBtn);
+
+    // 5 * 1500 = 7500 sq ft loaded into sqft target
+    expect(ctxRef!.inputValue).toBe("7500");
+    expect(ctxRef!.fromUnit.id).toBe("sqft");
+    expect(ctxRef!.toUnit.id).toBe("sqft");
+  });
+
+  it("REM-029: Restoring history with active units loads exact calculation cleanly", () => {
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+
+    function TestHarness() {
+      ctxRef = useApp();
+      return (
+        <div>
+          <ConversionHistory />
+        </div>
+      );
+    }
+
+    const normalItem: ConversionHistoryItem = {
+      id: "hist-normal",
+      dataVersion: "v2",
+      timestamp: new Date().toISOString(),
+      fromValue: 3,
+      fromUnitId: "acre",
+      fromUnitName: "Acre",
+      toValue: 120,
+      toUnitId: "guntha_mh",
+      toUnitName: "Guntha",
+      formattedResult: "120",
+      stateCode: "MH",
+      stateName: "Maharashtra",
+      formula: "3 Acre = 120 Guntha",
+      isCustomUnit: false,
+    };
+
+    saveHistory([normalItem]);
+
+    render(
+      <AppProvider initialRegionCode="MH" initialFromUnitId="sqft" initialToUnitId="sqyd" initialInputValue="100">
+        <TestHarness />
+      </AppProvider>
+    );
+
+    const rerunBtn = screen.getByTitle(/पुनः लोड करें|Re-run calculation/);
+    fireEvent.click(rerunBtn);
+
+    expect(ctxRef!.inputValue).toBe("3");
+    expect(ctxRef!.fromUnit.id).toBe("acre");
+    expect(ctxRef!.toUnit.id).toBe("guntha_mh");
   });
 });

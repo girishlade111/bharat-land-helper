@@ -67,8 +67,9 @@ export default function PrivacyPolicy() {
 
           <section className="rounded-xl border border-border/50 bg-card p-5">
             <h2 className="mb-3 text-base font-bold text-foreground">4. Third-Party Services</h2>
-            <p>Our website uses the following third-party services for functionality only:</p>
+            <p>Our website uses the following third-party services for functionality and performance monitoring:</p>
             <ul className="mt-2 list-disc space-y-1.5 pl-5">
+              <li><strong>Vercel Web Analytics</strong> — We use privacy-friendly, cookieless Vercel Web Analytics strictly to measure aggregate traffic (page views, generalized region, device type). It does not collect PII, store cookies, or record your land measurements, calculations, custom factors, or saved parcels.</li>
               <li><strong>Google Fonts</strong> — We load the Inter and Noto Sans Devanagari fonts from Google Fonts. Google may collect anonymized usage data as described in their <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Privacy Policy</a>.</li>
               <li><strong>WhatsApp Share</strong> — When you click the "WhatsApp Share" button, it opens WhatsApp's web interface (wa.me) with a pre-filled message. No data is sent to our servers.</li>
             </ul>

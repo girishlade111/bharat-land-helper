@@ -108,40 +108,88 @@ export default function ConversionHistory({ onLoadConversion }: ConversionHistor
   };
 
   const handleReRun = (item: ConversionHistoryItem) => {
-    // Check if unit exists in canonical registry or custom presets
+    // Check if both units exist in canonical registry or active custom presets
     const resolvedFrom = getUnit(item.fromUnitId);
-    if (!resolvedFrom && item.isCustomUnit) {
-      // Custom unit was deleted after this calculation occurred
-      const sqFtValue = item.fromValue * (item.fromUnitSqFtSnapshot || 1);
+    const resolvedTo = getUnit(item.toUnitId);
+
+    // Case 1: Both source and target exist
+    if (resolvedFrom && resolvedTo) {
       setConversionState({
-        value: String(sqFtValue),
-        fromUnitId: "sqft",
+        value: String(item.fromValue),
+        fromUnitId: item.fromUnitId,
         toUnitId: item.toUnitId,
         regionCode: item.stateCode || undefined,
       });
+      if (onLoadConversion) {
+        onLoadConversion(item);
+      }
       toast({
-        title: lang === "hi" ? "कस्टम इकाई उपलब्ध नहीं" : "Custom Unit Removed",
-        description:
-          lang === "hi"
-            ? "यह कस्टम इकाई हटा दी गई है। मूल क्षेत्रफल (वर्ग फीट) लोड किया गया।"
-            : `Custom unit '${item.fromUnitName}' was deleted. Loaded ${sqFtValue.toLocaleString("en-IN")} sq ft equivalent.`,
+        title: lang === "hi" ? "गणना लोड की गई" : "Conversion Loaded",
+        description: `${item.fromValue} ${item.fromUnitName} → ${item.toUnitName}`,
       });
       return;
     }
 
-    setConversionState({
-      value: String(item.fromValue),
-      fromUnitId: item.fromUnitId,
-      toUnitId: item.toUnitId,
-      regionCode: item.stateCode || undefined,
-    });
-    if (onLoadConversion) {
-      onLoadConversion(item);
+    // Case 2: Target unit was deleted (e.g. custom target removed)
+    if (resolvedFrom && !resolvedTo) {
+      const fallbackTarget = resolvedFrom.id === "sqft" ? "acre" : "sqft";
+      setConversionState({
+        value: String(item.fromValue),
+        fromUnitId: resolvedFrom.id,
+        toUnitId: fallbackTarget,
+        regionCode: item.stateCode || undefined,
+      });
+      toast({
+        title: lang === "hi" ? "कस्टम लक्ष्य इकाई उपलब्ध नहीं" : "Custom Target Unit Removed",
+        description:
+          lang === "hi"
+            ? `लक्ष्य इकाई '${item.toUnitName}' हटा दी गई है। ${item.fromValue} ${resolvedFrom.name} को ${fallbackTarget} में लोड किया गया। सहेजा गया परिणाम: ${item.formattedResult} ${item.toUnitName}`
+            : `Custom target '${item.toUnitName}' was deleted. Loaded ${item.fromValue} ${resolvedFrom.name} into ${fallbackTarget}. Saved result was ${item.formattedResult} ${item.toUnitName}.`,
+        variant: "destructive",
+      });
+      return;
     }
-    toast({
-      title: lang === "hi" ? "गणना लोड की गई" : "Conversion Loaded",
-      description: `${item.fromValue} ${item.fromUnitName} → ${item.toUnitName}`,
-    });
+
+    // Case 3: Source unit was deleted, but target unit exists
+    if (!resolvedFrom && resolvedTo) {
+      const fromSqFt = item.fromUnitSqFtSnapshot || 1;
+      const totalSqFt = item.fromValue * fromSqFt;
+      setConversionState({
+        value: String(totalSqFt),
+        fromUnitId: "sqft",
+        toUnitId: resolvedTo.id,
+        regionCode: item.stateCode || undefined,
+      });
+      toast({
+        title: lang === "hi" ? "कस्टम स्रोत इकाई उपलब्ध नहीं" : "Custom Source Unit Removed",
+        description:
+          lang === "hi"
+            ? `कस्टम स्रोत इकाई '${item.fromUnitName}' हटा दी गई है। ${totalSqFt.toLocaleString("en-IN")} वर्ग फीट लोड किया गया।`
+            : `Custom unit '${item.fromUnitName}' was deleted. Loaded ${totalSqFt.toLocaleString("en-IN")} sq ft equivalent into ${resolvedTo.name}.`,
+      });
+      return;
+    }
+
+    // Case 4: Both source and target were deleted
+    if (!resolvedFrom && !resolvedTo) {
+      const fromSqFt = item.fromUnitSqFtSnapshot || 1;
+      const totalSqFt = item.fromValue * fromSqFt;
+      setConversionState({
+        value: String(totalSqFt),
+        fromUnitId: "sqft",
+        toUnitId: "acre",
+        regionCode: item.stateCode || undefined,
+      });
+      toast({
+        title: lang === "hi" ? "कस्टम इकाइयाँ उपलब्ध नहीं" : "Custom Units Unavailable",
+        description:
+          lang === "hi"
+            ? `मूल इकाइयाँ '${item.fromUnitName}' और '${item.toUnitName}' हटा दी गई हैं। ${totalSqFt.toLocaleString("en-IN")} वर्ग फीट लोड किया गया। मूल परिणाम: ${item.formattedResult}`
+            : `Custom units '${item.fromUnitName}' and '${item.toUnitName}' were deleted. Loaded ${totalSqFt.toLocaleString("en-IN")} sq ft into Acre. Stored result: ${item.formattedResult}.`,
+        variant: "destructive",
+      });
+      return;
+    }
   };
 
   return (
@@ -332,6 +380,7 @@ export default function ConversionHistory({ onLoadConversion }: ConversionHistor
                   variant="outline"
                   size="sm"
                   onClick={() => handleReRun(item)}
+                  title={lang === "hi" ? "पुनः लोड करें" : "Re-run calculation"}
                   className="h-7 text-xs gap-1 px-2.5"
                 >
                   <RotateCcw className="h-3 w-3" />
