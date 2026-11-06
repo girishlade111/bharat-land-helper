@@ -2,6 +2,8 @@
 // Custom Local Land Measurement Unit Engine for Bharat Land Converter
 // Enables users to define, preview, and persist non-standard customary local land factors
 
+import type { LandUnit } from "./types";
+
 export type CustomReferenceUnit = "sqft" | "sqm" | "sqyd" | "acre";
 
 export interface CustomReferenceOption {
@@ -31,6 +33,35 @@ export interface CustomUnitPreset {
 
 export const CUSTOM_UNITS_STORAGE_KEY = "bharat_custom_units_v1";
 
+// Reserved official unit keywords that cannot be used as custom unit names to avoid collision
+const RESERVED_UNIT_NAMES = new Set([
+  "acre",
+  "hectare",
+  "sqft",
+  "sqm",
+  "sqyd",
+  "guntha",
+  "bigha",
+  "biswa",
+  "biswansi",
+  "kattha",
+  "katha",
+  "dhur",
+  "dhurki",
+  "chatak",
+  "kanal",
+  "marla",
+  "sarsahi",
+  "killa",
+  "ground",
+  "cent",
+  "decimal",
+  "gaj",
+  "vigha",
+  "lecha",
+  "ankanam",
+]);
+
 export function calculateCustomUnitSqFt(factor: number, referenceUnit: CustomReferenceUnit): number {
   const ref = CUSTOM_REFERENCE_UNITS.find((r) => r.id === referenceUnit) || CUSTOM_REFERENCE_UNITS[0];
   return factor * ref.toSqFt;
@@ -47,6 +78,17 @@ export function validateCustomUnitInput(
   }
   if (trimmedName.length > 50) {
     return { isValid: false, factor: 0, sqFtEquivalent: 0, error: "Unit name cannot exceed 50 characters.", errorHi: "इकाई का नाम 50 वर्णों से अधिक नहीं हो सकता।" };
+  }
+
+  const normalized = trimmedName.toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (RESERVED_UNIT_NAMES.has(normalized)) {
+    return {
+      isValid: false,
+      factor: 0,
+      sqFtEquivalent: 0,
+      error: `'${trimmedName}' is an official standard unit name. Please use a distinctive custom name (e.g. 'Village Hath Bigha').`,
+      errorHi: `'${trimmedName}' एक आधिकारिक मानक इकाई नाम है। कृपया कोई विशिष्ट कस्टम नाम चुनें।`,
+    };
   }
 
   let num = 0;
@@ -76,7 +118,7 @@ export function loadCustomPresets(): CustomUnitPreset[] {
     return [];
   }
   try {
-    const data = localStorage.getItem(CUSTOM_UNITS_STORAGE_KEY);
+    const data = window.localStorage.getItem(CUSTOM_UNITS_STORAGE_KEY);
     if (!data) return [];
     const parsed = JSON.parse(data);
     return Array.isArray(parsed) ? parsed : [];
@@ -127,10 +169,51 @@ export function deleteCustomPreset(id: string): CustomUnitPreset[] {
   }
   try {
     const existing = loadCustomPresets();
-    const filtered = existing.filter((p) => p.id !== id);
+    const filtered = existing.filter((p) => p.id !== id && `custom_${p.id}` !== id);
     window.localStorage.setItem(CUSTOM_UNITS_STORAGE_KEY, JSON.stringify(filtered));
     return filtered;
   } catch {
     return [];
   }
+}
+
+/**
+ * Transforms a stored custom preset into a full typed LandUnit for mathematical calculation.
+ * Preserves strict isolation with "CUSTOM" region code and "CUSTOMARY_UNOFFICIAL" confidence.
+ */
+export function customPresetToLandUnit(preset: CustomUnitPreset): LandUnit {
+  const unitId = preset.id.startsWith("custom_") ? preset.id : `custom_${preset.id}`;
+  const sqFt = preset.sqFtEquivalent;
+
+  return {
+    id: unitId,
+    name: `${preset.name} (Custom)`,
+    nameHi: `${preset.name} (कस्टम)`,
+    aliases: [preset.name.toLowerCase(), `custom_${preset.name.toLowerCase()}`],
+    category: "regional",
+    sqFt,
+    sqMeters: sqFt * 0.09290304,
+    regionCode: "CUSTOM",
+    regionName: "Custom Local Measurement",
+    variantName: `Custom: 1 = ${preset.factor} ${preset.referenceUnit}`,
+    variantNameHi: `कस्टम: 1 = ${preset.factor} ${preset.referenceUnit}`,
+    note: preset.note || `Custom user factor: 1 ${preset.name} = ${sqFt.toLocaleString("en-IN")} sq ft`,
+    noteHi: preset.note || `कस्टम कारक: 1 ${preset.name} = ${sqFt.toLocaleString("en-IN")} वर्ग फीट`,
+    provenance: {
+      sourceName: "User Defined Customary Factor",
+      referenceDocument: `Local Custom Factor: 1 Unit = ${preset.factor} ${preset.referenceUnit}`,
+      legalStatus: "Unverified private customary definition; not legally recognized by revenue authorities",
+      confidence: "CUSTOMARY_UNOFFICIAL",
+      evidenceClassification: "CUSTOMARY_UNOFFICIAL",
+      qualification: "Private user-defined conversion factor stored in browser localStorage. Not recognized for statutory deed registration.",
+    },
+  };
+}
+
+/**
+ * Returns all active custom units transformed into LandUnit objects.
+ */
+export function getCustomLandUnits(): LandUnit[] {
+  const presets = loadCustomPresets();
+  return presets.map(customPresetToLandUnit);
 }

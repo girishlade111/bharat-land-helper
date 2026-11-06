@@ -25,6 +25,12 @@ export interface UnitSubdivision {
   nameHi: string;
 }
 
+export type EvidenceClassification =
+  | "PRIMARY_STATUTORY_ACT"
+  | "OFFICIAL_SURVEY_MANUAL"
+  | "GAZETTEER_RECORD"
+  | "CUSTOMARY_UNOFFICIAL";
+
 export interface UnitProvenance {
   sourceName: string;
   referenceDocument: string;
@@ -32,6 +38,10 @@ export interface UnitProvenance {
   confidence: ConfidenceLevel;
   qualification?: string;
   qualificationHi?: string;
+  documentUrl?: string;
+  sectionOrPage?: string;
+  evidenceClassification?: EvidenceClassification;
+  lastVerifiedDate?: string;
 }
 
 export interface LandUnit {
