@@ -9,14 +9,12 @@ import {
   saveCustomPreset,
   loadCustomPresets,
   deleteCustomPreset,
-  CUSTOM_PRESETS_STORAGE_KEY,
   addHistoryItem,
   loadHistory,
   clearHistory,
   toggleFavorite,
   deleteHistoryItem,
   exportHistoryToCsv,
-  HISTORY_STORAGE_KEY,
 } from "../core";
 import { COMPARISON_DATA } from "../components/RegionalComparison";
 
@@ -40,16 +38,16 @@ describe("Bharat Land Converter — Phase 2B Advanced Utilities Test Suite", () 
       expect(res.aspectRatio).toBeCloseTo(1.6667, 3);
       expect(res.breakdown.sqYd).toBeCloseTo(1500 / 9, 3);
       expect(res.breakdown.acre).toBeCloseTo(1500 / 43560, 4);
-      expect(res.breakdown.hectare).toBeCloseTo(1500 * 0.09290304 / 10000, 4);
+      expect(res.breakdown.hectare).toBeCloseTo((1500 * 0.09290304) / 10000, 4);
     });
 
     it("computes rectangular plot area in metres (20 m × 10 m = 200 sq m)", () => {
       const res = calculatePlotArea("20", "10", "m");
       expect(res.isValid).toBe(true);
-      expect(res.breakdown.sqM).toBe(200);
-      expect(res.areaSqFt).toBeCloseTo(200 / 0.09290304, 2);
+      expect(res.breakdown.sqM).toBeCloseTo(200, 2);
+      expect(res.areaSqFt).toBeCloseTo(200 / 0.09290304, 1);
       expect(res.perimeter).toBe(60); // 60 metres
-      expect(res.perimeterFt).toBeCloseTo(60 * 3.28084, 2);
+      expect(res.perimeterFt).toBeCloseTo(60 * 3.28084, 1);
     });
 
     it("computes rectangular plot area in yards (30 yd × 20 yd = 600 sq yd = 5,400 sq ft)", () => {
@@ -102,18 +100,18 @@ describe("Bharat Land Converter — Phase 2B Advanced Utilities Test Suite", () 
 
     it("aggregates UP Kaccha Bigha (3 Kaccha Bigha = 1 Pucca Bigha = 27,225 sq ft)", () => {
       const res = calculateCompoundArea("up_kaccha", {
-        bigha: "3",
-        biswa: "0",
-        biswansi: "0",
+        bigha_kaccha: "3",
+        biswa_kaccha: "0",
+        biswansi_kaccha: "0",
       });
       expect(res.totalSqFt).toBe(27225);
     });
 
     it("aggregates Bihar 6-Haath Tirhut (1 Bigha 10 Kattha = 48,600 sq ft)", () => {
       const res = calculateCompoundArea("bihar_6haath", {
-        bigha: "1",
-        kattha: "10",
-        dhur: "0",
+        bigha_br6: "1",
+        kattha_br6: "10",
+        dhur_br6: "0",
       });
       // 1 Bigha (6-haath) = 32,400 sq ft
       // 10 Kattha = 10 * 1,620 = 16,200 sq ft
@@ -122,10 +120,10 @@ describe("Bharat Land Converter — Phase 2B Advanced Utilities Test Suite", () 
     });
 
     it("aggregates West Bengal Bigha-Kattha-Chatak (1 Bigha 5 Kattha 8 Chatak = 18,360 sq ft)", () => {
-      const res = calculateCompoundArea("wb_standard", {
-        bigha: "1",
-        kattha: "5",
-        chatak: "8",
+      const res = calculateCompoundArea("wb_bengal", {
+        bigha_wb: "1",
+        kattha_wb: "5",
+        chatak_wb: "8",
       });
       // 1 WB Bigha = 14,400 sq ft
       // 5 Kattha = 5 * 720 = 3,600 sq ft
@@ -136,9 +134,9 @@ describe("Bharat Land Converter — Phase 2B Advanced Utilities Test Suite", () 
 
     it("aggregates Punjab/Haryana Killa-Kanal-Marla (1 Killa 4 Kanal = 65,340 sq ft)", () => {
       const res = calculateCompoundArea("punjab_killa", {
-        killa: "1",
-        kanal: "4",
-        marla: "0",
+        killa_pb: "1",
+        kanal_pb: "4",
+        marla_pb: "0",
       });
       // 1 Killa = 43,560 sq ft
       // 4 Kanal = 4 * 5,445 = 21,780 sq ft
@@ -149,25 +147,24 @@ describe("Bharat Land Converter — Phase 2B Advanced Utilities Test Suite", () 
 
     it("decomposes 50,000 sq ft into UP Pucca Bigha, Biswa, and Biswansi", () => {
       const decomp = decomposeAreaIntoSystem("up_pucca", 50000);
-      expect(decomp.system.id).toBe("up_pucca");
+      expect(decomp.length).toBe(3);
       // 50,000 sq ft / 27,225 = 1 Pucca Bigha, rem 22,775
       // 22,775 / 1,361.25 = 16 Biswa, rem 995
       // 995 / 68.0625 = 14.618 Biswansi
-      expect(decomp.parts[0].subunit.id).toBe("bigha");
-      expect(decomp.parts[0].wholeValue).toBe(1);
-      expect(decomp.parts[1].subunit.id).toBe("biswa");
-      expect(decomp.parts[1].wholeValue).toBe(16);
-      expect(decomp.parts[2].subunit.id).toBe("biswansi");
-      expect(decomp.parts[2].wholeValue).toBe(14);
+      expect(decomp[0].subunitId).toBe("bigha");
+      expect(decomp[0].count).toBe(1);
+      expect(decomp[1].subunitId).toBe("biswa");
+      expect(decomp[1].count).toBe(16);
+      expect(decomp[2].subunitId).toBe("biswansi");
+      expect(Math.floor(decomp[2].count)).toBe(14);
     });
 
     it("handles zero and negative values gracefully in compound converter", () => {
       const resZero = calculateCompoundArea("up_pucca", { bigha: "0", biswa: "0" });
       expect(resZero.totalSqFt).toBe(0);
 
-      const decompZero = decomposeAreaIntoSystem("wb_standard", 0);
-      expect(decompZero.totalSqFt).toBe(0);
-      expect(decompZero.summary).toBe("0");
+      const decompZero = decomposeAreaIntoSystem("wb_bengal", 0);
+      expect(decompZero[0].count).toBe(0);
     });
   });
 

@@ -27,12 +27,17 @@ Object.defineProperty(window, "localStorage", {
   value: storageMock,
   writable: true,
 });
-try {
-  Object.defineProperty(globalThis, "localStorage", {
-    value: storageMock,
-    writable: true,
-  });
-} catch {}
+if (typeof globalThis !== "undefined") {
+  try {
+    Object.defineProperty(globalThis, "localStorage", {
+      value: storageMock,
+      writable: true,
+    });
+  } catch (err) {
+    // Already defined or restricted in environment
+    void err;
+  }
+}
 
 // Mock matchMedia
 Object.defineProperty(window, "matchMedia", {

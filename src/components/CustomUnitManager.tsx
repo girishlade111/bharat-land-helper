@@ -60,7 +60,8 @@ export default function CustomUnitManager({ onApplyCustomUnit }: CustomUnitManag
       return;
     }
 
-    const result = saveCustomPreset(name, factorStr as any, referenceUnit, note);
+    const numFactor = parseFloat(factorStr.replace(/,/g, "")) || 0;
+    const result = saveCustomPreset(name, numFactor, referenceUnit, note);
     if (result.success && result.preset) {
       setPresets(loadCustomPresets());
       toast({

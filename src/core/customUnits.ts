@@ -91,13 +91,17 @@ export function saveCustomPreset(
   referenceUnit: CustomReferenceUnit,
   note?: string
 ): { success: boolean; preset?: CustomUnitPreset; error?: string } {
+  if (typeof window === "undefined" || !window.localStorage) {
+    return { success: false, error: "Browser storage is not available." };
+  }
+
   const validation = validateCustomUnitInput(name, factor, referenceUnit);
   if (!validation.isValid) {
     return { success: false, error: validation.error };
   }
 
   const existing = loadCustomPresets();
-  const id = `custom_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+  const id = `custom_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const preset: CustomUnitPreset = {
     id,
     name: name.trim(),
@@ -110,7 +114,7 @@ export function saveCustomPreset(
 
   const updated = [preset, ...existing.filter((p) => p.name.toLowerCase() !== preset.name.toLowerCase())];
   try {
-    localStorage.setItem(CUSTOM_UNITS_STORAGE_KEY, JSON.stringify(updated));
+    window.localStorage.setItem(CUSTOM_UNITS_STORAGE_KEY, JSON.stringify(updated));
     return { success: true, preset };
   } catch {
     return { success: false, error: "Could not save to browser storage." };
@@ -124,7 +128,7 @@ export function deleteCustomPreset(id: string): CustomUnitPreset[] {
   try {
     const existing = loadCustomPresets();
     const filtered = existing.filter((p) => p.id !== id);
-    localStorage.setItem(CUSTOM_UNITS_STORAGE_KEY, JSON.stringify(filtered));
+    window.localStorage.setItem(CUSTOM_UNITS_STORAGE_KEY, JSON.stringify(filtered));
     return filtered;
   } catch {
     return [];
