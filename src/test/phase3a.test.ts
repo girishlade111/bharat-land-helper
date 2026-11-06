@@ -28,7 +28,7 @@ describe("Bharat Land Converter — Phase 3A Verification Tests", () => {
       expect(mpStandard?.sqFt).toBe(27225);
       expect(mpStandard?.provenance?.confidence).toBe("WIDELY_USED_CUSTOMARY");
       expect(mpStandard?.provenance?.referenceDocument).not.toContain("Section 68");
-      expect(mpStandard?.provenance?.qualification).toContain("customary");
+      expect(mpStandard?.provenance?.qualification).toContain("patwari");
     });
 
     it("P3A-TEST-002: bigha_mp_gwalior has correct WIDELY_USED_CUSTOMARY classification and 12,000 sq ft factor", () => {
@@ -36,7 +36,7 @@ describe("Bharat Land Converter — Phase 3A Verification Tests", () => {
       expect(mpGwalior).toBeDefined();
       expect(mpGwalior?.sqFt).toBe(12000);
       expect(mpGwalior?.provenance?.confidence).toBe("WIDELY_USED_CUSTOMARY");
-      expect(mpGwalior?.provenance?.referenceDocument).toContain("Gwalior State Land Records");
+      expect(mpGwalior?.provenance?.referenceDocument).toContain("Gwalior Revenue Settlement");
       expect(mpGwalior?.provenance?.referenceDocument).not.toContain("Section 68");
     });
 
