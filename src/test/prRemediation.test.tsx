@@ -31,6 +31,16 @@ import {
   deleteCustomPreset,
   loadCustomPresets,
   buildConversionSearchParams,
+  getUnitsForRegion,
+  getRegion,
+  ALL_REGIONS,
+  resolveUnit,
+  getUnit,
+  convertArea,
+  LEGACY_UNIT_INVENTORY,
+  LEGACY_UNIT_MAP,
+  getLegacyUnitInfo,
+  isLegacyUnitId,
   type ConversionHistoryItem,
 } from "../core";
 import { MemoryRouter, useLocation } from "react-router-dom";
@@ -1485,5 +1495,645 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
     );
 
     expect(ctxRef!.fromUnit.id).toBe("acre");
+  });
+
+  // =========================================================================
+  // Phase 2: Shared Regional Unit Availability (REGION-001 to REGION-015)
+  // =========================================================================
+
+  it("REGION-001: Haryana contains Kanal in available units", () => {
+    const hrUnits = getUnitsForRegion("HR");
+    expect(hrUnits.some((u) => u.id === "kanal")).toBe(true);
+  });
+
+  it("REGION-002: Haryana contains Marla in available units", () => {
+    const hrUnits = getUnitsForRegion("HR");
+    expect(hrUnits.some((u) => u.id === "marla")).toBe(true);
+  });
+
+  it("REGION-003: Haryana contains Killa and Sarsahi in available units", () => {
+    const hrUnits = getUnitsForRegion("HR");
+    expect(hrUnits.some((u) => u.id === "killa")).toBe(true);
+    expect(hrUnits.some((u) => u.id === "sarsahi")).toBe(true);
+  });
+
+  it("REGION-004: Jharkhand contains applicable Bihar traditional units", () => {
+    const jhUnits = getUnitsForRegion("JH");
+    expect(jhUnits.some((u) => u.id === "bigha_bihar_standard")).toBe(true);
+    expect(jhUnits.some((u) => u.id === "kattha_bihar_standard")).toBe(true);
+    expect(jhUnits.some((u) => u.id === "dhur_bihar_standard")).toBe(true);
+  });
+
+  it("REGION-005: Karnataka contains declared Guntha in available units", () => {
+    const kaUnits = getUnitsForRegion("KA");
+    expect(kaUnits.some((u) => u.id === "guntha_mh")).toBe(true);
+  });
+
+  it("REGION-006: Gujarat contains declared Guntha in available units", () => {
+    const gjUnits = getUnitsForRegion("GJ");
+    expect(gjUnits.some((u) => u.id === "guntha_mh")).toBe(true);
+  });
+
+  it("REGION-007: Himachal Pradesh includes declared Kanal and Marla", () => {
+    const hpUnits = getUnitsForRegion("HP");
+    expect(hpUnits.some((u) => u.id === "kanal")).toBe(true);
+    expect(hpUnits.some((u) => u.id === "marla")).toBe(true);
+  });
+
+  it("REGION-008: Chhattisgarh contains declared shared MP units", () => {
+    const cgUnits = getUnitsForRegion("CG");
+    expect(cgUnits.some((u) => u.id === "bigha_mp_standard")).toBe(true);
+    expect(cgUnits.some((u) => u.id === "bigha_mp_gwalior")).toBe(true);
+  });
+
+  it("REGION-009: Selected region has no duplicate unit IDs across all 36 regions", () => {
+    for (const r of ALL_REGIONS) {
+      const units = getUnitsForRegion(r.code);
+      const ids = units.map((u) => u.id);
+      const unique = new Set(ids);
+      expect(unique.size).toBe(ids.length);
+    }
+  });
+
+  it("REGION-010: Unrelated traditional units are excluded from specific regions", () => {
+    const hrUnits = getUnitsForRegion("HR");
+    // Haryana should not include West Bengal Chatak or Tamil Nadu Ground
+    expect(hrUnits.some((u) => u.id === "chatak_wb")).toBe(false);
+    expect(hrUnits.some((u) => u.id === "ground_tn")).toBe(false);
+  });
+
+  it("REGION-011: All declared primaryTraditionalUnits resolve to valid registry definitions", () => {
+    const missing: { region: string; unitId: string }[] = [];
+    for (const r of ALL_REGIONS) {
+      for (const unitId of r.primaryTraditionalUnits) {
+        const u = getUnit(unitId) || resolveUnit(unitId, { stateCode: r.code });
+        if (!u) missing.push({ region: r.code, unitId });
+      }
+    }
+    expect(missing).toEqual([]);
+  });
+
+  it("REGION-012: Conversions through shared regional units use intended canonical factors", () => {
+    const kanal = getUnit("kanal")!;
+    const guntha = getUnit("guntha_mh")!;
+    const sqft = getUnit("sqft")!;
+
+    expect(convertArea(1, kanal, sqft).rawResult).toBe(5445);
+    expect(convertArea(1, guntha, sqft).rawResult).toBe(1089);
+  });
+
+  it("REGION-013: Switching regions updates available units while preserving state safely", () => {
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>Region: {ctxRef.selectedRegion.code}</div>;
+    }
+
+    render(
+      <AppProvider initialRegionCode="HR">
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.availableUnits.some((u) => u.id === "kanal")).toBe(true);
+
+    act(() => {
+      ctxRef!.setSelectedRegionCode("KA");
+    });
+
+    expect(ctxRef!.availableUnits.some((u) => u.id === "guntha_mh")).toBe(true);
+    expect(ctxRef!.availableUnits.some((u) => u.id === "kanal")).toBe(false);
+  });
+
+  it("REGION-014: Existing custom units remain available in shared regional unit listings", () => {
+    saveCustomPreset("Farm Unit", 5000, "sqft", "Private field");
+    const hrUnits = getUnitsForRegion("HR");
+    expect(hrUnits.some((u) => u.name.includes("Farm Unit"))).toBe(true);
+  });
+
+  it("REGION-015: Regional metadata consistency: declared traditional units match getUnitsForRegion", () => {
+    const hr = getRegion("HR")!;
+    const hrUnits = getUnitsForRegion("HR");
+    for (const id of hr.primaryTraditionalUnits) {
+      expect(hrUnits.some((u) => u.id === id)).toBe(true);
+    }
+  });
+
+  // =========================================================================
+  // Phase 3 & 4: Legacy Concrete Unit IDs & Factor Differences
+  // =========================================================================
+
+  it("LEGACY-001: Inventory has 39 entries matching legacy commit 2b11877", () => {
+    expect(LEGACY_UNIT_INVENTORY.length).toBe(39);
+    expect(LEGACY_UNIT_MAP.size).toBe(39);
+  });
+
+  it("LEGACY-002: Resolves legacy bigha_up to canonical bigha_up_pucca", () => {
+    const res = resolveUnit("bigha_up");
+    expect(res).toBeDefined();
+    expect(res!.id).toBe("bigha_up_pucca");
+  });
+
+  it("LEGACY-003: Resolves legacy biswa_up to canonical biswa_up_pucca", () => {
+    const res = resolveUnit("biswa_up");
+    expect(res).toBeDefined();
+    expect(res!.id).toBe("biswa_up_pucca");
+  });
+
+  it("LEGACY-004: Resolves legacy bigha_bihar to canonical bigha_bihar_standard", () => {
+    const res = resolveUnit("bigha_bihar");
+    expect(res).toBeDefined();
+    expect(res!.id).toBe("bigha_bihar_standard");
+  });
+
+  it("LEGACY-005: Resolves legacy bigha_pucca_rj to canonical bigha_rj_pucca", () => {
+    const res = resolveUnit("bigha_pucca_rj");
+    expect(res).toBeDefined();
+    expect(res!.id).toBe("bigha_rj_pucca");
+  });
+
+  it("LEGACY-006: Resolves legacy guntha_ka to canonical guntha_mh", () => {
+    const res = resolveUnit("guntha_ka");
+    expect(res).toBeDefined();
+    expect(res!.id).toBe("guntha_mh");
+  });
+
+  it("LEGACY-007: Resolves legacy ankanam to canonical ankanam_ap", () => {
+    const res = resolveUnit("ankanam");
+    expect(res).toBeDefined();
+    expect(res!.id).toBe("ankanam_ap");
+  });
+
+  it("LEGACY-008: Resolves legacy bigha_mp to canonical bigha_mp_gwalior", () => {
+    const res = resolveUnit("bigha_mp");
+    expect(res).toBeDefined();
+    expect(res!.id).toBe("bigha_mp_gwalior");
+  });
+
+  it("LEGACY-009: Resolves legacy cent to canonical decimal_standard", () => {
+    const res = resolveUnit("cent");
+    expect(res).toBeDefined();
+    expect(res!.id).toBe("decimal_standard");
+  });
+
+  it("LEGACY-010: getUnit resolves legacy concrete IDs directly", () => {
+    expect(getUnit("bigha_up")?.id).toBe("bigha_up_pucca");
+    expect(getUnit("biswa_up")?.id).toBe("biswa_up_pucca");
+    expect(getUnit("bigha_bihar")?.id).toBe("bigha_bihar_standard");
+    expect(getUnit("guntha_ka")?.id).toBe("guntha_mh");
+  });
+
+  it("FACTOR-001: Discloses factor difference for UP Bigha (27,000 vs 27,225 sq ft)", () => {
+    const info = getLegacyUnitInfo("bigha_up")!;
+    expect(info.factorDiffers).toBe(true);
+    expect(info.legacySqFt).toBe(27000);
+    expect(info.canonicalSqFt).toBe(27225);
+  });
+
+  it("FACTOR-002: Discloses factor difference for UP Biswa (1,350 vs 1,361.25 sq ft)", () => {
+    const info = getLegacyUnitInfo("biswa_up")!;
+    expect(info.factorDiffers).toBe(true);
+    expect(info.legacySqFt).toBe(1350);
+    expect(info.canonicalSqFt).toBe(1361.25);
+  });
+
+  it("FACTOR-003: Discloses factor difference for UP Biswansi (67.5 vs 68.0625 sq ft)", () => {
+    const info = getLegacyUnitInfo("biswansi_up")!;
+    expect(info.factorDiffers).toBe(true);
+    expect(info.legacySqFt).toBe(67.5);
+    expect(info.canonicalSqFt).toBe(68.0625);
+  });
+
+  it("FACTOR-004: Discloses factor difference for Bihar Bigha (27,220 vs 27,225 sq ft)", () => {
+    const info = getLegacyUnitInfo("bigha_bihar")!;
+    expect(info.factorDiffers).toBe(true);
+    expect(info.legacySqFt).toBe(27220);
+    expect(info.canonicalSqFt).toBe(27225);
+  });
+
+  it("FACTOR-005: Discloses factor difference for Bihar Kattha (1,361 vs 1,361.25 sq ft)", () => {
+    const info = getLegacyUnitInfo("kattha_bihar")!;
+    expect(info.factorDiffers).toBe(true);
+    expect(info.legacySqFt).toBe(1361);
+    expect(info.canonicalSqFt).toBe(1361.25);
+  });
+
+  it("FACTOR-006: Discloses factor difference for West Bengal Chatak (180 vs 45 sq ft)", () => {
+    const info = getLegacyUnitInfo("chatak_wb")!;
+    expect(info.factorDiffers).toBe(true);
+    expect(info.legacySqFt).toBe(180);
+    expect(info.canonicalSqFt).toBe(45);
+  });
+
+  it("FACTOR-007: Discloses factor difference for Gujarat Vigha (17,427 vs 17,424 sq ft)", () => {
+    const info = getLegacyUnitInfo("bigha_gj")!;
+    expect(info.factorDiffers).toBe(true);
+    expect(info.legacySqFt).toBe(17427);
+    expect(info.canonicalSqFt).toBe(17424);
+  });
+
+  it("FACTOR-008: AppContext records legacyNotice when URL contains unit with factor difference", () => {
+    window.history.replaceState(null, "", "/?v=1&u=bigha_up&s=Uttar%20Pradesh");
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>From: {ctxRef.fromUnit.id}</div>;
+    }
+
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.fromUnit.id).toBe("bigha_up_pucca");
+    expect(ctxRef!.selectedRegion.code).toBe("UP");
+    expect(ctxRef!.legacyNotice).toBeDefined();
+    expect(ctxRef!.legacyNotice!.legacyUnitId).toBe("bigha_up");
+    expect(ctxRef!.legacyNotice!.legacySqFt).toBe(27000);
+    expect(ctxRef!.legacyNotice!.canonicalSqFt).toBe(27225);
+  });
+
+  it("FACTOR-009: AppContext does not record legacyNotice when URL contains unit with identical factor", () => {
+    window.history.replaceState(null, "", "/?v=1&u=bigha_pucca_rj&s=Rajasthan");
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>From: {ctxRef.fromUnit.id}</div>;
+    }
+
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.fromUnit.id).toBe("bigha_rj_pucca");
+    expect(ctxRef!.selectedRegion.code).toBe("RJ");
+    expect(ctxRef!.legacyNotice).toBeNull();
+  });
+
+  it("FACTOR-010: Unknown legacy ID in URL safely falls back to Acre without crashing", () => {
+    window.history.replaceState(null, "", "/?v=1&u=completely_unknown_unit&s=UP");
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>From: {ctxRef.fromUnit.id}</div>;
+    }
+
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.fromUnit.id).toBe("acre");
+  });
+
+  // =========================================================================
+  // Phase 5: Legacy Saved Parcel Consistency (PARCEL-009 to PARCEL-016)
+  // =========================================================================
+
+  it("PARCEL-009: Migrates legacy parcel with bigha_up while preserving exact sqftTotal = 27000", () => {
+    const legacy = [
+      {
+        id: "p-up-1",
+        name: "Legacy UP Farm",
+        value: 1,
+        unitId: "bigha_up",
+        state: "Uttar Pradesh",
+        sqftTotal: 27000,
+      },
+    ];
+    window.localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(legacy));
+
+    const migrated = migrateLegacyParcels();
+    expect(migrated.length).toBe(1);
+    expect(migrated[0].name).toBe("Legacy UP Farm");
+    expect(migrated[0].unitId).toBe("bigha_up_pucca");
+    expect(migrated[0].sqftTotal).toBe(27000);
+    expect(migrated[0].legacyFactor).toBe(27000);
+    expect(migrated[0].legacyNote).toContain("27,000");
+  });
+
+  it("PARCEL-010: Preserves legacy sqftTotal for Bihar Bigha parcel", () => {
+    const legacy = [
+      {
+        id: "p-br-1",
+        name: "Bihar Plot",
+        value: 2,
+        unitId: "bigha_bihar",
+        state: "Bihar",
+        sqftTotal: 54440,
+      },
+    ];
+    window.localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(legacy));
+
+    const migrated = migrateLegacyParcels();
+    expect(migrated[0].sqftTotal).toBe(54440);
+    expect(migrated[0].legacyFactor).toBe(27220);
+  });
+
+  it("PARCEL-011: Migrates legacy Rajasthan Pucca parcel without factor difference note", () => {
+    const legacy = [
+      {
+        id: "p-rj-1",
+        name: "Jaipur Land",
+        value: 1,
+        unitId: "bigha_pucca_rj",
+        state: "Rajasthan",
+        sqftTotal: 27225,
+      },
+    ];
+    window.localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(legacy));
+
+    const migrated = migrateLegacyParcels();
+    expect(migrated[0].unitId).toBe("bigha_rj_pucca");
+    expect(migrated[0].sqftTotal).toBe(27225);
+    expect(migrated[0].legacyNote).toBeUndefined();
+  });
+
+  it("PARCEL-012: Migrates legacy parcel with stateCode instead of stateName", () => {
+    const legacy = [
+      {
+        id: "p-mh-1",
+        name: "Pune Guntha",
+        value: 40,
+        unitId: "guntha_mh",
+        stateCode: "MH",
+        sqftTotal: 43560,
+      },
+    ];
+    window.localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(legacy));
+
+    const migrated = migrateLegacyParcels();
+    expect(migrated[0].stateCode).toBe("MH");
+    expect(migrated[0].stateName).toBe("Maharashtra");
+  });
+
+  it("PARCEL-013: Export parcel summary includes legacy note when present", () => {
+    const parcel: SavedLand = {
+      id: "p-note-1",
+      name: "Disclosed Farm",
+      value: 1,
+      unitId: "bigha_up_pucca",
+      stateCode: "UP",
+      stateName: "Uttar Pradesh",
+      sqftTotal: 27000,
+      date: "06/11/2026",
+      legacyNote: "Historical factor: 27,000 sq ft/unit",
+    };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify([parcel]));
+    window.localStorage.setItem(PARCELS_MIGRATION_FLAG, "true");
+
+    const loaded = loadParcels();
+    expect(loaded[0].legacyNote).toBe("Historical factor: 27,000 sq ft/unit");
+  });
+
+  it("PARCEL-014: Migration is idempotent and does not overwrite existing v2 parcels", () => {
+    const v2Existing: SavedLand[] = [
+      {
+        id: "existing-1",
+        name: "Existing V2",
+        value: 5,
+        unitId: "acre",
+        stateCode: "MH",
+        stateName: "Maharashtra",
+        sqftTotal: 217800,
+        date: "06/11/2026",
+      },
+    ];
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(v2Existing));
+    window.localStorage.setItem(PARCELS_MIGRATION_FLAG, "true");
+
+    const loaded = loadParcels();
+    expect(loaded.length).toBe(1);
+    expect(loaded[0].id).toBe("existing-1");
+  });
+
+  it("PARCEL-015: Old records in bharat-land-parcels are not deleted prematurely", () => {
+    const legacy = [{ id: "l1", name: "Keep Me", value: 1, unitId: "sqft", sqftTotal: 1 }];
+    window.localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(legacy));
+
+    migrateLegacyParcels();
+    expect(window.localStorage.getItem(LEGACY_STORAGE_KEY)).not.toBeNull();
+  });
+
+  it("PARCEL-016: Deletion safety removes parcel cleanly from v2 storage", () => {
+    const parcels: SavedLand[] = [
+      { id: "del-1", name: "To Delete", value: 1, unitId: "acre", stateCode: "MH", stateName: "Maharashtra", sqftTotal: 43560, date: "06/11/2026" },
+      { id: "keep-1", name: "To Keep", value: 2, unitId: "acre", stateCode: "MH", stateName: "Maharashtra", sqftTotal: 87120, date: "06/11/2026" },
+    ];
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(parcels));
+    window.localStorage.setItem(PARCELS_MIGRATION_FLAG, "true");
+
+    const remaining = parcels.filter((p) => p.id !== "del-1");
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
+
+    const finalLoaded = JSON.parse(window.localStorage.getItem(STORAGE_KEY)!);
+    expect(finalLoaded.length).toBe(1);
+    expect(finalLoaded[0].id).toBe("keep-1");
+  });
+
+  // =========================================================================
+  // Phase 6: Old Shared URL Regression (URL-001 to URL-010)
+  // =========================================================================
+
+  it("URL-001: /?v=1&u=bigha_up&s=Uttar%20Pradesh restores UP, bigha_up_pucca, value 1", () => {
+    window.history.replaceState(null, "", "/?v=1&u=bigha_up&s=Uttar%20Pradesh");
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>From: {ctxRef.fromUnit.id}</div>;
+    }
+
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.inputValue).toBe("1");
+    expect(ctxRef!.fromUnit.id).toBe("bigha_up_pucca");
+    expect(ctxRef!.selectedRegion.code).toBe("UP");
+    expect(ctxRef!.legacyNotice).not.toBeNull();
+  });
+
+  it("URL-002: /?v=2&u=biswa_up&s=Uttar%20Pradesh restores UP, biswa_up_pucca, value 2", () => {
+    window.history.replaceState(null, "", "/?v=2&u=biswa_up&s=Uttar%20Pradesh");
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>From: {ctxRef.fromUnit.id}</div>;
+    }
+
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.inputValue).toBe("2");
+    expect(ctxRef!.fromUnit.id).toBe("biswa_up_pucca");
+    expect(ctxRef!.selectedRegion.code).toBe("UP");
+  });
+
+  it("URL-003: /?v=1&u=bigha_bihar&s=Bihar restores Bihar, bigha_bihar_standard, value 1", () => {
+    window.history.replaceState(null, "", "/?v=1&u=bigha_bihar&s=Bihar");
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>From: {ctxRef.fromUnit.id}</div>;
+    }
+
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.fromUnit.id).toBe("bigha_bihar_standard");
+    expect(ctxRef!.selectedRegion.code).toBe("BR");
+  });
+
+  it("URL-004: /?v=1&u=bigha_pucca_rj&s=Rajasthan restores Rajasthan, bigha_rj_pucca", () => {
+    window.history.replaceState(null, "", "/?v=1&u=bigha_pucca_rj&s=Rajasthan");
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>From: {ctxRef.fromUnit.id}</div>;
+    }
+
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.fromUnit.id).toBe("bigha_rj_pucca");
+    expect(ctxRef!.selectedRegion.code).toBe("RJ");
+  });
+
+  it("URL-005: /?v=1&u=bigha_kaccha_rj&s=Rajasthan restores Rajasthan, bigha_rj_kaccha", () => {
+    window.history.replaceState(null, "", "/?v=1&u=bigha_kaccha_rj&s=Rajasthan");
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>From: {ctxRef.fromUnit.id}</div>;
+    }
+
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.fromUnit.id).toBe("bigha_rj_kaccha");
+    expect(ctxRef!.selectedRegion.code).toBe("RJ");
+  });
+
+  it("URL-006: /?v=1&u=bigha_mp&s=Madhya%20Pradesh restores MP, bigha_mp_gwalior", () => {
+    window.history.replaceState(null, "", "/?v=1&u=bigha_mp&s=Madhya%20Pradesh");
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>From: {ctxRef.fromUnit.id}</div>;
+    }
+
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.fromUnit.id).toBe("bigha_mp_gwalior");
+    expect(ctxRef!.selectedRegion.code).toBe("MP");
+  });
+
+  it("URL-007: /?v=40&u=guntha_mh&s=Maharashtra restores Maharashtra, guntha_mh, value 40", () => {
+    window.history.replaceState(null, "", "/?v=40&u=guntha_mh&s=Maharashtra");
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>From: {ctxRef.fromUnit.id}</div>;
+    }
+
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.inputValue).toBe("40");
+    expect(ctxRef!.fromUnit.id).toBe("guntha_mh");
+    expect(ctxRef!.selectedRegion.code).toBe("MH");
+  });
+
+  it("URL-008: /?v=1&u=guntha_ka&s=Karnataka restores Karnataka, guntha_mh", () => {
+    window.history.replaceState(null, "", "/?v=1&u=guntha_ka&s=Karnataka");
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>From: {ctxRef.fromUnit.id}</div>;
+    }
+
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.fromUnit.id).toBe("guntha_mh");
+    expect(ctxRef!.selectedRegion.code).toBe("KA");
+  });
+
+  it("URL-009: /?v=8&u=kanal&s=Punjab restores Punjab, kanal, value 8", () => {
+    window.history.replaceState(null, "", "/?v=8&u=kanal&s=Punjab");
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>From: {ctxRef.fromUnit.id}</div>;
+    }
+
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.inputValue).toBe("8");
+    expect(ctxRef!.fromUnit.id).toBe("kanal");
+    expect(ctxRef!.selectedRegion.code).toBe("PB");
+  });
+
+  it("URL-010: /?v=1&u=bigha_wb&s=West%20Bengal restores West Bengal, bigha_wb, value 1", () => {
+    window.history.replaceState(null, "", "/?v=1&u=bigha_wb&s=West%20Bengal");
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>From: {ctxRef.fromUnit.id}</div>;
+    }
+
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.fromUnit.id).toBe("bigha_wb");
+    expect(ctxRef!.selectedRegion.code).toBe("WB");
   });
 });

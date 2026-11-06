@@ -518,3 +518,4 @@ export function isLegacyUnitId(id: string): boolean {
   if (!id) return false;
   return LEGACY_UNIT_MAP.has(id.toLowerCase().trim());
 }
+
