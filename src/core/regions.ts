@@ -307,8 +307,8 @@ export const ALL_REGIONS: Region[] = [
     officialSystem: "Bigha-Kattha-Chatak & Acre-Decimal",
     officialSystemHi: "बीघा-कट्ठा-छटाक और एकड़-डेसिमल",
     primaryTraditionalUnits: ["bigha_wb", "kattha_wb", "chatak_wb", "decimal_standard"],
-    notes: "Banglarbhumi portal uses Acre-Decimal. 1 Bigha = 20 Kattha = 320 Chatak = 14,400 sq ft (1/3 Acre). 1 Chatak = 45 sq ft.",
-    notesHi: "बांगलारभूमि पर एकड़-डेसिमल। 1 बीघा = 20 कट्ठा = 320 छटाक = 14,400 वर्ग फीट। 1 छटाक = 45 वर्ग फीट।",
+    notes: "Banglarbhumi portal uses Acre-Decimal. 1 Bigha = 20 Kattha = 320 Chatak = 14,400 sq ft (1,600 sq yd ≈ 0.3306 Acre). 1 Chatak = 45 sq ft.",
+    notesHi: "बांगलारभूमि पर एकड़-डेसिमल। 1 बीघा = 20 कट्ठा = 320 छटाक = 14,400 वर्ग फीट (≈ 0.3306 एकड़)। 1 छटाक = 45 वर्ग फीट।",
   },
 
   // 8 Union Territories

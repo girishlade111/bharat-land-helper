@@ -50,7 +50,7 @@ const REFS = [
     title: "West Bengal & Assam",
     titleHi: "पश्चिम बंगाल और असम",
     items: [
-      "1 Bigha (WB) = 20 Kattha = 14,400 sq ft (1/3 Acre = 1,600 sq yd)",
+      "1 Bigha (WB) = 20 Kattha = 14,400 sq ft (1,600 sq yd ≈ 0.3306 Acre; note: exact 1/3 Acre is 14,520 sq ft)",
       "1 Kattha (WB / Cottah) = 16 Chatak = 720 sq ft = 80 sq yd",
       "1 Chatak (WB) = 45 sq ft (5 sq yd = 1/16 Kattha)",
       "1 Bigha (Assam) = 5 Kattha = 100 Lecha = 14,400 sq ft",
