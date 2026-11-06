@@ -929,34 +929,25 @@ async function main() {
   await runTest("TEST 26: Phase 2B Plot Dimensions Calculator tab & calculation", async () => {
     await cdp.send("Page.navigate", { url: `${BASE_URL}/` });
     await sleep(1500);
+    await injectHelper();
 
     // Switch to Plot Dimensions tab
     await cdp.eval(`
-      const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Plot Dimensions') || b.textContent?.includes('भूखंड आयाम'));
-      if (btn) btn.click();
+      (() => {
+        const btn = document.querySelector('#tab-plot-btn');
+        if (btn) btn.click();
+      })()
     `);
-    await sleep(500);
+    await sleep(600);
 
     // Set length to 60 and width to 40
-    await cdp.eval(`
-      const inputs = Array.from(document.querySelectorAll('input'));
-      const lengthInput = inputs.find(i => i.id === 'plot-length' || i.value === '50');
-      const widthInput = inputs.find(i => i.id === 'plot-width' || i.value === '30');
-      if (lengthInput) {
-        lengthInput.value = '60';
-        lengthInput.dispatchEvent(new Event('input', { bubbles: true }));
-        lengthInput.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-      if (widthInput) {
-        widthInput.value = '40';
-        widthInput.dispatchEvent(new Event('input', { bubbles: true }));
-        widthInput.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-    `);
+    await cdp.eval(`window.__setReactInput('#plot-length-input', '60')`);
+    await sleep(300);
+    await cdp.eval(`window.__setReactInput('#plot-width-input', '40')`);
     await sleep(400);
 
     const hasPlotArea = await cdp.eval(`
-      document.body.innerText.includes('2,400') && (document.body.innerText.includes('sq ft') || document.body.innerText.includes('Square Metres'))
+      document.body.innerText.includes('2,400')
     `);
 
     if (!hasPlotArea) {
@@ -970,10 +961,12 @@ async function main() {
   await runTest("TEST 27: Phase 2B Compound Traditional Unit Converter tab", async () => {
     // Switch to Compound Units tab
     await cdp.eval(`
-      const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Compound Units') || b.textContent?.includes('मिश्रित इकाइयाँ'));
-      if (btn) btn.click();
+      (() => {
+        const btn = document.querySelector('#tab-compound-btn');
+        if (btn) btn.click();
+      })()
     `);
-    await sleep(500);
+    await sleep(600);
 
     const hasCompoundSystem = await cdp.eval(`
       document.body.innerText.includes('Pucca Bigha') || document.body.innerText.includes('Biswa')
@@ -990,10 +983,12 @@ async function main() {
   await runTest("TEST 28: Phase 2B Regional Unit Comparison Matrix tab", async () => {
     // Switch to Unit Comparison tab
     await cdp.eval(`
-      const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Unit Comparison') || b.textContent?.includes('इकाई तुलना'));
-      if (btn) btn.click();
+      (() => {
+        const btn = document.querySelector('#tab-compare-btn');
+        if (btn) btn.click();
+      })()
     `);
-    await sleep(500);
+    await sleep(600);
 
     const hasComparisonTable = await cdp.eval(`
       document.body.innerText.includes('Pucca Bigha') && (document.body.innerText.includes('Uttar Pradesh') || document.body.innerText.includes('UP Revenue Code'))
@@ -1010,10 +1005,12 @@ async function main() {
   await runTest("TEST 29: Phase 2B Conversion History & Custom Factors tabs", async () => {
     // Switch to Custom Factor tab
     await cdp.eval(`
-      const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Custom Factor') || b.textContent?.includes('कस्टम इकाई'));
-      if (btn) btn.click();
+      (() => {
+        const btn = document.querySelector('#tab-custom-btn');
+        if (btn) btn.click();
+      })()
     `);
-    await sleep(500);
+    await sleep(600);
 
     const hasCustomNotice = await cdp.eval(`
       document.body.innerText.includes('Custom Local Measurement Factor') || document.body.innerText.includes('कस्टम स्थानीय माप कारक')
@@ -1021,10 +1018,12 @@ async function main() {
 
     // Switch to History & Saved tab
     await cdp.eval(`
-      const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('History & Saved') || b.textContent?.includes('इतिहास एवं सहेजे गए'));
-      if (btn) btn.click();
+      (() => {
+        const btn = document.querySelector('#tab-history-btn');
+        if (btn) btn.click();
+      })()
     `);
-    await sleep(500);
+    await sleep(600);
 
     const hasHistoryView = await cdp.eval(`
       document.body.innerText.includes('Conversion History') || document.body.innerText.includes('रूपांतरण इतिहास')

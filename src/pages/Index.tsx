@@ -55,6 +55,7 @@ function MainContent() {
         className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-border/60"
       >
         <button
+          id="tab-converter-btn"
           type="button"
           onClick={() => setActiveTool("converter")}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shrink-0 ${
@@ -68,6 +69,7 @@ function MainContent() {
         </button>
 
         <button
+          id="tab-plot-btn"
           type="button"
           onClick={() => setActiveTool("plot")}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shrink-0 ${
@@ -81,6 +83,7 @@ function MainContent() {
         </button>
 
         <button
+          id="tab-compound-btn"
           type="button"
           onClick={() => setActiveTool("compound")}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shrink-0 ${
@@ -94,6 +97,7 @@ function MainContent() {
         </button>
 
         <button
+          id="tab-compare-btn"
           type="button"
           onClick={() => setActiveTool("compare")}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shrink-0 ${
@@ -107,6 +111,7 @@ function MainContent() {
         </button>
 
         <button
+          id="tab-custom-btn"
           type="button"
           onClick={() => setActiveTool("custom")}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shrink-0 ${
@@ -120,6 +125,7 @@ function MainContent() {
         </button>
 
         <button
+          id="tab-history-btn"
           type="button"
           onClick={() => setActiveTool("history")}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shrink-0 ${
@@ -156,6 +162,9 @@ function MainContent() {
 
           {/* Land Valuation Rate Calculator */}
           <RateCalculator />
+
+          {/* Saved Parcels List */}
+          <MyLandList />
 
           {/* Cross-State Bigha Comparison */}
           <ComparisonMode />
