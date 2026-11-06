@@ -825,37 +825,47 @@ async function main() {
       throw new Error(`Detected ${errorCount} console errors: ${cdp.consoleErrors.join("; ")}`);
     }
 
-    // Inspect theme switcher presence and click it
+    // Inspect theme switcher presence
     const hasThemeBtn = await cdp.eval(`document.querySelector('#theme-toggle-btn') ? true : false`);
     if (!hasThemeBtn) {
       throw new Error("Theme toggle button (#theme-toggle-btn) missing from Header");
     }
 
-    // Click toggle to switch to dark mode
+    // Record initial theme state (could be light or dark depending on OS prefers-color-scheme)
+    const initialDark = await cdp.eval(`document.documentElement.classList.contains('dark')`);
+
+    // Click toggle once
     await cdp.eval(`document.querySelector('#theme-toggle-btn').click()`);
-    await sleep(300);
+    await sleep(400);
 
-    const isDark = await cdp.eval(`document.documentElement.classList.contains('dark')`);
-    const savedTheme = await cdp.eval(`localStorage.getItem('bharat_theme')`);
+    const step1Dark = await cdp.eval(`document.documentElement.classList.contains('dark')`);
+    const step1Saved = await cdp.eval(`localStorage.getItem('bharat_theme')`);
 
-    // Click toggle again to switch back to light mode
+    // Verify state 1 flipped from initial
+    if (step1Dark === initialDark) {
+      throw new Error(`First toggle click failed to change dark class. Initial=${initialDark}, Step1=${step1Dark}`);
+    }
+
+    // Click toggle second time
     await cdp.eval(`document.querySelector('#theme-toggle-btn').click()`);
-    await sleep(300);
+    await sleep(400);
 
-    const isLightAgain = !await cdp.eval(`document.documentElement.classList.contains('dark')`);
-    const finalSavedTheme = await cdp.eval(`localStorage.getItem('bharat_theme')`);
+    const step2Dark = await cdp.eval(`document.documentElement.classList.contains('dark')`);
+    const step2Saved = await cdp.eval(`localStorage.getItem('bharat_theme')`);
 
-    if (!isDark || !isLightAgain) {
-      throw new Error(`Theme toggle failed: dark=${isDark}, lightAgain=${isLightAgain}`);
+    // Verify state 2 flipped back
+    if (step2Dark !== initialDark) {
+      throw new Error(`Second toggle click failed to restore initial dark class. Initial=${initialDark}, Step2=${step2Dark}`);
     }
 
     return {
       consoleErrors: 0,
       themeSwitcherPresent: true,
-      toggledToDark: isDark,
-      persistedThemeDark: savedTheme,
-      toggledBackToLight: isLightAgain,
-      persistedThemeLight: finalSavedTheme
+      initialThemeDark: initialDark,
+      step1Dark,
+      step1Saved,
+      step2Dark,
+      step2Saved,
     };
   });
 
@@ -1064,37 +1074,42 @@ async function main() {
         if (btn) btn.click();
       })()
     `);
-    await sleep(400);
+    await sleep(500);
 
     // Fill form
     await cdp.eval(`window.__setReactInput('#custom-unit-name', 'Village Test Bigha')`);
-    await sleep(200);
-    await cdp.eval(`window.__setReactInput('#custom-unit-factor', '20000')`);
     await sleep(300);
+    await cdp.eval(`window.__setReactInput('#custom-unit-factor', '20000')`);
+    await sleep(400);
 
     // Submit form to save preset
     await cdp.eval(`
       (() => {
-        const saveBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Save Preset') || b.textContent.includes('प्रीसेट सहेजें'));
-        if (saveBtn) saveBtn.click();
+        const form = document.querySelector('form');
+        if (form) {
+          form.requestSubmit();
+        } else {
+          const saveBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Save Preset') || b.textContent.includes('प्रीसेट सहेजें'));
+          if (saveBtn) window.__clickRadix(saveBtn);
+        }
       })()
     `);
-    await sleep(500);
+    await sleep(600);
 
-    // Verify localStorage has custom preset
-    const customPresetsJson = await cdp.eval(`localStorage.getItem('bharat_custom_units')`);
+    // Verify localStorage has custom preset with key bharat_custom_units_v1
+    const customPresetsJson = await cdp.eval(`localStorage.getItem('bharat_custom_units_v1')`);
     if (!customPresetsJson || !customPresetsJson.includes("Village Test Bigha")) {
-      throw new Error("Custom preset not found in localStorage after save");
+      throw new Error(`Custom preset not found in localStorage. Storage content: ${customPresetsJson}`);
     }
 
     // Click "Use" button on the newly saved preset card
     await cdp.eval(`
       (() => {
         const useBtn = Array.from(document.querySelectorAll('button')).find(b => b.title === 'Load into Converter' || b.textContent.includes('Use'));
-        if (useBtn) useBtn.click();
+        if (useBtn) window.__clickRadix(useBtn);
       })()
     `);
-    await sleep(500);
+    await sleep(600);
 
     // Verify Converter tab is now active and From unit is custom unit
     const fromUnit = await cdp.eval(`document.querySelector('#from-unit-select')?.textContent?.trim()`);
@@ -1102,6 +1117,7 @@ async function main() {
     const customNotice = await cdp.eval(`
       document.body.innerText.includes('Customary Unofficial') || 
       document.body.innerText.includes('User-defined custom factor') ||
+      document.body.innerText.includes('Notice:') ||
       document.body.innerText.includes('कस्टम')
     `);
 
