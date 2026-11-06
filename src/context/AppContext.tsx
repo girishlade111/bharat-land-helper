@@ -64,6 +64,7 @@ export interface AppProviderProps {
   initialFromUnitId?: string;
   initialToUnitId?: string;
   initialInputValue?: string;
+  initialLang?: Lang;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -74,8 +75,19 @@ export function AppProvider({
   initialFromUnitId = "acre",
   initialToUnitId = "guntha_mh",
   initialInputValue = "1",
+  initialLang,
 }: AppProviderProps) {
-  const [lang, setLangState] = useState<Lang>("en");
+  const getInitialLang = (): Lang => {
+    if (initialLang) return initialLang;
+    if (typeof window !== "undefined") {
+      const p = window.location.pathname;
+      if (p.startsWith("/hi")) return "hi";
+      if (p.startsWith("/mr")) return "mr";
+    }
+    return "en";
+  };
+
+  const [lang, setLangState] = useState<Lang>(getInitialLang);
   const [regionCode, setRegionCode] = useState<string>(initialRegionCode);
   const [fromUnitId, setFromUnitIdState] = useState<string>(initialFromUnitId);
   const [toUnitId, setToUnitIdState] = useState<string>(initialToUnitId);
@@ -253,6 +265,9 @@ export function AppProvider({
 
   const setLang = useCallback((lg: Lang) => {
     setLangState(lg);
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = lg;
+    }
     updateUrl(inputValue, fromUnitId, toUnitId, regionCode, lg);
   }, [inputValue, fromUnitId, toUnitId, regionCode, updateUrl]);
 

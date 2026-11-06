@@ -49,17 +49,25 @@ async function main() {
   // Read routes from src/data/seoRoutes.ts by importing from SSR bundle or reading definitions
   // Since entry-server imports App which imports seoRoutes, we can get definitions
   // Or we can define/import them directly
-  const { CORE_ROUTES, CONVERSION_ROUTES } = await import(
+  const { ALL_CORE_ROUTES, CONVERSION_ROUTES, getHreflangLinks } = await import(
     `file://${path.join(ROOT_DIR, "src", "data", "seoRoutes.ts").replace(/\\/g, "/")}`
   );
 
-  console.log(`Prerendering ${CORE_ROUTES.length} core routes and ${CONVERSION_ROUTES.length} conversion landing pages...`);
+  console.log(`Prerendering ${ALL_CORE_ROUTES.length} core and localized routes and ${CONVERSION_ROUTES.length} conversion landing pages...`);
 
   const results = [];
 
   // Helper to inject route metadata into HTML template
   function prepareHtml(template, renderedBody, route) {
     let html = template;
+
+    // Set correct localized html lang attribute
+    const langAttr = route.path.startsWith("/hi") ? "hi" : route.path.startsWith("/mr") ? "mr" : "en";
+    if (/<html[^>]*lang=/i.test(html)) {
+      html = html.replace(/(<html[^>]*lang=")[^"]*(")/i, `$1${langAttr}$2`);
+    } else {
+      html = html.replace(/<html/i, `<html lang="${langAttr}"`);
+    }
 
     // Inject server-rendered body
     html = html.replace(
@@ -117,6 +125,15 @@ async function main() {
       `<meta name="twitter:url" content="${route.canonical}" />`
     );
 
+    // Inject reciprocal hreflang tags before </head>
+    const hreflangLinks = getHreflangLinks(route.path);
+    if (hreflangLinks && hreflangLinks.length > 0) {
+      const hreflangHtml = hreflangLinks
+        .map((h) => `    <link rel="alternate" hreflang="${h.hreflang}" href="${h.href}" />`)
+        .join("\n");
+      html = html.replace("</head>", `${hreflangHtml}\n  </head>`);
+    }
+
     // Handle noindex if specified (e.g. 404 page)
     if (route.noindex) {
       html = html.replace(
@@ -128,8 +145,8 @@ async function main() {
     return html;
   }
 
-  // 5. Prerender Core Routes
-  for (const route of CORE_ROUTES) {
+  // 5. Prerender Core & Localized Routes
+  for (const route of ALL_CORE_ROUTES) {
     try {
       const renderedBody = render(route.path);
       const finalHtml = prepareHtml(baseTemplate, renderedBody, route);

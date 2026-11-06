@@ -129,6 +129,215 @@ export const CORE_ROUTES: CoreRouteData[] = [
   },
 ];
 
+export const TOOL_ROUTES: CoreRouteData[] = [
+  {
+    path: "/tools",
+    title: "Indian Land Measurement Tools & Calculators Hub | Bharat Land Converter",
+    description: "Specialized Indian land area calculators: plot dimensions (length × width), compound units (bigha-biswa-biswansi), regional comparison matrix, and custom local factor manager.",
+    canonical: "https://land.ladestack.in/tools",
+    h1: "Indian Land Measurement Tools & Calculators Hub",
+    breadcrumbs: [
+      { name: "Home", item: "https://land.ladestack.in/" },
+      { name: "Tools Hub", item: "https://land.ladestack.in/tools" },
+    ],
+  },
+  {
+    path: "/tools/plot-area-calculator",
+    title: "Plot Area Calculator (Length × Width) | Bharat Land Converter",
+    description: "Calculate rectangular land plot area from length and width in feet, metres, or yards into square feet, acres, guntha, and bigha. Free schematic diagram and instant breakdown.",
+    canonical: "https://land.ladestack.in/tools/plot-area-calculator",
+    h1: "Plot Area Calculator (Rectangular Land Dimensions)",
+    breadcrumbs: [
+      { name: "Home", item: "https://land.ladestack.in/" },
+      { name: "Tools", item: "https://land.ladestack.in/tools" },
+      { name: "Plot Area Calculator", item: "https://land.ladestack.in/tools/plot-area-calculator" },
+    ],
+  },
+  {
+    path: "/tools/compound-land-unit-converter",
+    title: "Compound Land Unit Converter (Bigha-Biswa, Kattha-Dhur) | Bharat Land Converter",
+    description: "Convert multi-tier traditional Indian land units like Bigha-Biswa-Biswansi, Bigha-Kattha-Dhur, Acre-Guntha into square feet and reverse decompose total area into composite units.",
+    canonical: "https://land.ladestack.in/tools/compound-land-unit-converter",
+    h1: "Compound Traditional Land Unit Converter",
+    breadcrumbs: [
+      { name: "Home", item: "https://land.ladestack.in/" },
+      { name: "Tools", item: "https://land.ladestack.in/tools" },
+      { name: "Compound Unit Converter", item: "https://land.ladestack.in/tools/compound-land-unit-converter" },
+    ],
+  },
+  {
+    path: "/tools/land-unit-comparison",
+    title: "Regional Land Unit Comparison Matrix (Cross-State) | Bharat Land Converter",
+    description: "Compare how customary units like Bigha, Guntha, Biswa, and Kanal differ across 16+ Indian states with legal citations and standard square feet benchmarks.",
+    canonical: "https://land.ladestack.in/tools/land-unit-comparison",
+    h1: "Regional Land Unit Comparison Matrix",
+    breadcrumbs: [
+      { name: "Home", item: "https://land.ladestack.in/" },
+      { name: "Tools", item: "https://land.ladestack.in/tools" },
+      { name: "Unit Comparison", item: "https://land.ladestack.in/tools/land-unit-comparison" },
+    ],
+  },
+  {
+    path: "/tools/custom-land-unit-calculator",
+    title: "Custom Land Unit Calculator & Factor Manager | Bharat Land Converter",
+    description: "Define your own local or hyper-regional land measurement factors, store them securely in browser memory, and apply them across conversions.",
+    canonical: "https://land.ladestack.in/tools/custom-land-unit-calculator",
+    h1: "Custom Land Unit Calculator & Factor Manager",
+    breadcrumbs: [
+      { name: "Home", item: "https://land.ladestack.in/" },
+      { name: "Tools", item: "https://land.ladestack.in/tools" },
+      { name: "Custom Unit Calculator", item: "https://land.ladestack.in/tools/custom-land-unit-calculator" },
+    ],
+  },
+];
+
+export const HINDI_ROUTES: CoreRouteData[] = [
+  {
+    path: "/hi",
+    title: "भारत भूमि क्षेत्रफल परिवर्तक | बीघा, गुंठा, एकड़, हेक्टेयर",
+    description: "मुफ्त भारतीय भूमि क्षेत्रफल परिवर्तक। बीघा, गुंठा, एकड़, हेक्टेयर, कनाल, मरला और 35+ इकाइयों का सटीक रूपांतरण। बिना लॉगिन, 100% सुरक्षित।",
+    canonical: "https://land.ladestack.in/hi",
+    h1: "भारत भूमि क्षेत्रफल परिवर्तक",
+    breadcrumbs: [{ name: "मुखपृष्ठ", item: "https://land.ladestack.in/hi" }],
+  },
+  {
+    path: "/hi/tools",
+    title: "भारतीय भूमि मापन उपकरण एवं कैलकुलेटर केंद्र | भारत लैंड कनवर्टर",
+    description: "भूखंड विमा, पारंपरिक बहुस्तरीय इकाइयां, राज्यवार बीघा तुलना और स्थानीय राजस्व गुणकों के लिए समर्पित स्वतंत्र उपकरण।",
+    canonical: "https://land.ladestack.in/hi/tools",
+    h1: "भारतीय भूमि मापन उपकरण एवं कैलकुलेटर केंद्र",
+    breadcrumbs: [
+      { name: "मुखपृष्ठ", item: "https://land.ladestack.in/hi" },
+      { name: "उपकरण", item: "https://land.ladestack.in/hi/tools" },
+    ],
+  },
+  {
+    path: "/hi/tools/plot-area-calculator",
+    title: "भूखंड क्षेत्रफल कैलकुलेटर (लंबाई × चौड़ाई) | भारत लैंड कनवर्टर",
+    description: "आयताकार भूमि या प्लॉट की लंबाई और चौड़ाई दर्ज कर तत्काल वर्ग फीट, वर्ग मीटर, गज, एकड़, गुंठा और बीघा में सटीक क्षेत्रफल प्राप्त करें।",
+    canonical: "https://land.ladestack.in/hi/tools/plot-area-calculator",
+    h1: "भूखंड क्षेत्रफल कैलकुलेटर (लंबाई × चौड़ाई)",
+    breadcrumbs: [
+      { name: "मुखपृष्ठ", item: "https://land.ladestack.in/hi" },
+      { name: "उपकरण", item: "https://land.ladestack.in/hi/tools" },
+      { name: "भूखंड कैलकुलेटर", item: "https://land.ladestack.in/hi/tools/plot-area-calculator" },
+    ],
+  },
+  {
+    path: "/hi/tools/compound-land-unit-converter",
+    title: "मिश्रित पारंपरिक भूमि इकाई परिवर्तक | भारत लैंड कनवर्टर",
+    description: "बीघा-बिस्वा-बिस्वांसी, बीघा-कट्ठा-धूर और एकड़-गुंठा-आना जैसी बहुस्तरीय पारंपरिक प्रणालियों का द्वि-दिशात्मक रूपांतरण।",
+    canonical: "https://land.ladestack.in/hi/tools/compound-land-unit-converter",
+    h1: "मिश्रित पारंपरिक भूमि इकाई परिवर्तक (Compound Land Units)",
+    breadcrumbs: [
+      { name: "मुखपृष्ठ", item: "https://land.ladestack.in/hi" },
+      { name: "उपकरण", item: "https://land.ladestack.in/hi/tools" },
+      { name: "मिश्रित इकाइयाँ", item: "https://land.ladestack.in/hi/tools/compound-land-unit-converter" },
+    ],
+  },
+  {
+    path: "/hi/tools/land-unit-comparison",
+    title: "क्षेत्रीय भूमि इकाई तुलना मैट्रिक्स | भारत लैंड कनवर्टर",
+    description: "विभिन्न राज्यों में बीघा, गुंठा, बिस्वा और कनाल के क्षेत्रफल में भिन्नताओं की आधिकारिक व पारंपरिक संदर्भ सहित तुलना।",
+    canonical: "https://land.ladestack.in/hi/tools/land-unit-comparison",
+    h1: "क्षेत्रीय भूमि इकाई तुलना मैट्रिक्स (Regional Comparison)",
+    breadcrumbs: [
+      { name: "मुखपृष्ठ", item: "https://land.ladestack.in/hi" },
+      { name: "उपकरण", item: "https://land.ladestack.in/hi/tools" },
+      { name: "इकाई तुलना", item: "https://land.ladestack.in/hi/tools/land-unit-comparison" },
+    ],
+  },
+  {
+    path: "/hi/tools/custom-land-unit-calculator",
+    title: "कस्टम भूमि इकाई कैलकुलेटर एवं फैक्टर मैनेजर | भारत लैंड कनवर्टर",
+    description: "अपने क्षेत्र या गांव की स्थानीय पारंपरिक इकाई का गुणक स्वयं परिभाषित करें और तुरंत रूपांतरण परिणाम देखें।",
+    canonical: "https://land.ladestack.in/hi/tools/custom-land-unit-calculator",
+    h1: "कस्टम भूमि इकाई कैलकुलेटर एवं फैक्टर मैनेजर",
+    breadcrumbs: [
+      { name: "मुखपृष्ठ", item: "https://land.ladestack.in/hi" },
+      { name: "उपकरण", item: "https://land.ladestack.in/hi/tools" },
+      { name: "कस्टम इकाई", item: "https://land.ladestack.in/hi/tools/custom-land-unit-calculator" },
+    ],
+  },
+];
+
+export const MARATHI_ROUTES: CoreRouteData[] = [
+  {
+    path: "/mr",
+    title: "भारत जमीन क्षेत्रफळ परिवर्तक | गुंठा, बिघा, एकर, हेक्टर",
+    description: "मोफत भारतीय जमीन क्षेत्रफळ परिवर्तक. गुंठा, बिघा, एकर, हेक्टर, बिस्वा आणि ३५+ घटकांचे अचूक जमीन मोजमाप रूपांतरण. १००% सुरक्षित आणि ऑफलाइन.",
+    canonical: "https://land.ladestack.in/mr",
+    h1: "भारत जमीन क्षेत्रफळ परिवर्तक",
+    breadcrumbs: [{ name: "मुख्यपृष्ठ", item: "https://land.ladestack.in/mr" }],
+  },
+  {
+    path: "/mr/tools",
+    title: "भारतीय जमीन मोजमाप साधने व कॅल्क्युलेटर केंद्र | भारत लँड कन्व्हर्टर",
+    description: "प्लॉटचे आकारमान, पारंपारिक बहुस्तरीय एकके, राज्यनिहाय बिघा तुलना आणि स्थानिक महसूल गुणकांसाठी डिझाइन केलेली स्वतंत्र साधने.",
+    canonical: "https://land.ladestack.in/mr/tools",
+    h1: "भारतीय जमीन मोजमाप साधने व कॅल्क्युलेटर केंद्र",
+    breadcrumbs: [
+      { name: "मुख्यपृष्ठ", item: "https://land.ladestack.in/mr" },
+      { name: "साधने", item: "https://land.ladestack.in/mr/tools" },
+    ],
+  },
+  {
+    path: "/mr/tools/plot-area-calculator",
+    title: "प्लॉट क्षेत्रफळ कॅल्क्युलेटर (लांबी × रुंदी) | भारत लँड कन्व्हर्टर",
+    description: "आयताकृती जमिनीची लांबी आणि रुंदी फूट, मीटर किंवा गजमध्ये टाकून तत्काळ चौरस फूट, चौरस मीटर, एकर, गुंठा आणि स्थानिक बिघामध्ये रूपांतरण करा.",
+    canonical: "https://land.ladestack.in/mr/tools/plot-area-calculator",
+    h1: "प्लॉट क्षेत्रफळ कॅल्क्युलेटर (लांबी × रुंदी)",
+    breadcrumbs: [
+      { name: "मुख्यपृष्ठ", item: "https://land.ladestack.in/mr" },
+      { name: "साधने", item: "https://land.ladestack.in/mr/tools" },
+      { name: "प्लॉट कॅल्क्युलेटर", item: "https://land.ladestack.in/mr/tools/plot-area-calculator" },
+    ],
+  },
+  {
+    path: "/mr/tools/compound-land-unit-converter",
+    title: "मिश्रित पारंपारिक जमीन एकक कन्व्हर्टर | भारत लँड कन्व्हर्टर",
+    description: "बिघा-बिस्वा-बिस्वांसी, बिघा-कठ्ठा-धूर आणि एकर-गुंठा-आना यांसारख्या बहुस्तरीय पारंपारिक महसूल प्रणालींचे अचूक द्वि-दिशात्मक रूपांतरण.",
+    canonical: "https://land.ladestack.in/mr/tools/compound-land-unit-converter",
+    h1: "मिश्रित पारंपारिक जमीन एकक कन्व्हर्टर (Compound Land Units)",
+    breadcrumbs: [
+      { name: "मुख्यपृष्ठ", item: "https://land.ladestack.in/mr" },
+      { name: "साधने", item: "https://land.ladestack.in/mr/tools" },
+      { name: "मिश्रित एकके", item: "https://land.ladestack.in/mr/tools/compound-land-unit-converter" },
+    ],
+  },
+  {
+    path: "/mr/tools/land-unit-comparison",
+    title: "प्रादेशिक जमीन एकक तुलना मॅट्रिक्स | भारत लँड कन्व्हर्टर",
+    description: "विविध राज्यांमधील बिघा, गुंठा, बिस्वा आणि कनाल यांच्या क्षेत्रफळ तफावतीची अधिकृत व पारंपारिक पुराव्यासह तुलना.",
+    canonical: "https://land.ladestack.in/mr/tools/land-unit-comparison",
+    h1: "प्रादेशिक जमीन एकक तुलना मॅट्रिक्स (Regional Comparison)",
+    breadcrumbs: [
+      { name: "मुख्यपृष्ठ", item: "https://land.ladestack.in/mr" },
+      { name: "साधने", item: "https://land.ladestack.in/mr/tools" },
+      { name: "एकक तुलना", item: "https://land.ladestack.in/mr/tools/land-unit-comparison" },
+    ],
+  },
+  {
+    path: "/mr/tools/custom-land-unit-calculator",
+    title: "कस्टम जमीन एकक कॅल्क्युलेटर व फॅक्टर मॅनेजर | भारत लँड कन्व्हर्टर",
+    description: "स्थानिक गावातील किंवा तालुकानिहाय पारंपारिक एकक स्वतः जोडा, चौरस फूट गुणक निश्चित करा आणि संपूर्ण प्रणालीमध्ये त्याचा वापर करा.",
+    canonical: "https://land.ladestack.in/mr/tools/custom-land-unit-calculator",
+    h1: "कस्टम जमीन एकक कॅल्क्युलेटर व फॅक्टर मॅनेजर",
+    breadcrumbs: [
+      { name: "मुख्यपृष्ठ", item: "https://land.ladestack.in/mr" },
+      { name: "साधने", item: "https://land.ladestack.in/mr/tools" },
+      { name: "कस्टम एकक", item: "https://land.ladestack.in/mr/tools/custom-land-unit-calculator" },
+    ],
+  },
+];
+
+export const ALL_CORE_ROUTES: CoreRouteData[] = [
+  ...CORE_ROUTES,
+  ...TOOL_ROUTES,
+  ...HINDI_ROUTES,
+  ...MARATHI_ROUTES,
+];
+
 export const CONVERSION_ROUTES: ConversionRouteData[] = [
   {
     path: "/convert/acre-to-sqft",
@@ -476,7 +685,7 @@ export const CONVERSION_ROUTES: ConversionRouteData[] = [
 ];
 
 export const ALL_PUBLIC_ROUTES = [
-  ...CORE_ROUTES.map((r) => r.path),
+  ...ALL_CORE_ROUTES.map((r) => r.path),
   ...CONVERSION_ROUTES.map((r) => r.path),
 ];
 
@@ -487,6 +696,98 @@ export function getConversionRouteByPath(pathname: string): ConversionRouteData 
 
 export function getCoreRouteByPath(pathname: string): CoreRouteData | undefined {
   const clean = pathname.replace(/\/$/, "") || "/";
-  return CORE_ROUTES.find((r) => r.path === clean);
+  return ALL_CORE_ROUTES.find((r) => r.path === clean);
+}
+
+export interface HreflangLink {
+  rel: "alternate";
+  hreflang: string;
+  href: string;
+}
+
+export function getHreflangLinks(pathname: string): HreflangLink[] {
+  const clean = pathname.replace(/\/$/, "") || "/";
+
+  // Group 1: Home
+  if (clean === "/" || clean === "/hi" || clean === "/mr") {
+    return [
+      { rel: "alternate", hreflang: "en-IN", href: "https://land.ladestack.in/" },
+      { rel: "alternate", hreflang: "hi-IN", href: "https://land.ladestack.in/hi" },
+      { rel: "alternate", hreflang: "mr-IN", href: "https://land.ladestack.in/mr" },
+      { rel: "alternate", hreflang: "x-default", href: "https://land.ladestack.in/" },
+    ];
+  }
+
+  // Group 2: Tools Hub
+  if (clean === "/tools" || clean === "/hi/tools" || clean === "/mr/tools") {
+    return [
+      { rel: "alternate", hreflang: "en-IN", href: "https://land.ladestack.in/tools" },
+      { rel: "alternate", hreflang: "hi-IN", href: "https://land.ladestack.in/hi/tools" },
+      { rel: "alternate", hreflang: "mr-IN", href: "https://land.ladestack.in/mr/tools" },
+      { rel: "alternate", hreflang: "x-default", href: "https://land.ladestack.in/tools" },
+    ];
+  }
+
+  // Group 3: Plot Area Calculator
+  if (
+    clean === "/tools/plot-area-calculator" ||
+    clean === "/hi/tools/plot-area-calculator" ||
+    clean === "/mr/tools/plot-area-calculator"
+  ) {
+    return [
+      { rel: "alternate", hreflang: "en-IN", href: "https://land.ladestack.in/tools/plot-area-calculator" },
+      { rel: "alternate", hreflang: "hi-IN", href: "https://land.ladestack.in/hi/tools/plot-area-calculator" },
+      { rel: "alternate", hreflang: "mr-IN", href: "https://land.ladestack.in/mr/tools/plot-area-calculator" },
+      { rel: "alternate", hreflang: "x-default", href: "https://land.ladestack.in/tools/plot-area-calculator" },
+    ];
+  }
+
+  // Group 4: Compound Unit Converter
+  if (
+    clean === "/tools/compound-land-unit-converter" ||
+    clean === "/hi/tools/compound-land-unit-converter" ||
+    clean === "/mr/tools/compound-land-unit-converter"
+  ) {
+    return [
+      { rel: "alternate", hreflang: "en-IN", href: "https://land.ladestack.in/tools/compound-land-unit-converter" },
+      { rel: "alternate", hreflang: "hi-IN", href: "https://land.ladestack.in/hi/tools/compound-land-unit-converter" },
+      { rel: "alternate", hreflang: "mr-IN", href: "https://land.ladestack.in/mr/tools/compound-land-unit-converter" },
+      { rel: "alternate", hreflang: "x-default", href: "https://land.ladestack.in/tools/compound-land-unit-converter" },
+    ];
+  }
+
+  // Group 5: Land Unit Comparison
+  if (
+    clean === "/tools/land-unit-comparison" ||
+    clean === "/hi/tools/land-unit-comparison" ||
+    clean === "/mr/tools/land-unit-comparison"
+  ) {
+    return [
+      { rel: "alternate", hreflang: "en-IN", href: "https://land.ladestack.in/tools/land-unit-comparison" },
+      { rel: "alternate", hreflang: "hi-IN", href: "https://land.ladestack.in/hi/tools/land-unit-comparison" },
+      { rel: "alternate", hreflang: "mr-IN", href: "https://land.ladestack.in/mr/tools/land-unit-comparison" },
+      { rel: "alternate", hreflang: "x-default", href: "https://land.ladestack.in/tools/land-unit-comparison" },
+    ];
+  }
+
+  // Group 6: Custom Land Unit Calculator
+  if (
+    clean === "/tools/custom-land-unit-calculator" ||
+    clean === "/hi/tools/custom-land-unit-calculator" ||
+    clean === "/mr/tools/custom-land-unit-calculator"
+  ) {
+    return [
+      { rel: "alternate", hreflang: "en-IN", href: "https://land.ladestack.in/tools/custom-land-unit-calculator" },
+      { rel: "alternate", hreflang: "hi-IN", href: "https://land.ladestack.in/hi/tools/custom-land-unit-calculator" },
+      { rel: "alternate", hreflang: "mr-IN", href: "https://land.ladestack.in/mr/tools/custom-land-unit-calculator" },
+      { rel: "alternate", hreflang: "x-default", href: "https://land.ladestack.in/tools/custom-land-unit-calculator" },
+    ];
+  }
+
+  // Non-translated pages default to English canonical with x-default
+  return [
+    { rel: "alternate", hreflang: "en-IN", href: `https://land.ladestack.in${clean === "/" ? "" : clean}` },
+    { rel: "alternate", hreflang: "x-default", href: `https://land.ladestack.in${clean === "/" ? "" : clean}` },
+  ];
 }
 

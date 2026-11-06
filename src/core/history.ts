@@ -52,7 +52,7 @@ const FIXED_STANDARD_SQFT: Record<string, number> = {
  * Migrates a legacy v1 history item to the schema v2 structure with audited snapshot provenance.
  * Never invents historical factors: categorizes provenance transparently.
  */
-function migrateV1Item(item: Record<string, unknown>): ConversionHistoryItem {
+export function migrateV1Item(item: Record<string, unknown>): ConversionHistoryItem {
   const fromValue = Number(item.fromValue) || 0;
   const toValue = Number(item.toValue) || 0;
   const fromUnitId = String(item.fromUnitId || "acre");

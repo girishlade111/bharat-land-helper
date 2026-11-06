@@ -13,7 +13,7 @@ import { SITE_URL } from "../src/config/site.ts";
 const DOMAIN = SITE_URL;
 
 // 6 Core Canonical Routes (404 is excluded because it is noindex/error)
-const CORE_CANONICAL_PATHS = [
+export const CORE_CANONICAL_PATHS = [
   "",
   "about",
   "faq",
@@ -22,8 +22,37 @@ const CORE_CANONICAL_PATHS = [
   "terms",
 ];
 
+// 5 Dedicated Standalone Tool Routes
+export const TOOL_CANONICAL_PATHS = [
+  "tools",
+  "tools/plot-area-calculator",
+  "tools/compound-land-unit-converter",
+  "tools/land-unit-comparison",
+  "tools/custom-land-unit-calculator",
+];
+
+// 6 Hindi Localized Routes
+export const HINDI_CANONICAL_PATHS = [
+  "hi",
+  "hi/tools",
+  "hi/tools/plot-area-calculator",
+  "hi/tools/compound-land-unit-converter",
+  "hi/tools/land-unit-comparison",
+  "hi/tools/custom-land-unit-calculator",
+];
+
+// 6 Marathi Localized Routes
+export const MARATHI_CANONICAL_PATHS = [
+  "mr",
+  "mr/tools",
+  "mr/tools/plot-area-calculator",
+  "mr/tools/compound-land-unit-converter",
+  "mr/tools/land-unit-comparison",
+  "mr/tools/custom-land-unit-calculator",
+];
+
 // 8 Verified Conversion Landing Pages
-const CONVERSION_CANONICAL_PATHS = [
+export const CONVERSION_CANONICAL_PATHS = [
   "convert/acre-to-sqft",
   "convert/hectare-to-acre",
   "convert/acre-to-guntha/maharashtra",
@@ -34,16 +63,28 @@ const CONVERSION_CANONICAL_PATHS = [
   "convert/bigha-to-kattha/west-bengal",
 ];
 
-export function generateSitemapXml() {
-  const allPaths = [...CORE_CANONICAL_PATHS, ...CONVERSION_CANONICAL_PATHS];
+export const ALL_CANONICAL_PATHS = [
+  ...CORE_CANONICAL_PATHS,
+  ...TOOL_CANONICAL_PATHS,
+  ...HINDI_CANONICAL_PATHS,
+  ...MARATHI_CANONICAL_PATHS,
+  ...CONVERSION_CANONICAL_PATHS,
+];
 
-  const urlsXml = allPaths
+export function generateSitemapXml() {
+  const urlsXml = ALL_CANONICAL_PATHS
     .map((p) => {
       const loc = p === "" ? `${DOMAIN}/` : `${DOMAIN}/${p}`;
+      const isHome = p === "" || p === "hi" || p === "mr";
+      const isTool = p.includes("tools");
+      const isConvert = p.startsWith("convert/");
+      const priority = isHome ? "1.0" : isTool ? "0.9" : isConvert ? "0.8" : "0.7";
+      const changefreq = isHome ? "daily" : isTool || isConvert ? "weekly" : "monthly";
+
       return `  <url>
     <loc>${loc}</loc>
-    <changefreq>${p === "" ? "daily" : "monthly"}</changefreq>
-    <priority>${p === "" ? "1.0" : p.startsWith("convert/") ? "0.9" : "0.7"}</priority>
+    <changefreq>${changefreq}</changefreq>
+    <priority>${priority}</priority>
   </url>`;
     })
     .join("\n");
@@ -59,7 +100,7 @@ export function writeSitemap() {
   const xml = generateSitemapXml();
   const publicPath = path.join(ROOT_DIR, "public", "sitemap.xml");
   fs.writeFileSync(publicPath, xml, "utf8");
-  console.log(`Generated deterministic sitemap at ${publicPath} with 14 canonical URLs`);
+  console.log(`Generated deterministic sitemap at ${publicPath} with ${ALL_CANONICAL_PATHS.length} canonical URLs`);
 
   // Also write to dist/sitemap.xml if dist exists
   const distPath = path.join(ROOT_DIR, "dist", "sitemap.xml");
@@ -71,4 +112,3 @@ export function writeSitemap() {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   writeSitemap();
 }
-

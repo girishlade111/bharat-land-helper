@@ -169,15 +169,30 @@ describe("Bharat Land Converter — Functional UI & Workflow Tests", () => {
     });
   });
 
-  it("10. Language switch toggles UI between English and Hindi", async () => {
+  it("10. Language switch cycles UI between English, Hindi, and Marathi", async () => {
     renderWithRouter(<Index />);
 
     const langBtn = screen.getByRole("button", { name: /Switch language/ });
-    fireEvent.click(langBtn);
+    expect(screen.getByText("English")).toBeInTheDocument();
 
-    // Header and UI should display Hindi labels
+    // 1st click: switches to Hindi
+    fireEvent.click(langBtn);
     await waitFor(() => {
       expect(screen.getByText("भूमि क्षेत्रफल रूपांतरण")).toBeInTheDocument();
+      expect(screen.getByText("हिंदी")).toBeInTheDocument();
+    });
+
+    // 2nd click: switches to Marathi
+    fireEvent.click(langBtn);
+    await waitFor(() => {
+      expect(screen.getByText("जमीन क्षेत्रफळ रूपांतरण")).toBeInTheDocument();
+      expect(screen.getByText("मराठी")).toBeInTheDocument();
+    });
+
+    // 3rd click: switches back to English
+    fireEvent.click(langBtn);
+    await waitFor(() => {
+      expect(screen.getByText("Indian Land Area Converter")).toBeInTheDocument();
       expect(screen.getByText("English")).toBeInTheDocument();
     });
   });

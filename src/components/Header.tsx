@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
-import { t } from "@/data/translations";
+import { t, type Lang } from "@/data/translations";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Globe, MapPin, Moon, Sun } from "lucide-react";
+import { Globe, MapPin, Moon, Sun, Wrench } from "lucide-react";
 
 export default function Header() {
   const { lang, setLang, selectedRegion, setSelectedRegionCode, availableRegions } = useApp();
   const [isDark, setIsDark] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     try {
@@ -50,6 +53,36 @@ export default function Header() {
     }
   };
 
+  const handleLangChange = (nextLang: Lang) => {
+    setLang(nextLang);
+    const pathname = location.pathname;
+    let cleanPath = pathname;
+    if (cleanPath.startsWith("/hi")) {
+      cleanPath = cleanPath.replace(/^\/hi/, "") || "/";
+    } else if (cleanPath.startsWith("/mr")) {
+      cleanPath = cleanPath.replace(/^\/mr/, "") || "/";
+    }
+
+    let targetPath = cleanPath;
+    if (nextLang === "hi") {
+      targetPath = cleanPath === "/" ? "/hi" : `/hi${cleanPath}`;
+    } else if (nextLang === "mr") {
+      targetPath = cleanPath === "/" ? "/mr" : `/mr${cleanPath}`;
+    }
+
+    if (targetPath !== pathname) {
+      navigate(targetPath);
+    }
+  };
+
+  const cycleLang = () => {
+    const nextLang: Lang = lang === "en" ? "hi" : lang === "hi" ? "mr" : "en";
+    handleLangChange(nextLang);
+  };
+
+  const homePath = lang === "hi" ? "/hi" : lang === "mr" ? "/mr" : "/";
+  const toolsPath = lang === "hi" ? "/hi/tools" : lang === "mr" ? "/mr/tools" : "/tools";
+
   const states = availableRegions.filter((r) => r.type === "state");
   const unionTerritories = availableRegions.filter((r) => r.type === "ut");
 
@@ -57,7 +90,7 @@ export default function Header() {
     <header className="sticky top-0 z-50 border-b border-border/60 bg-card/90 backdrop-blur-md">
       <div className="container max-w-5xl flex h-14 items-center justify-between gap-3 px-4 sm:h-16">
         {/* Brand / Logo */}
-        <div className="flex items-center gap-2.5">
+        <Link to={homePath} className="flex items-center gap-2.5 transition-opacity hover:opacity-90">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-green-700 text-white text-base font-black shadow-sm">
             B
           </div>
@@ -66,26 +99,34 @@ export default function Header() {
               {t("appTitle", lang)}
             </span>
             <span className="hidden text-[10px] font-medium text-muted-foreground sm:block leading-tight">
-              {lang === "hi"
-                ? "28 राज्य और 8 केंद्र शासित प्रदेशों का सत्यापित भूमि मापक"
-                : "Source-backed land measurement for all 28 States & 8 UTs"}
+              {t("tagline", lang)}
             </span>
           </div>
-        </div>
+        </Link>
 
-        {/* Region, Language & Theme Controls */}
+        {/* Right Action Controls */}
         <div className="flex items-center gap-2">
-          {/* State / UT Selector */}
+          {/* Tools Hub Nav Link */}
+          <Link
+            to={toolsPath}
+            className="hidden sm:inline-flex items-center gap-1.5 h-9 rounded-xl border border-border/70 bg-secondary/40 px-2.5 text-xs font-semibold hover:bg-secondary text-foreground transition-colors"
+            title="Land Measurement Tools Hub"
+          >
+            <Wrench className="h-3.5 w-3.5 text-primary" />
+            <span>{t("navTools", lang)}</span>
+          </Link>
+
+          {/* State / Region Selector */}
           <Select value={selectedRegion.code} onValueChange={setSelectedRegionCode}>
             <SelectTrigger
               id="state-selector-trigger"
-              aria-label={t("selectState", lang)}
               className="h-9 w-[130px] rounded-xl border-border/70 bg-secondary/50 text-xs font-semibold sm:w-[180px] sm:text-sm"
+              aria-label={t("selectState", lang)}
             >
               <MapPin className="mr-1.5 h-3.5 w-3.5 text-primary shrink-0" />
-              <SelectValue placeholder={t("selectState", lang)} />
+              <SelectValue placeholder={lang === "hi" ? selectedRegion.nameHi : selectedRegion.name} />
             </SelectTrigger>
-            <SelectContent className="max-h-[320px]">
+            <SelectContent className="max-h-[300px]">
               <SelectGroup>
                 <SelectLabel className="text-[10px] font-bold uppercase tracking-wider text-primary">
                   States (28)
@@ -109,18 +150,19 @@ export default function Header() {
             </SelectContent>
           </Select>
 
-          {/* Language Switcher */}
+          {/* Language Switcher Button (accessible cycle & testable) */}
           <Button
             id="lang-toggle-btn"
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setLang(lang === "en" ? "hi" : "en")}
+            onClick={cycleLang}
             className="h-9 gap-1.5 rounded-xl border-border/70 bg-secondary/50 px-2.5 text-xs font-semibold hover:bg-secondary sm:px-3"
-            aria-label={`Switch language to ${lang === "en" ? "Hindi" : "English"}`}
+            aria-label={`Current language: ${lang}. Switch language: English, Hindi, Marathi`}
+            title="Switch Language: English / हिंदी / मराठी"
           >
             <Globe className="h-3.5 w-3.5 text-primary" />
-            <span>{t("language", lang)}</span>
+            <span>{lang === "en" ? "English" : lang === "hi" ? "हिंदी" : "मराठी"}</span>
           </Button>
 
           {/* Theme Switcher */}

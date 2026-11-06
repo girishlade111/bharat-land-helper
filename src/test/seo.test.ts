@@ -99,6 +99,9 @@ describe("Bharat Land Converter — Phase 2A Technical SEO Tests", () => {
     const sitemap = fs.readFileSync(path.join(PUBLIC_DIR, "sitemap.xml"), "utf8");
     expect(sitemap).toContain("<loc>https://land.ladestack.in/</loc>");
     expect(sitemap).toContain("<loc>https://land.ladestack.in/about</loc>");
+    expect(sitemap).toContain("<loc>https://land.ladestack.in/tools</loc>");
+    expect(sitemap).toContain("<loc>https://land.ladestack.in/hi</loc>");
+    expect(sitemap).toContain("<loc>https://land.ladestack.in/mr</loc>");
     expect(sitemap).toContain("<loc>https://land.ladestack.in/convert/acre-to-sqft</loc>");
 
     // Exclude noindex / error pages
@@ -109,7 +112,7 @@ describe("Bharat Land Converter — Phase 2A Technical SEO Tests", () => {
     expect(sitemap).not.toContain("?lang=hi");
 
     const locMatches = sitemap.match(/<loc>(.*?)<\/loc>/g) || [];
-    expect(locMatches.length).toBe(14); // Exactly 6 core + 8 conversion routes
+    expect(locMatches.length).toBe(31); // Exactly 6 core + 5 tools + 6 hi + 6 mr + 8 conversion routes
   });
 
   // SEO-TEST-009

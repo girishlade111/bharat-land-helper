@@ -97,10 +97,12 @@ export default function ConverterInput() {
           </div>
           <div>
             <h2 id="converter-heading" className="text-base font-bold text-foreground leading-tight">
-              {lang === "hi" ? "भूमि क्षेत्रफल रूपांतरण" : "Indian Land Area Converter"}
+              {lang === "mr" ? "जमीन क्षेत्रफळ रूपांतरण" : lang === "hi" ? "भूमि क्षेत्रफल रूपांतरण" : "Indian Land Area Converter"}
             </h2>
             <p className="text-xs text-muted-foreground">
-              {lang === "hi"
+              {lang === "mr"
+                ? `${selectedRegion.nameMr || selectedRegion.name} साठी प्रमाणित एकके`
+                : lang === "hi"
                 ? `${selectedRegion.nameHi} के लिए सत्यापित इकाइयाँ`
                 : `Verified units for ${selectedRegion.name}`}
             </p>

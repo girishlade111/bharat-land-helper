@@ -40,10 +40,12 @@ function MainContent() {
       {/* Primary Hero Heading for SEO and Hierarchy */}
       <div className="space-y-1">
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-          {lang === "hi" ? "भारत भूमि क्षेत्रफल परिवर्तक" : "Bharat Land Area Converter"}
+          {lang === "mr" ? "भारत जमीन क्षेत्रफळ परिवर्तक" : lang === "hi" ? "भारत भूमि क्षेत्रफल परिवर्तक" : "Bharat Land Area Converter"}
         </h1>
         <p className="text-xs sm:text-sm text-muted-foreground">
-          {lang === "hi"
+          {lang === "mr"
+            ? "गुंठा, बिघा, एकर, हेक्टर, बिस्वा आणि ३५+ घटकांचे अचूक जमीन मोजमाप रूपांतरण"
+            : lang === "hi"
             ? "बीघा, गुंठा, एकड़, हेक्टेयर, कनाल, मरला और 35+ इकाइयों का सटीक रूपांतरण"
             : "Accurate land measurement converter for Bigha, Guntha, Acre, Hectare, Kanal, Marla, and 35+ units across all Indian states"}
         </p>
@@ -65,7 +67,7 @@ function MainContent() {
           }`}
         >
           <ArrowRightLeft className="h-4 w-4" />
-          <span>{lang === "hi" ? "क्षेत्रफल परिवर्तक" : "Area Converter"}</span>
+          <span>{lang === "mr" ? "क्षेत्रफळ परिवर्तक" : lang === "hi" ? "क्षेत्रफल परिवर्तक" : "Area Converter"}</span>
         </button>
 
         <button
@@ -79,7 +81,7 @@ function MainContent() {
           }`}
         >
           <Ruler className="h-4 w-4" />
-          <span>{lang === "hi" ? "भूखंड आयाम" : "Plot Dimensions"}</span>
+          <span>{lang === "mr" ? "प्लॉट आकारमान" : lang === "hi" ? "भूखंड आयाम" : "Plot Dimensions"}</span>
         </button>
 
         <button
@@ -93,7 +95,7 @@ function MainContent() {
           }`}
         >
           <Layers className="h-4 w-4" />
-          <span>{lang === "hi" ? "मिश्रित इकाइयाँ" : "Compound Units"}</span>
+          <span>{lang === "mr" ? "मिश्रित एकके" : lang === "hi" ? "मिश्रित इकाइयाँ" : "Compound Units"}</span>
         </button>
 
         <button
@@ -107,7 +109,7 @@ function MainContent() {
           }`}
         >
           <BarChart3 className="h-4 w-4" />
-          <span>{lang === "hi" ? "इकाई तुलना" : "Unit Comparison"}</span>
+          <span>{lang === "mr" ? "एकक तुलना" : lang === "hi" ? "इकाई तुलना" : "Unit Comparison"}</span>
         </button>
 
         <button
@@ -121,7 +123,7 @@ function MainContent() {
           }`}
         >
           <Sliders className="h-4 w-4" />
-          <span>{lang === "hi" ? "कस्टम इकाई" : "Custom Factor"}</span>
+          <span>{lang === "mr" ? "कस्टम एकक" : lang === "hi" ? "कस्टम इकाई" : "Custom Factor"}</span>
         </button>
 
         <button
@@ -135,7 +137,7 @@ function MainContent() {
           }`}
         >
           <History className="h-4 w-4" />
-          <span>{lang === "hi" ? "इतिहास एवं सहेजे गए" : "History & Saved"}</span>
+          <span>{lang === "mr" ? "इतिहास आणि जतन" : lang === "hi" ? "इतिहास एवं सहेजे गए" : "History & Saved"}</span>
         </button>
       </nav>
 
@@ -235,9 +237,9 @@ function MainContent() {
   );
 }
 
-export default function Index() {
+export default function Index({ forcedLang }: { forcedLang?: "en" | "hi" | "mr" } = {}) {
   return (
-    <AppProvider>
+    <AppProvider initialLang={forcedLang}>
       <div className="min-h-screen bg-background flex flex-col justify-between">
         <Header />
         <MainContent />
