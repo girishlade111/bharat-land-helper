@@ -354,7 +354,7 @@ export const CONVERSION_ROUTES: ConversionRouteData[] = [
     stateName: "National / Standard",
     stateCode: "MH",
     statutoryRef: "Indian Standards of Weights and Measures Act, 1976; National Cadastral Survey Standard.",
-    customaryNotes: "Standard imperial acre across all Indian states and international real estate documentation. 1 Acre = 43,560 sq ft = 4,840 sq yd = 0.40468564224 Hectares.",
+    customaryNotes: "Standard imperial acre across all Indian states and international real estate documentation. 1 Acre = 43,560 sq ft = 4,840 sq yd = 4,046.8564 sq m = 0.40468564224 Hectares.",
     conversionTable: [
       [1, "43,560"],
       [2, "87,120"],

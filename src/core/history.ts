@@ -3,6 +3,8 @@
  * 100% Client-Side Local Storage Persistence with Schema Migration & OWASP CSV Injection Protection
  */
 
+import { getUnit } from "./units";
+
 export type SnapshotProvenance =
   | "VERIFIED_SNAPSHOT"
   | "RECOVERED_FROM_STORED_RESULT"
@@ -38,6 +40,7 @@ export interface ConversionHistoryItem {
 export const HISTORY_STORAGE_KEY_V1 = "bharat_conversion_history_v1";
 export const HISTORY_STORAGE_KEY_LEGACY_ALT = "bharat_calc_history_v1";
 export const HISTORY_STORAGE_KEY_V2 = "bharat_conversion_history_v2";
+export const HISTORY_MIGRATION_FLAG = "bharat_history_migrated_v1";
 export const MAX_HISTORY_ITEMS = 50;
 
 // Known SI and Imperial standard multipliers for mathematical reconstruction
@@ -120,7 +123,8 @@ export function migrateV1Item(item: Record<string, unknown>): ConversionHistoryI
 
 /**
  * Loads calculation history from browser localStorage safely, performing transparent schema migration if needed.
- * Safely inspects v2, v1 legacy, and legacy alt keys, merging without duplicates.
+ * Safely inspects v2, and if not yet migrated, inspects v1 legacy and legacy alt keys.
+ * Once migrated or cleared, legacy keys are never re-queried, preventing ghost resurrection of deleted records.
  */
 export function loadHistory(): ConversionHistoryItem[] {
   if (typeof window === "undefined" || !window.localStorage) {
@@ -128,7 +132,7 @@ export function loadHistory(): ConversionHistoryItem[] {
   }
   try {
     const itemsMap = new Map<string, ConversionHistoryItem>();
-    let needsSave = false;
+    const isMigrated = window.localStorage.getItem(HISTORY_MIGRATION_FLAG) === "true";
 
     // 1. Try loading v2 primary storage
     const rawV2 = window.localStorage.getItem(HISTORY_STORAGE_KEY_V2);
@@ -152,51 +156,69 @@ export function loadHistory(): ConversionHistoryItem[] {
       }
     }
 
-    // 2. Check legacy v1 storage (bharat_conversion_history_v1)
-    const rawV1 = window.localStorage.getItem(HISTORY_STORAGE_KEY_V1);
-    if (rawV1) {
-      try {
-        const parsed = JSON.parse(rawV1);
-        if (Array.isArray(parsed)) {
-          parsed.forEach((item) => {
-            if (item && typeof item.id === "string" && !itemsMap.has(item.id)) {
-              itemsMap.set(item.id, migrateV1Item(item));
-              needsSave = true;
-            }
-          });
+    // 2. Only check legacy storage if migration has NOT yet occurred
+    if (!isMigrated) {
+      let migratedAny = false;
+
+      // Check legacy v1 storage (bharat_conversion_history_v1)
+      const rawV1 = window.localStorage.getItem(HISTORY_STORAGE_KEY_V1);
+      if (rawV1) {
+        try {
+          const parsed = JSON.parse(rawV1);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((item) => {
+              if (item && typeof item.id === "string" && !itemsMap.has(item.id)) {
+                itemsMap.set(item.id, migrateV1Item(item));
+                migratedAny = true;
+              }
+            });
+          }
+        } catch (err) {
+          console.warn("Failed to parse v1 legacy history item:", err);
         }
-      } catch (err) {
-        console.warn("Failed to parse v1 legacy history item:", err);
       }
+
+      // Check legacy alt storage (bharat_calc_history_v1)
+      const rawAlt = window.localStorage.getItem(HISTORY_STORAGE_KEY_LEGACY_ALT);
+      if (rawAlt) {
+        try {
+          const parsed = JSON.parse(rawAlt);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((item) => {
+              if (item && typeof item.id === "string" && !itemsMap.has(item.id)) {
+                itemsMap.set(item.id, migrateV1Item(item));
+                migratedAny = true;
+              }
+            });
+          }
+        } catch (err) {
+          console.warn("Failed to parse legacy alt history item:", err);
+        }
+      }
+
+      // Mark migration completed permanently and remove stale legacy alt storage
+      try {
+        window.localStorage.setItem(HISTORY_MIGRATION_FLAG, "true");
+        window.localStorage.removeItem(HISTORY_STORAGE_KEY_LEGACY_ALT);
+      } catch (err) {
+        console.warn("Failed to set migration flag:", err);
+      }
+
+      const merged = Array.from(itemsMap.values())
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, MAX_HISTORY_ITEMS);
+
+      // Persist migrated items to v2 and mirror to v1 for backward compatibility
+      if (migratedAny || rawV2 === null) {
+        saveHistory(merged);
+      }
+
+      return merged;
     }
 
-    // 3. Check legacy alt storage (bharat_calc_history_v1)
-    const rawAlt = window.localStorage.getItem(HISTORY_STORAGE_KEY_LEGACY_ALT);
-    if (rawAlt) {
-      try {
-        const parsed = JSON.parse(rawAlt);
-        if (Array.isArray(parsed)) {
-          parsed.forEach((item) => {
-            if (item && typeof item.id === "string" && !itemsMap.has(item.id)) {
-              itemsMap.set(item.id, migrateV1Item(item));
-              needsSave = true;
-            }
-          });
-        }
-      } catch (err) {
-        console.warn("Failed to parse legacy alt history item:", err);
-      }
-    }
-
-    const merged = Array.from(itemsMap.values())
+    return Array.from(itemsMap.values())
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, MAX_HISTORY_ITEMS);
-
-    if (needsSave && merged.length > 0) {
-      saveHistory(merged);
-    }
-
-    return merged;
   } catch (err) {
     console.error("Failed to load conversion history:", err);
     return [];
@@ -205,6 +227,7 @@ export function loadHistory(): ConversionHistoryItem[] {
 
 /**
  * Saves calculation history array to localStorage under v2 key.
+ * Also synchronizes v1 key and cleans legacy alt key.
  */
 export function saveHistory(items: ConversionHistoryItem[]): void {
   if (typeof window === "undefined" || !window.localStorage) {
@@ -213,8 +236,12 @@ export function saveHistory(items: ConversionHistoryItem[]): void {
   try {
     const trimmed = items.slice(0, MAX_HISTORY_ITEMS);
     window.localStorage.setItem(HISTORY_STORAGE_KEY_V2, JSON.stringify(trimmed));
-    // Also update v1 key for backward compatibility with older tabs
+    // Mirror to v1 key for backward compatibility
     window.localStorage.setItem(HISTORY_STORAGE_KEY_V1, JSON.stringify(trimmed));
+    // Clean legacy alt key
+    window.localStorage.removeItem(HISTORY_STORAGE_KEY_LEGACY_ALT);
+    // Ensure migration flag is set so legacy keys are never re-queried
+    window.localStorage.setItem(HISTORY_MIGRATION_FLAG, "true");
   } catch (err) {
     console.error("Failed to save conversion history:", err);
   }

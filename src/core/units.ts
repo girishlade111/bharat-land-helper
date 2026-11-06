@@ -71,8 +71,8 @@ export const ALL_UNITS: LandUnit[] = [
     sqMeters: 43560 * SQFT_TO_SQM, // 4,046.8564224 m^2
     sqFt: 43560,
     regionCode: "ALL",
-    note: "43,560 sq ft = 4,840 sq yd = 0.404686 Hectare",
-    noteHi: "43,560 वर्ग फीट = 4,840 वर्ग गज = 0.4047 हेक्टेयर",
+    note: "43,560 sq ft = 4,840 sq yd = 4,046.8564 sq m = 0.404686 Hectare",
+    noteHi: "43,560 वर्ग फीट = 4,840 वर्ग गज = 4,046.8564 वर्ग मीटर = 0.4047 हेक्टेयर",
     provenance: {
       sourceName: "Imperial Survey Standard",
       referenceDocument: "Survey of India Land Records Manual",
