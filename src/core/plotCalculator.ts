@@ -62,8 +62,8 @@ export function parsePlotDimension(input: string | number): { isValid: boolean; 
     if (isNaN(input) || !isFinite(input)) {
       return { isValid: false, value: 0, error: "Please enter a valid finite number.", errorHi: "कृपया एक मान्य संख्या दर्ज करें।" };
     }
-    if (input < 0) {
-      return { isValid: false, value: 0, error: "Plot dimensions cannot be negative.", errorHi: "भूखंड की विमाएं ऋणात्मक नहीं हो सकती हैं।" };
+    if (input <= 0) {
+      return { isValid: false, value: 0, error: "Plot dimensions must be greater than zero.", errorHi: "भूखंड की विमाएं शून्य से अधिक होनी चाहिए।" };
     }
     return { isValid: true, value: input };
   }
@@ -80,8 +80,8 @@ export function parsePlotDimension(input: string | number): { isValid: boolean; 
   if (isNaN(num) || !isFinite(num)) {
     return { isValid: false, value: 0, error: "Please enter a valid numeric value.", errorHi: "कृपया एक मान्य संख्यात्मक मान दर्ज करें।" };
   }
-  if (num < 0) {
-    return { isValid: false, value: 0, error: "Plot dimensions cannot be negative.", errorHi: "भूखंड की विमाएं ऋणात्मक नहीं हो सकती हैं।" };
+  if (num <= 0) {
+    return { isValid: false, value: 0, error: "Plot dimensions must be greater than zero.", errorHi: "भूखंड की विमाएं शून्य से अधिक होनी चाहिए।" };
   }
 
   return { isValid: true, value: num };
