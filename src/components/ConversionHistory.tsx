@@ -274,6 +274,11 @@ export default function ConversionHistory({ onLoadConversion }: ConversionHistor
                   <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
                     {item.stateName}
                   </span>
+                  {item.isCustomUnit && (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-900 dark:text-amber-300 border border-amber-500/30">
+                      {lang === "hi" ? "कस्टम इकाई" : "Custom Factor"}
+                    </span>
+                  )}
                 </div>
                 <div className="text-xs text-muted-foreground font-mono flex items-center gap-2">
                   <span>{item.formula}</span>
