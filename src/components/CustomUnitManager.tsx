@@ -31,7 +31,7 @@ interface CustomUnitManagerProps {
 }
 
 export default function CustomUnitManager({ onApplyCustomUnit }: CustomUnitManagerProps) {
-  const { lang, setInputValue, setFromUnitId } = useApp();
+  const { lang, setInputValue, setFromUnitId, setToUnitId } = useApp();
   const { toast } = useToast();
 
   const [name, setName] = useState<string>("");
