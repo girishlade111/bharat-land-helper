@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
-import { addHistoryItem } from "@/core";
+import { addHistoryItem, formatIndianNumber } from "@/core";
 import { t } from "@/data/translations";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
@@ -25,6 +25,8 @@ export default function ConverterInput() {
     displayPrecision,
     setDisplayPrecision,
     selectedRegion,
+    legacyNotice,
+    dismissLegacyNotice,
   } = useApp();
 
   const { toast } = useToast();
@@ -129,6 +131,39 @@ export default function ConverterInput() {
           ))}
         </div>
       </div>
+
+      {/* Legacy Link Compatibility Notice */}
+      {legacyNotice && (
+        <div
+          role="alert"
+          id="legacy-unit-notice"
+          className="flex items-start justify-between gap-3 p-3.5 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200 text-xs animate-fade-in"
+        >
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <div className="font-bold">
+                Legacy Link Compatibility ({legacyNotice.legacyName})
+              </div>
+              <div className="text-[11px] leading-relaxed text-amber-800 dark:text-amber-300">
+                Shared link referenced historical benchmark ({formatIndianNumber(legacyNotice.legacySqFt)} sq ft).
+                Active calculation has been updated to statutory {legacyNotice.canonicalName} ({formatIndianNumber(legacyNotice.canonicalSqFt)} sq ft).
+                {legacyNotice.notes && ` ${legacyNotice.notes}`}
+              </div>
+            </div>
+          </div>
+          {dismissLegacyNotice && (
+            <button
+              type="button"
+              onClick={dismissLegacyNotice}
+              className="text-[10px] font-semibold text-amber-700 dark:text-amber-300 hover:underline shrink-0"
+              aria-label="Dismiss legacy notice"
+            >
+              Dismiss
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Main Conversion Grid: Input + From Unit + Swap + To Unit */}
       <div className="grid gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-end">

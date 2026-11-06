@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useApp } from "@/context/AppContext";
-import { getUnit, formatIndianNumber, getRegion, ALL_REGIONS, resolveUnit } from "@/core";
+import { getUnit, formatIndianNumber, getRegion, ALL_REGIONS, resolveUnit, getLegacyUnitInfo } from "@/core";
 import { t } from "@/data/translations";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,8 @@ export interface SavedLand {
   stateName: string;
   sqftTotal: number;
   date: string;
+  legacyNote?: string;
+  legacyFactor?: number;
 }
 
 interface LegacySavedLand {
@@ -76,13 +78,19 @@ export function migrateLegacyParcels(): SavedLand[] {
       const stateCode = region.code;
       const stateName = region.name;
 
-      const unit = resolveUnit(item.unitId, { stateCode }) || getUnit(item.unitId);
-      const unitId = unit ? unit.id : (item.unitId || "sqft");
-      const unitSqFt = unit ? unit.sqFt : 1;
+      const legacyInfo = getLegacyUnitInfo(item.unitId || "");
+      const unit = resolveUnit(item.unitId || "", { stateCode }) || getUnit(item.unitId || "");
+      const unitId = unit ? unit.id : (legacyInfo ? legacyInfo.canonicalUnitId : (item.unitId || "sqft"));
+      const unitSqFt = unit ? unit.sqFt : (legacyInfo ? legacyInfo.canonicalSqFt : 1);
       const value = typeof item.value === "number" && !isNaN(item.value) ? item.value : 0;
       const sqftTotal = typeof item.sqftTotal === "number" && !isNaN(item.sqftTotal)
         ? item.sqftTotal
-        : value * unitSqFt;
+        : value * (legacyInfo ? legacyInfo.legacySqFt : unitSqFt);
+
+      let legacyNote: string | undefined = undefined;
+      if (legacyInfo && legacyInfo.factorDiffers) {
+        legacyNote = `Historical factor: ${formatIndianNumber(legacyInfo.legacySqFt)} sq ft/unit (statutory standard is now ${formatIndianNumber(unit?.sqFt || legacyInfo.canonicalSqFt)} sq ft)`;
+      }
 
       migrated.push({
         id: String(item.id || Date.now() + Math.random()),
@@ -93,6 +101,8 @@ export function migrateLegacyParcels(): SavedLand[] {
         stateName,
         sqftTotal,
         date: String(item.date || new Date().toLocaleDateString("en-IN")),
+        legacyNote,
+        legacyFactor: legacyInfo?.legacySqFt,
       });
     }
 
@@ -180,7 +190,8 @@ export default function MyLandList() {
     let msg = `📋 *My Land Parcels*\n\n`;
     parcels.forEach((p, i) => {
       const u = getUnit(p.unitId);
-      msg += `${i + 1}. *${p.name}*: ${formatIndianNumber(p.value)} ${u?.name || p.unitId} (${p.stateName})\n`;
+      const notePart = p.legacyNote ? ` [${p.legacyNote}]` : "";
+      msg += `${i + 1}. *${p.name}*: ${formatIndianNumber(p.value)} ${u?.name || p.unitId} (${p.stateName}) · ${formatIndianNumber(p.sqftTotal)} sq ft${notePart}\n`;
     });
     msg += `\n📏 *Total Area*: ${formatIndianNumber(totalAcre, { maxDecimals: 3 })} Acre (${formatIndianNumber(totalSqft)} sq ft)\n`;
     msg += `_via Bharat Land Converter_`;
@@ -246,6 +257,11 @@ export default function MyLandList() {
                     <div className="text-[11px] text-muted-foreground">
                       {formatIndianNumber(p.value)} {u?.name || p.unitId} · {formatIndianNumber(p.sqftTotal)} sq ft · {p.stateName}
                     </div>
+                    {p.legacyNote && (
+                      <div className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5 font-medium">
+                        {p.legacyNote}
+                      </div>
+                    )}
                   </div>
                   <Button
                     variant="ghost"
