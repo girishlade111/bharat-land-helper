@@ -3,6 +3,12 @@
  * 100% Client-Side Local Storage Persistence with Schema Migration & OWASP CSV Injection Protection
  */
 
+export type SnapshotProvenance =
+  | "VERIFIED_SNAPSHOT"
+  | "RECOVERED_FROM_STORED_RESULT"
+  | "INFERRED_FROM_CURRENT_DEFINITION"
+  | "ORIGINAL_CONTEXT_UNKNOWN";
+
 export interface ConversionHistoryItem {
   id: string;
   dataVersion: "v1" | "v2";
@@ -25,6 +31,7 @@ export interface ConversionHistoryItem {
   customFactorSnapshot?: number;
   confidence?: string;
   sourceClassification?: string;
+  snapshotProvenance?: SnapshotProvenance;
   isFavorite?: boolean;
 }
 
@@ -32,32 +39,80 @@ export const HISTORY_STORAGE_KEY_V1 = "bharat_conversion_history_v1";
 export const HISTORY_STORAGE_KEY_V2 = "bharat_conversion_history_v2";
 export const MAX_HISTORY_ITEMS = 50;
 
+// Known SI and Imperial standard multipliers for mathematical reconstruction
+const FIXED_STANDARD_SQFT: Record<string, number> = {
+  sqft: 1,
+  sqyd: 9,
+  acre: 43560,
+  hectare: 107639.1041671,
+  sqm: 10.76391041671,
+};
+
 /**
- * Migrates a legacy v1 history item to the schema v2 structure.
+ * Migrates a legacy v1 history item to the schema v2 structure with audited snapshot provenance.
+ * Never invents historical factors: categorizes provenance transparently.
  */
 function migrateV1Item(item: Record<string, unknown>): ConversionHistoryItem {
+  const fromValue = Number(item.fromValue) || 0;
+  const toValue = Number(item.toValue) || 0;
+  const fromUnitId = String(item.fromUnitId || "acre");
+  const toUnitId = String(item.toUnitId || "guntha_mh");
+
+  let fromSnap = typeof item.fromUnitSqFtSnapshot === "number" ? item.fromUnitSqFtSnapshot : undefined;
+  let toSnap = typeof item.toUnitSqFtSnapshot === "number" ? item.toUnitSqFtSnapshot : undefined;
+  let provenance: SnapshotProvenance = (item.snapshotProvenance as SnapshotProvenance) || "ORIGINAL_CONTEXT_UNKNOWN";
+
+  if (typeof fromSnap === "number" && typeof toSnap === "number") {
+    provenance = "VERIFIED_SNAPSHOT";
+  } else if (fromValue > 0 && toValue > 0) {
+    // Attempt mathematical reconstruction if one unit is a fixed standard
+    if (FIXED_STANDARD_SQFT[toUnitId] !== undefined) {
+      toSnap = FIXED_STANDARD_SQFT[toUnitId];
+      fromSnap = (toValue * toSnap) / fromValue;
+      provenance = "RECOVERED_FROM_STORED_RESULT";
+    } else if (FIXED_STANDARD_SQFT[fromUnitId] !== undefined) {
+      fromSnap = FIXED_STANDARD_SQFT[fromUnitId];
+      toSnap = (fromValue * fromSnap) / toValue;
+      provenance = "RECOVERED_FROM_STORED_RESULT";
+    } else {
+      // Inferred from current definition registry if IDs resolve
+      const currentFrom = getUnit(fromUnitId);
+      const currentTo = getUnit(toUnitId);
+      if (currentFrom && currentTo) {
+        fromSnap = currentFrom.sqFt;
+        toSnap = currentTo.sqFt;
+        provenance = "INFERRED_FROM_CURRENT_DEFINITION";
+      } else {
+        provenance = "ORIGINAL_CONTEXT_UNKNOWN";
+      }
+    }
+  } else {
+    provenance = "ORIGINAL_CONTEXT_UNKNOWN";
+  }
+
   return {
     id: String(item.id || `calc_${Date.now()}`),
     dataVersion: "v2",
     timestamp: typeof item.timestamp === "string" ? item.timestamp : new Date().toISOString(),
-    fromValue: Number(item.fromValue) || 0,
-    fromUnitId: String(item.fromUnitId || "acre"),
+    fromValue,
+    fromUnitId,
     fromUnitName: String(item.fromUnitName || "Acre"),
-    fromUnitSqFtSnapshot: typeof item.fromUnitSqFtSnapshot === "number" ? item.fromUnitSqFtSnapshot : undefined,
-    toValue: Number(item.toValue) || 0,
-    toUnitId: String(item.toUnitId || "guntha_mh"),
+    fromUnitSqFtSnapshot: fromSnap,
+    toValue,
+    toUnitId,
     toUnitName: String(item.toUnitName || "Guntha"),
-    toUnitSqFtSnapshot: typeof item.toUnitSqFtSnapshot === "number" ? item.toUnitSqFtSnapshot : undefined,
+    toUnitSqFtSnapshot: toSnap,
     formattedResult: String(item.formattedResult || "0"),
     stateCode: String(item.stateCode || "MH"),
     stateName: String(item.stateName || "Maharashtra"),
     district: item.district ? String(item.district) : undefined,
     variantId: item.variantId ? String(item.variantId) : undefined,
     formula: String(item.formula || ""),
-    isCustomUnit: Boolean(item.isCustomUnit || item.fromUnitId?.startsWith("custom_")),
+    isCustomUnit: Boolean(item.isCustomUnit || fromUnitId.startsWith("custom_")),
     customFactorSnapshot: typeof item.customFactorSnapshot === "number" ? item.customFactorSnapshot : undefined,
     confidence: item.confidence ? String(item.confidence) : "WIDELY_USED_CUSTOMARY",
-    sourceClassification: item.sourceClassification ? String(item.sourceClassification) : "State Revenue Standard",
+    sourceClassification: item.sourceClassification ? String(item.sourceClassification) : "Customary Benchmark",
+    snapshotProvenance: provenance,
     isFavorite: Boolean(item.isFavorite),
   };
 }
@@ -154,6 +209,7 @@ export function addHistoryItem(
     id: `calc_${now.getTime()}_${Math.random().toString(36).substring(2, 7)}`,
     dataVersion: "v2",
     timestamp: now.toISOString(),
+    snapshotProvenance: record.snapshotProvenance || "VERIFIED_SNAPSHOT",
     isFavorite: false,
   };
 

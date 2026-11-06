@@ -21,7 +21,7 @@ const VERIFIED_BIGHAS: BighaEntry[] = [
   { state: "Maharashtra", stateHi: "महाराष्ट्र", variant: "Customary (25 Guntha)", variantHi: "पारंपरिक (25 गुंठा)", sqft: 27225, acres: 0.625, sourceDoc: "MLR Code 1966" },
   { state: "Rajasthan", stateHi: "राजस्थान", variant: "Pucca (3,025 sq yd)", variantHi: "पक्का (3,025 वर्ग गज)", sqft: 27225, acres: 0.625, sourceDoc: "Rajasthan Tenancy Act 1955" },
   { state: "Bihar", stateHi: "बिहार", variant: "Standard 5.5-Haath Lagga (20 Kattha)", variantHi: "मानक 5.5 हाथ लग्गी", sqft: 27225, acres: 0.625, sourceDoc: "Bihar Tenancy Manual" },
-  { state: "Madhya Pradesh", stateHi: "मध्य प्रदेश", variant: "Malwa / Mahakoshal Standard", variantHi: "मालवा / महाकौशल मानक", sqft: 27225, acres: 0.625, sourceDoc: "MP Land Revenue Code 1959" },
+  { state: "Madhya Pradesh", stateHi: "मध्य प्रदेश", variant: "Malwa / Mahakoshal Customary", variantHi: "मालवा / महाकौशल पारंपरिक", sqft: 27225, acres: 0.625, sourceDoc: "Central India Customary Standard" },
   { state: "Bihar (North)", stateHi: "उत्तर बिहार", variant: "Tirhut / Mithila (6-Haath Lagga)", variantHi: "तिरहुत (6 हाथ लग्गी)", sqft: 32400, acres: 0.7438, sourceDoc: "Cadastral Survey Records" },
   { state: "Rajasthan", stateHi: "राजस्थान", variant: "Kaccha Customary (1,936 sq yd)", variantHi: "कच्चा पारंपरिक", sqft: 17424, acres: 0.4, sourceDoc: "Apna Khata Customary" },
   { state: "Gujarat", stateHi: "गुजरात", variant: "Standard Vigha (16 Guntha)", variantHi: "मानक वीघा (16 गुंठा)", sqft: 17424, acres: 0.4, sourceDoc: "AnyRoR Gujarat Standard" },

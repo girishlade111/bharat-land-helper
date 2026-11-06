@@ -406,22 +406,24 @@ describe("Bharat Land Converter — Phase 2B.5 Hardened Test Suite", () => {
         expect(entry.variant).toBeTruthy();
         expect(entry.sourceDoc).toBeTruthy();
         expect(entry.geographicScope).toBeTruthy();
-        expect(["OFFICIAL_STANDARD", "REGIONAL_STATUTORY", "CUSTOMARY_UNOFFICIAL"]).toContain(
+        expect(["OFFICIAL_STANDARD", "REGIONAL_STATUTORY", "WIDELY_USED_CUSTOMARY", "CUSTOMARY_UNOFFICIAL"]).toContain(
           entry.confidence,
         );
       });
     });
 
-    it("verifies Madhya Pradesh Bigha definitions adhere to statutory and customary distinctions", () => {
+    it("verifies Madhya Pradesh Bigha definitions adhere to customary distinctions and purged Section 68 error", () => {
       const mpStandard = COMPARISON_DATA.find((e) => e.id === "bigha_mp_malwa");
       expect(mpStandard).toBeDefined();
       expect(mpStandard!.sqFt).toBe(27225);
-      expect(mpStandard!.confidence).toBe("OFFICIAL_STANDARD");
+      expect(mpStandard!.confidence).toBe("WIDELY_USED_CUSTOMARY");
+      expect(mpStandard!.sourceDoc).not.toContain("Section 68");
 
       const mpGwalior = COMPARISON_DATA.find((e) => e.id === "bigha_mp_gwalior");
       expect(mpGwalior).toBeDefined();
       expect(mpGwalior!.sqFt).toBe(12000);
-      expect(mpGwalior!.confidence).toBe("REGIONAL_STATUTORY");
+      expect(mpGwalior!.confidence).toBe("WIDELY_USED_CUSTOMARY");
+      expect(mpGwalior!.sourceDoc).not.toContain("Section 68");
     });
   });
 });

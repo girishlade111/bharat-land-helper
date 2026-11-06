@@ -279,6 +279,21 @@ export default function ConversionHistory({ onLoadConversion }: ConversionHistor
                       {lang === "hi" ? "कस्टम इकाई" : "Custom Factor"}
                     </span>
                   )}
+                  {item.snapshotProvenance === "VERIFIED_SNAPSHOT" && (
+                    <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20" title="Factor verified at time of calculation">
+                      Snapshot
+                    </span>
+                  )}
+                  {item.snapshotProvenance === "RECOVERED_FROM_STORED_RESULT" && (
+                    <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20" title="Factor mathematically recovered from stored calculation result">
+                      Recovered
+                    </span>
+                  )}
+                  {item.snapshotProvenance === "INFERRED_FROM_CURRENT_DEFINITION" && (
+                    <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20" title="Factor inferred from current unit definition">
+                      Inferred
+                    </span>
+                  )}
                 </div>
                 <div className="text-xs text-muted-foreground font-mono flex items-center gap-2">
                   <span>{item.formula}</span>

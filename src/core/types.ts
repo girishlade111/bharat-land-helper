@@ -30,6 +30,7 @@ export type EvidenceClassification =
   | "PRIMARY_STATUTORY_ACT"
   | "OFFICIAL_SURVEY_MANUAL"
   | "GAZETTEER_RECORD"
+  | "LOCAL_REVENUE_CUSTOM"
   | "CUSTOMARY_UNOFFICIAL";
 
 export interface UnitProvenance {
@@ -39,6 +40,7 @@ export interface UnitProvenance {
   confidence: ConfidenceLevel;
   qualification?: string;
   qualificationHi?: string;
+  qualificationMr?: string;
   documentUrl?: string;
   sectionOrPage?: string;
   evidenceClassification?: EvidenceClassification;
@@ -49,6 +51,7 @@ export interface LandUnit {
   id: string;
   name: string;
   nameHi: string;
+  nameMr?: string;
   aliases: string[];
   category: "standard" | "regional";
   sqMeters: number; // Canonical SI base
@@ -57,9 +60,11 @@ export interface LandUnit {
   regionName?: string;
   variantName?: string;
   variantNameHi?: string;
+  variantNameMr?: string;
   subdivision?: UnitSubdivision;
   note?: string;
   noteHi?: string;
+  noteMr?: string;
   provenance: UnitProvenance;
 }
 
