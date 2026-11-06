@@ -1,0 +1,324 @@
+import { useState, useEffect, useMemo } from "react";
+import { useApp } from "@/context/AppContext";
+import {
+  loadHistory,
+  deleteHistoryItem,
+  toggleFavorite,
+  clearHistory,
+  downloadHistoryCsv,
+  type ConversionHistoryItem,
+} from "@/core";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import {
+  History,
+  Star,
+  Trash2,
+  Download,
+  Printer,
+  RotateCcw,
+  Search,
+  CheckCircle2,
+  FileSpreadsheet,
+} from "lucide-react";
+
+interface ConversionHistoryProps {
+  onLoadConversion?: (item: ConversionHistoryItem) => void;
+}
+
+export default function ConversionHistory({ onLoadConversion }: ConversionHistoryProps) {
+  const { lang, setInputValue, setFromUnitId, setToUnitId, setSelectedRegionCode } = useApp();
+  const { toast } = useToast();
+
+  const [historyItems, setHistoryItems] = useState<ConversionHistoryItem[]>([]);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Load history safely on client mount
+  useEffect(() => {
+    setHistoryItems(loadHistory());
+  }, []);
+
+  // Filtered items
+  const filteredItems = useMemo(() => {
+    return historyItems.filter((item) => {
+      if (showFavoritesOnly && !item.isFavorite) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesUnit =
+          item.fromUnitName.toLowerCase().includes(q) ||
+          item.toUnitName.toLowerCase().includes(q) ||
+          item.stateName.toLowerCase().includes(q);
+        const matchesVal =
+          String(item.fromValue).includes(q) || String(item.toValue).includes(q);
+        if (!matchesUnit && !matchesVal) return false;
+      }
+      return true;
+    });
+  }, [historyItems, showFavoritesOnly, searchQuery]);
+
+  const handleToggleFavorite = (id: string) => {
+    const updated = toggleFavorite(id);
+    setHistoryItems(updated);
+  };
+
+  const handleDeleteItem = (id: string) => {
+    const updated = deleteHistoryItem(id);
+    setHistoryItems(updated);
+    toast({
+      title: lang === "hi" ? "इतिहास हटाया गया" : "Record Removed",
+      description: lang === "hi" ? "गणना सूची से हटा दी गई है" : "Conversion calculation removed from history",
+    });
+  };
+
+  const handleClearAll = () => {
+    if (window.confirm(lang === "hi" ? "क्या आप पूरा इतिहास मिटाना चाहते हैं?" : "Clear all conversion history?")) {
+      const updated = clearHistory(false);
+      setHistoryItems(updated);
+      toast({
+        title: lang === "hi" ? "इतिहास साफ किया गया" : "History Cleared",
+        description: lang === "hi" ? "सभी प्रविष्टियां हटा दी गई हैं" : "All history records have been cleared",
+      });
+    }
+  };
+
+  const handleExportCsv = () => {
+    if (historyItems.length === 0) {
+      toast({
+        title: lang === "hi" ? "कोई डेटा नहीं" : "No Data",
+        description: lang === "hi" ? "निर्यात के लिए कोई इतिहास नहीं है" : "No conversion history to export",
+        variant: "destructive",
+      });
+      return;
+    }
+    const success = downloadHistoryCsv(filteredItems.length > 0 ? filteredItems : historyItems);
+    if (success) {
+      toast({
+        title: lang === "hi" ? "CSV डाउनलोड शुरू" : "CSV Exported",
+        description: lang === "hi" ? "रूपांतरण इतिहास फ़ाइल सहेजी गई" : "Conversion history CSV downloaded successfully",
+      });
+    }
+  };
+
+  const handlePrint = () => {
+    if (typeof window !== "undefined") {
+      window.print();
+    }
+  };
+
+  const handleReRun = (item: ConversionHistoryItem) => {
+    setInputValue(String(item.fromValue));
+    setFromUnitId(item.fromUnitId);
+    setToUnitId(item.toUnitId);
+    if (item.stateCode) {
+      setSelectedRegionCode(item.stateCode);
+    }
+    if (onLoadConversion) {
+      onLoadConversion(item);
+    }
+    toast({
+      title: lang === "hi" ? "गणना लोड की गई" : "Conversion Loaded",
+      description: `${item.fromValue} ${item.fromUnitName} → ${item.toUnitName}`,
+    });
+  };
+
+  return (
+    <section
+      aria-label="Conversion History and Export"
+      className="rounded-2xl border border-border bg-card p-4 sm:p-6 shadow-sm space-y-5"
+    >
+      {/* Header and Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border/60 pb-4">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+              <History className="h-5 w-5" />
+            </div>
+            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
+              {lang === "hi" ? "रूपांतरण इतिहास एवं निर्यात" : "Conversion History & Export"}
+            </h2>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {lang === "hi"
+              ? "ब्राउज़र में स्थानीय रूप से सहेजी गई गणनाएं, CSV डाउनलोड और प्रिंट मेमो"
+              : "Client-side private calculation history, spreadsheet export & printable memo"}
+          </p>
+        </div>
+
+        {/* Global Action Buttons */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCsv}
+            disabled={historyItems.length === 0}
+            className="h-8 gap-1.5 text-xs font-medium"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>{lang === "hi" ? "CSV निर्यात" : "Export CSV"}</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrint}
+            disabled={historyItems.length === 0}
+            className="h-8 gap-1.5 text-xs font-medium"
+          >
+            <Printer className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+            <span>{lang === "hi" ? "प्रिंट मेमो" : "Print Memo"}</span>
+          </Button>
+
+          {historyItems.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClearAll}
+              className="h-8 gap-1 text-xs text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span>{lang === "hi" ? "साफ करें" : "Clear"}</span>
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Filter and Search Bar */}
+      {historyItems.length > 0 && (
+        <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={lang === "hi" ? "इकाई या मान खोजें..." : "Filter by unit, value or state..."}
+              className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                showFavoritesOnly
+                  ? "bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-300"
+                  : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <Star
+                className={`h-3.5 w-3.5 ${
+                  showFavoritesOnly ? "fill-amber-500 text-amber-500" : "text-muted-foreground"
+                }`}
+              />
+              <span>{lang === "hi" ? "पसंदीदा केवल" : "Favorites Only"}</span>
+            </button>
+            <span className="text-xs text-muted-foreground">
+              {filteredItems.length} {lang === "hi" ? "प्रविष्टियां" : "records"}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* History Items List / Table */}
+      {filteredItems.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border/80 p-8 text-center space-y-2">
+          <History className="h-8 w-8 text-muted-foreground/40 mx-auto" />
+          <p className="text-sm font-medium text-foreground">
+            {lang === "hi" ? "कोई इतिहास रिकॉर्ड नहीं" : "No conversion history recorded"}
+          </p>
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+            {lang === "hi"
+              ? "जब आप परिवर्तक का उपयोग करेंगे, तो आपकी गणनाएं स्वचालित रूप से यहाँ सुरक्षित रहेंगी।"
+              : "As you perform land area conversions, your calculation history will appear here for instant reference and CSV export."}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2.5">
+          {filteredItems.map((item) => (
+            <div
+              key={item.id}
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-border/70 bg-card hover:bg-muted/30 transition-all text-sm group"
+            >
+              {/* Left Column: Values & Units */}
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-foreground">
+                    {item.fromValue} {item.fromUnitName}
+                  </span>
+                  <span className="text-muted-foreground text-xs">→</span>
+                  <span className="font-bold text-primary">
+                    {item.formattedResult} {item.toUnitName}
+                  </span>
+                  <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
+                    {item.stateName}
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground font-mono flex items-center gap-2">
+                  <span>{item.formula}</span>
+                  <span className="text-[10px] text-muted-foreground/60">•</span>
+                  <span className="text-[11px] text-muted-foreground/80">
+                    {new Date(item.timestamp).toLocaleDateString("en-IN", {
+                      day: "2-digit",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+              </div>
+
+              {/* Right Column: Actions */}
+              <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleToggleFavorite(item.id)}
+                  title={item.isFavorite ? "Remove favorite" : "Mark as favorite"}
+                  className="p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors"
+                >
+                  <Star
+                    className={`h-4 w-4 ${
+                      item.isFavorite
+                        ? "fill-amber-500 text-amber-500"
+                        : "text-muted-foreground hover:text-amber-500"
+                    }`}
+                  />
+                </button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleReRun(item)}
+                  className="h-7 text-xs gap-1 px-2.5"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  <span>{lang === "hi" ? "लोड करें" : "Load"}</span>
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={() => handleDeleteItem(item.id)}
+                  title="Delete record"
+                  className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Cadastral Print / Legal Notice */}
+      <div className="text-[11px] text-muted-foreground border-t border-border/50 pt-3 flex items-start gap-2">
+        <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+        <span>
+          {lang === "hi"
+            ? "सूचना: यह गणना इतिहास आपके उपकरण पर स्थानीय रूप से सुरक्षित रहता है। विधिक विलेख हेतु स्थानीय राजस्व पटवारी रिकॉर्ड से सत्यापन आवश्यक है।"
+            : "Notice: Conversion records are stored in browser local storage. For statutory land registration, verify all regional unit factors with the relevant Tehsil Revenue Authority."}
+        </span>
+      </div>
+    </section>
+  );
+}

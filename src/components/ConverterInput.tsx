@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
+import { addHistoryItem } from "@/core";
 import { t } from "@/data/translations";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
@@ -52,6 +53,27 @@ export default function ConverterInput() {
       });
     }
   };
+
+  // Automatically record valid calculations to client-side history (debounced)
+  useEffect(() => {
+    if (primaryResult && validation.isValid && validation.parsedValue > 0) {
+      const timer = setTimeout(() => {
+        addHistoryItem({
+          fromValue: primaryResult.inputValue,
+          fromUnitId: fromUnit.id,
+          fromUnitName: lang === "hi" ? fromUnit.nameHi : fromUnit.name,
+          toValue: primaryResult.rawResult,
+          toUnitId: toUnit.id,
+          toUnitName: lang === "hi" ? toUnit.nameHi : toUnit.name,
+          formattedResult: primaryResult.formattedResult,
+          stateCode: selectedRegion.code,
+          stateName: lang === "hi" ? selectedRegion.nameHi : selectedRegion.name,
+          formula: primaryResult.formula,
+        });
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [primaryResult, validation, fromUnit, toUnit, selectedRegion, lang]);
 
   return (
     <section aria-labelledby="converter-heading" className="animate-fade-in rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-6 space-y-5">

@@ -3,4 +3,7 @@ export * from "./regions";
 export * from "./units";
 export * from "./formatter";
 export * from "./converter";
-
+export * from "./plotCalculator";
+export * from "./compoundUnits";
+export * from "./customUnits";
+export * from "./history";
