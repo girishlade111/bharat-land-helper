@@ -136,20 +136,44 @@ function LandUnitComparisonContent() {
 
         <div className="space-y-3 text-xs leading-relaxed text-muted-foreground">
           <p>
-            Unlike modern standardized metric measures (1 Hectare = 10,000 sq m everywhere), traditional Indian land units evolved through regional revenue settlements over hundreds of years:
+            {lang === "mr"
+              ? "आधुनिक मेट्रिक मानकांपेक्षा (१ हेक्टर = सर्वत्र १०,००० चौ. मी.) वेगळे, भारतातील पारंपारिक जमीन मोजमापे शेकडो वर्षांच्या प्रादेशिक महसूल बंदोबस्तातून विकसित झाली आहेत:"
+              : lang === "hi"
+              ? "आधुनिक मानकीकृत मीट्रिक मापों (१ हेक्टेयर = सर्वत्र १०,००० वर्ग मी.) के विपरीत, भारत की पारंपरिक राजस्व इकाइयाँ सैकड़ों वर्षों के ऐतिहासिक सर्वेक्षणों से विकसित हुई हैं:"
+              : "Unlike modern standardized metric measures (1 Hectare = 10,000 sq m everywhere), traditional Indian land units evolved through regional revenue settlements over hundreds of years:"}
           </p>
           <ul className="list-disc pl-5 space-y-1.5 text-foreground/90">
             <li>
-              <strong>Mughal Ilahi Gaz & Gunter's Chain:</strong> In northern provinces (UP, Bihar, parts of Punjab), revenue officials standardized the Bigha to a square of 55 yards × 55 yards (3,025 square yards = 27,225 square feet), known as the Pucca Bigha.
+              <strong>{lang === "mr" ? "मुघल इलाही गज व गंटर जरीब:" : lang === "hi" ? "मुगल इलाही गज एवं जरीब:" : "Mughal Ilahi Gaz & Gunter's Chain:"}</strong>{" "}
+              {lang === "mr"
+                ? "उत्तर भारतातील सुभ्यांमध्ये (उत्तर प्रदेश, बिहार) ५५ गज × ५५ गज (३,०२५ चौ. गज = २७,२२५ चौ. फूट) चौरसाला 'पक्का बीघा' म्हणून प्रमाणित केले गेले."
+                : lang === "hi"
+                ? "उत्तरी प्रांतों (उत्तर प्रदेश, बिहार) में ५५ गज × ५५ गज (३,०२५ वर्ग गज = २७,२२५ वर्ग फीट) के वर्ग को 'पक्का बीघा' के रूप में मानकीकृत किया गया।"
+                : "In northern provinces (UP, Bihar, parts of Punjab), revenue officials standardized the Bigha to a square of 55 yards × 55 yards (3,025 square yards = 27,225 square feet), known as the Pucca Bigha."}
             </li>
             <li>
-              <strong>Bengal Permanent Settlement (1793):</strong> In Bengal Presidency (West Bengal, parts of Assam), the British East India Company standardized the Bigha to 120 ft × 120 ft (14,400 sq ft or 1,600 sq yd), creating the distinct Bengal Bigha equal to roughly one-third of an acre.
+              <strong>{lang === "mr" ? "बंगाल कायमधारा बंदोबस्त (१७९३):" : lang === "hi" ? "बंगाल स्थायी बंदोबस्त (१७९३):" : "Bengal Permanent Settlement (1793):"}</strong>{" "}
+              {lang === "mr"
+                ? "बंगाल प्रेसिडेन्सीमध्ये (पश्चिम बंगाल, आसाम) बीघा १२० फूट × १२० फूट (१४,४०० चौ. फूट = १,६०० चौ. गज ≈ ०.३३०६ एकर; अचूक १/३ एकर नाही जो १४,५२० चौ. फूट असतो) म्हणून निश्चित केला गेला."
+                : lang === "hi"
+                ? "बंगाल प्रेसीडेंसी (पश्चिम बंगाल, असम) में बीघा १२० फीट × १२० फीट (१४,४०० वर्ग फीट = १,६०० वर्ग गज ≈ ०.३३०६ एकड़; सटीक १/३ एकड़ नहीं जो १४,५२० वर्ग फीट होता है) निर्धारित किया गया।"
+                : "In Bengal Presidency (West Bengal, parts of Assam), the British East India Company standardized the Bigha to 120 ft × 120 ft (14,400 sq ft or 1,600 sq yd ≈ 0.3306 Acre; not exact 1/3 Acre which is 14,520 sq ft)."}
             </li>
             <li>
-              <strong>Princely State Customary Variations (Madhya Pradesh & Rajasthan):</strong> Regions administered by princely states used local measuring rods (Gatha / Latha) of varying lengths (e.g., Gwalior's 12,000 sq ft Bigha vs Central India / Malwa's 27,225 sq ft Bigha).
+              <strong>{lang === "mr" ? "संस्थानकालीन स्थानिक भेद (मध्य प्रदेश व राजस्थान):" : lang === "hi" ? "रियासती स्थानीय भिन्नताएँ (मध्य प्रदेश एवं राजस्थान):" : "Princely State Customary Variations (Madhya Pradesh & Rajasthan):"}</strong>{" "}
+              {lang === "mr"
+                ? "संस्थानिक भागांमध्ये स्थानिक काठ्या (गठ्ठा / लठ्ठा) वेगवेगळ्या लांबीच्या होत्या (उदा. ग्वाल्हेरचा १२,००० चौ. फूट बीघा विरुद्ध माळव्याचा २७,२२५ चौ. फूट बीघा)."
+                : lang === "hi"
+                ? "रियासती क्षेत्रों में स्थानीय गट्ठा/लट्ठानुसार भिन्न मान रहे (जैसे ग्वालियर का १२,००० वर्ग फीट बीघा बनाम मालवा का २७,२२५ वर्ग फीट बीघा)।"
+                : "Regions administered by princely states used local measuring rods (Gatha / Latha) of varying lengths (e.g., Gwalior's 12,000 sq ft Bigha vs Central India / Malwa's 27,225 sq ft Bigha)."}
             </li>
             <li>
-              <strong>Western India (Maharashtra & Gujarat):</strong> The Bombay Land Revenue Code standardized the Guntha at exactly 33 ft × 33 ft = 1,089 sq ft (121 sq yd), with exactly 40 Gunthas constituting one standard imperial acre.
+              <strong>{lang === "mr" ? "पश्चिम भारत (महाराष्ट्र व गुजरात):" : lang === "hi" ? "पश्चिमी भारत (महाराष्ट्र एवं गुजरात):" : "Western India (Maharashtra & Gujarat):"}</strong>{" "}
+              {lang === "mr"
+                ? "बॉम्बे लँड रेव्हेन्यू कोडनुसार १ गुंठा बरोबर ३३ फूट × ३३ फूट = १,०८९ चौ. फूट (१२१ चौ. गज) निश्चित करण्यात आला, ज्यामध्ये बरोबर ४० गुंठे मिळून १ एकर होतो."
+                : lang === "hi"
+                ? "बॉम्बे लैंड रेवेन्यू कोड के अनुसार १ गुंठा ठीक ३३ फीट × ३३ फीट = १,०८९ वर्ग फीट (१२१ वर्ग गज) निर्धारित हुआ, जिससे ठीक ४० गुंठे मिलकर १ एकड़ बनाते हैं।"
+                : "The Bombay Land Revenue Code standardized the Guntha at exactly 33 ft × 33 ft = 1,089 sq ft (121 sq yd), with exactly 40 Gunthas constituting one standard imperial acre."}
             </li>
           </ul>
         </div>
@@ -159,13 +183,27 @@ function LandUnitComparisonContent() {
       <section className="space-y-2.5 rounded-2xl border border-amber-500/25 bg-amber-500/5 p-5 text-xs text-foreground/80 leading-relaxed">
         <div className="flex items-center gap-2 font-bold text-amber-900 dark:text-amber-200 text-sm">
           <ShieldCheck className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
-          <h3>Provenance Note on Madhya Pradesh Bigha</h3>
+          <h3>
+            {lang === "mr"
+              ? "मध्य प्रदेश बीघा: महसूल व प्रत्यक्ष संदर्भ"
+              : lang === "hi"
+              ? "मध्य प्रदेश बीघा: राजस्व एवं व्यावहारिक संदर्भ"
+              : "Provenance Note on Madhya Pradesh Bigha"}
+          </h3>
         </div>
         <p>
-          Official computerized land records in Madhya Pradesh (MP Bhulekh) record parcels strictly in Metric Hectares and Ares. The Madhya Pradesh Land Revenue Code, 1959 governs survey administration, tenure, and revenue recovery, but does not define a statutory Bigha conversion.
+          {lang === "mr"
+            ? "मध्य प्रदेशातील अधिकृत संगणकीकृत भूमी अभिलेख (MP Bhulekh) केवळ मेट्रिक हेक्टर आणि आरमध्ये नोंदवले जातात. मध्य प्रदेश जमीन महसूल संहिता, १९५९ सर्वेक्षण व महसूल प्रशासनाचे नियमन करते, परंतु त्यात वैधानिक बीघा गुणक निश्चित केलेला नाही."
+            : lang === "hi"
+            ? "मध्य प्रदेश के आधिकारिक कम्प्यूटरीकृत भू-अभिलेख (MP Bhulekh) केवल मीट्रिक हेक्टेयर और आर में दर्ज होते हैं। मध्य प्रदेश भू-राजस्व संहिता, १९५९ सर्वेक्षण प्रशासन को नियंत्रित करती है, परंतु इसमें कोई वैधानिक बीघा रूपांतरण दर परिभाषित नहीं है।"
+            : "Official computerized land records in Madhya Pradesh (MP Bhulekh) record parcels strictly in Metric Hectares and Ares. The Madhya Pradesh Land Revenue Code, 1959 governs survey administration, tenure, and revenue recovery, but does not define a statutory Bigha conversion."}
         </p>
         <p>
-          The benchmarks presented here (27,225 sq ft Standard/Malwa Bigha and 12,000 sq ft Gwalior Bigha) represent widely used customary revenue conversion factors preserved in local Patwari practice, registry deeds, and agricultural trade.
+          {lang === "mr"
+            ? "येथे दिलेले मानके (२७,२२५ चौ. फूट मानक/माळवा बीघा आणि १२,००० चौ. फूट ग्वाल्हेर बीघा) स्थानिक पटवारी सराव, खरेदीखत आणि कृषी व्यवहारातील प्रचलित पारंपारिक घटक दर्शवतात."
+            : lang === "hi"
+            ? "यहाँ प्रस्तुत मानक (२७,२२५ वर्ग फीट मानक/मालवा बीघा और १२,००० वर्ग फीट ग्वालियर बीघा) स्थानीय पटवारी व्यवहार, बैनामा और कृषि व्यापार के व्यापक प्रचलित पारंपरिक गुणक हैं।"
+            : "The benchmarks presented here (27,225 sq ft Standard/Malwa Bigha and 12,000 sq ft Gwalior Bigha) represent widely used customary revenue conversion factors preserved in local Patwari practice, registry deeds, and agricultural trade."}
         </p>
       </section>
 
@@ -179,21 +217,27 @@ function LandUnitComparisonContent() {
             to={`${langPrefix}/tools/plot-area-calculator`}
             className="p-3 rounded-xl border border-border bg-card hover:border-primary/50 flex items-center justify-between transition-colors"
           >
-            <span className="font-semibold text-foreground">Plot Area Calculator</span>
+            <span className="font-semibold text-foreground">
+              {lang === "mr" ? "प्लॉट क्षेत्रफळ कॅल्क्युलेटर" : lang === "hi" ? "भूखंड क्षेत्रफल कैलकुलेटर" : "Plot Area Calculator"}
+            </span>
             <ArrowRight className="h-3.5 w-3.5 text-primary" />
           </Link>
           <Link
             to={`${langPrefix}/tools/compound-land-unit-converter`}
             className="p-3 rounded-xl border border-border bg-card hover:border-primary/50 flex items-center justify-between transition-colors"
           >
-            <span className="font-semibold text-foreground">Compound Unit Converter</span>
+            <span className="font-semibold text-foreground">
+              {lang === "mr" ? "मिश्रित एकक कन्व्हर्टर" : lang === "hi" ? "मिश्रित इकाई परिवर्तक" : "Compound Unit Converter"}
+            </span>
             <ArrowRight className="h-3.5 w-3.5 text-primary" />
           </Link>
           <Link
-            to="/convert/acre-to-guntha/maharashtra"
+            to={`${langPrefix}/tools/custom-land-unit-calculator`}
             className="p-3 rounded-xl border border-border bg-card hover:border-primary/50 flex items-center justify-between transition-colors"
           >
-            <span className="font-semibold text-foreground">Acre to Guntha (MH)</span>
+            <span className="font-semibold text-foreground">
+              {lang === "mr" ? "कस्टम स्थानिक एकक" : lang === "hi" ? "कस्टम स्थानीय इकाई" : "Custom Unit Manager"}
+            </span>
             <ArrowRight className="h-3.5 w-3.5 text-primary" />
           </Link>
         </div>

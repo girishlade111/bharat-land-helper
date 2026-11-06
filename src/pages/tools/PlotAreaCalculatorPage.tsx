@@ -152,7 +152,11 @@ function PlotAreaCalculatorContent() {
               {lang === "mr" ? "१ चौरस गज (गज़ / Sq Yd)" : lang === "hi" ? "१ वर्ग गज (Gaj / Sq Yd)" : "1 Square Yard (Gaj)"}
             </span>
             <p className="text-muted-foreground">
-              = 9 sq ft (3 ft × 3 ft). Commonly used for residential layouts across Delhi, Haryana, Punjab, and Uttar Pradesh.
+              {lang === "mr"
+                ? "= ९ चौ. फूट (३ फूट × ३ फूट). दिल्ली, हरियाणा, पंजाब आणि उत्तर प्रदेशातील निवासी लेआउटमध्ये प्रचलित."
+                : lang === "hi"
+                ? "= ९ वर्ग फीट (३ फीट × ३ फीट)। दिल्ली, हरियाणा, पंजाब और उत्तर प्रदेश में आवासीय लेआउट में प्रचलित।"
+                : "= 9 sq ft (3 ft × 3 ft). Commonly used for residential layouts across Delhi, Haryana, Punjab, and Uttar Pradesh."}
             </p>
           </div>
 
@@ -161,7 +165,11 @@ function PlotAreaCalculatorContent() {
               {lang === "mr" ? "१ गुंठा (महाराष्ट्र / कर्नाटक)" : lang === "hi" ? "१ गुंठा (महाराष्ट्र / कर्नाटक)" : "1 Guntha (Maharashtra / Karnataka)"}
             </span>
             <p className="text-muted-foreground">
-              = 1,089 sq ft (33 ft × 33 ft = 121 sq yd). Exactly 40 Gunthas equal 1 Imperial Acre (43,560 sq ft).
+              {lang === "mr"
+                ? "= १,०८९ चौ. फूट (३३ फूट × ३३ फूट = १२१ चौ. गज). बरोबर ४० गुंठे म्हणजे १ एकर (४३,५६० चौ. फूट)."
+                : lang === "hi"
+                ? "= १,०८९ वर्ग फीट (३३ फीट × ३३ फीट = १२१ वर्ग गज)। ठीक ४० गुंठे मिलकर १ एकड़ (४३,५६० वर्ग फीट) बनाते हैं।"
+                : "= 1,089 sq ft (33 ft × 33 ft = 121 sq yd). Exactly 40 Gunthas equal 1 Imperial Acre (43,560 sq ft)."}
             </p>
           </div>
         </div>
@@ -184,11 +192,21 @@ function PlotAreaCalculatorContent() {
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-border bg-muted/30">
-                <th className="p-2.5 font-semibold text-foreground">Plot Size (Dimensions)</th>
-                <th className="p-2.5 font-semibold text-foreground">Square Feet (sq ft)</th>
-                <th className="p-2.5 font-semibold text-foreground">Square Yards (Gaj)</th>
-                <th className="p-2.5 font-semibold text-foreground">Guntha (MH)</th>
-                <th className="p-2.5 font-semibold text-foreground">Typical Category</th>
+                <th className="p-2.5 font-semibold text-foreground">
+                  {lang === "mr" ? "प्लॉट आकार (लांबी × रुंदी)" : lang === "hi" ? "भूखंड आकार (आयाम)" : "Plot Size (Dimensions)"}
+                </th>
+                <th className="p-2.5 font-semibold text-foreground">
+                  {lang === "mr" ? "चौरस फूट (sq ft)" : lang === "hi" ? "वर्ग फीट (sq ft)" : "Square Feet (sq ft)"}
+                </th>
+                <th className="p-2.5 font-semibold text-foreground">
+                  {lang === "mr" ? "चौरस गज (Gaj)" : lang === "hi" ? "वर्ग गज (Gaj)" : "Square Yards (Gaj)"}
+                </th>
+                <th className="p-2.5 font-semibold text-foreground">
+                  {lang === "mr" ? "गुंठा (महाराष्ट्र)" : lang === "hi" ? "गुंठा (महाराष्ट्र)" : "Guntha (MH)"}
+                </th>
+                <th className="p-2.5 font-semibold text-foreground">
+                  {lang === "mr" ? "प्रचलित वापर / श्रेणी" : lang === "hi" ? "सामान्य उपयोग / श्रेणी" : "Typical Category"}
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60 font-mono">
@@ -197,35 +215,45 @@ function PlotAreaCalculatorContent() {
                 <td className="p-2.5">800 sq ft</td>
                 <td className="p-2.5">88.89 Gaj</td>
                 <td className="p-2.5">0.735 Guntha</td>
-                <td className="p-2.5 font-sans text-muted-foreground">Small House / 2BHK</td>
+                <td className="p-2.5 font-sans text-muted-foreground">
+                  {lang === "mr" ? "लहान घर / 2BHK" : lang === "hi" ? "छोटा मकान / 2BHK" : "Small House / 2BHK"}
+                </td>
               </tr>
               <tr>
                 <td className="p-2.5 text-foreground font-medium">30 ft × 40 ft</td>
                 <td className="p-2.5">1,200 sq ft</td>
                 <td className="p-2.5">133.33 Gaj</td>
                 <td className="p-2.5">1.102 Guntha</td>
-                <td className="p-2.5 font-sans text-muted-foreground">Standard 30×40 Villa Plot</td>
+                <td className="p-2.5 font-sans text-muted-foreground">
+                  {lang === "mr" ? "मानक 30×40 व्हिला प्लॉट" : lang === "hi" ? "मानक 30×40 विला भूखंड" : "Standard 30×40 Villa Plot"}
+                </td>
               </tr>
               <tr>
                 <td className="p-2.5 text-foreground font-medium">30 ft × 50 ft</td>
                 <td className="p-2.5">1,500 sq ft</td>
                 <td className="p-2.5">166.67 Gaj</td>
                 <td className="p-2.5">1.377 Guntha</td>
-                <td className="p-2.5 font-sans text-muted-foreground">Prime Residential Layout</td>
+                <td className="p-2.5 font-sans text-muted-foreground">
+                  {lang === "mr" ? "प्राईम निवासी लेआउट" : lang === "hi" ? "प्रमुख आवासीय लेआउट" : "Prime Residential Layout"}
+                </td>
               </tr>
               <tr>
                 <td className="p-2.5 text-foreground font-medium">40 ft × 60 ft</td>
                 <td className="p-2.5">2,400 sq ft</td>
                 <td className="p-2.5">266.67 Gaj</td>
                 <td className="p-2.5">2.204 Guntha</td>
-                <td className="p-2.5 font-sans text-muted-foreground">Large Bungalow Plot</td>
+                <td className="p-2.5 font-sans text-muted-foreground">
+                  {lang === "mr" ? "मोठा बंगला भूखंड" : lang === "hi" ? "बड़ा बंगला भूखंड" : "Large Bungalow Plot"}
+                </td>
               </tr>
               <tr>
                 <td className="p-2.5 text-foreground font-medium">60 ft × 100 ft</td>
                 <td className="p-2.5">6,000 sq ft</td>
                 <td className="p-2.5">666.67 Gaj</td>
                 <td className="p-2.5">5.510 Guntha</td>
-                <td className="p-2.5 font-sans text-muted-foreground">Commercial / Farmhouse</td>
+                <td className="p-2.5 font-sans text-muted-foreground">
+                  {lang === "mr" ? "व्यावसायिक / फार्महाऊस" : lang === "hi" ? "व्यावसायिक / फार्महाउस" : "Commercial / Farmhouse"}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -242,21 +270,27 @@ function PlotAreaCalculatorContent() {
             to={`${langPrefix}/tools/compound-land-unit-converter`}
             className="p-3 rounded-xl border border-border bg-card hover:border-primary/50 flex items-center justify-between transition-colors"
           >
-            <span className="font-semibold text-foreground">Compound Unit Converter</span>
+            <span className="font-semibold text-foreground">
+              {lang === "mr" ? "मिश्रित एकक कन्व्हर्टर" : lang === "hi" ? "मिश्रित इकाई परिवर्तक" : "Compound Unit Converter"}
+            </span>
             <ArrowRight className="h-3.5 w-3.5 text-primary" />
           </Link>
           <Link
             to={`${langPrefix}/tools/land-unit-comparison`}
             className="p-3 rounded-xl border border-border bg-card hover:border-primary/50 flex items-center justify-between transition-colors"
           >
-            <span className="font-semibold text-foreground">Land Unit Comparison</span>
+            <span className="font-semibold text-foreground">
+              {lang === "mr" ? "प्रादेशिक एकक तुलना" : lang === "hi" ? "क्षेत्रीय इकाई तुलना" : "Regional Comparison Matrix"}
+            </span>
             <ArrowRight className="h-3.5 w-3.5 text-primary" />
           </Link>
           <Link
-            to="/convert/acre-to-sqft"
+            to={`${langPrefix}/tools/custom-land-unit-calculator`}
             className="p-3 rounded-xl border border-border bg-card hover:border-primary/50 flex items-center justify-between transition-colors"
           >
-            <span className="font-semibold text-foreground">Acre to Square Feet</span>
+            <span className="font-semibold text-foreground">
+              {lang === "mr" ? "कस्टम स्थानिक एकक" : lang === "hi" ? "कस्टम स्थानीय इकाई" : "Custom Unit Manager"}
+            </span>
             <ArrowRight className="h-3.5 w-3.5 text-primary" />
           </Link>
         </div>

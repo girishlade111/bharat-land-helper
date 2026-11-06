@@ -104,14 +104,78 @@ function ToolsHubContent() {
   ];
 
   const conversionLinks = [
-    { title: "Acre to Square Feet (sq ft)", path: "/convert/acre-to-sqft" },
-    { title: "Hectare to Acre (National Standard)", path: "/convert/hectare-to-acre" },
-    { title: "Acre to Guntha (Maharashtra)", path: "/convert/acre-to-guntha/maharashtra" },
-    { title: "Guntha to Square Feet (Maharashtra)", path: "/convert/guntha-to-sqft/maharashtra" },
-    { title: "Acre to Bigha (Uttar Pradesh)", path: "/convert/acre-to-bigha/uttar-pradesh" },
-    { title: "Bigha to Kattha (West Bengal)", path: "/convert/bigha-to-kattha/west-bengal" },
-    { title: "Kanal to Marla (Punjab & Haryana)", path: "/convert/kanal-to-marla/punjab" },
-    { title: "Ground to Sq Ft (Tamil Nadu)", path: "/convert/ground-to-sqft/tamil-nadu" },
+    {
+      title:
+        lang === "mr"
+          ? "एकर ते चौरस फूट (Acre to Sq Ft)"
+          : lang === "hi"
+          ? "एकड़ से वर्ग फीट (Acre to Sq Ft)"
+          : "Acre to Square Feet (sq ft)",
+      path: "/convert/acre-to-sqft",
+    },
+    {
+      title:
+        lang === "mr"
+          ? "हेक्टर ते एकर (Hectare to Acre)"
+          : lang === "hi"
+          ? "हेक्टेयर से एकड़ (Hectare to Acre)"
+          : "Hectare to Acre (National Standard)",
+      path: "/convert/hectare-to-acre",
+    },
+    {
+      title:
+        lang === "mr"
+          ? "एकर ते गुंठा (महाराष्ट्र / 7/12)"
+          : lang === "hi"
+          ? "एकड़ से गुंठा (महाराष्ट्र / 7/12)"
+          : "Acre to Guntha (Maharashtra)",
+      path: "/convert/acre-to-guntha/maharashtra",
+    },
+    {
+      title:
+        lang === "mr"
+          ? "गुंठा ते चौरस फूट (महाराष्ट्र)"
+          : lang === "hi"
+          ? "गुंठा से वर्ग फीट (महाराष्ट्र)"
+          : "Guntha to Square Feet (Maharashtra)",
+      path: "/convert/guntha-to-sqft/maharashtra",
+    },
+    {
+      title:
+        lang === "mr"
+          ? "एकर ते बीघा (उत्तर प्रदेश)"
+          : lang === "hi"
+          ? "एकड़ से बीघा (उत्तर प्रदेश)"
+          : "Acre to Bigha (Uttar Pradesh)",
+      path: "/convert/acre-to-bigha/uttar-pradesh",
+    },
+    {
+      title:
+        lang === "mr"
+          ? "बीघा ते कट्ठा (पश्चिम बंगाल)"
+          : lang === "hi"
+          ? "बीघा से कट्ठा (पश्चिम बंगाल)"
+          : "Bigha to Kattha (West Bengal)",
+      path: "/convert/bigha-to-kattha/west-bengal",
+    },
+    {
+      title:
+        lang === "mr"
+          ? "कनाल ते मरला (पंजाब व हरियाणा)"
+          : lang === "hi"
+          ? "कनाल से मरला (पंजाब एवं हरियाणा)"
+          : "Kanal to Marla (Punjab & Haryana)",
+      path: "/convert/kanal-to-marla/punjab",
+    },
+    {
+      title:
+        lang === "mr"
+          ? "ग्राउंड ते चौरस फूट (तमिळनाडू)"
+          : lang === "hi"
+          ? "ग्राउंड से वर्ग फीट (तमिलनाडु)"
+          : "Ground to Sq Ft (Tamil Nadu)",
+      path: "/convert/ground-to-sqft/tamil-nadu",
+    },
   ];
 
   const breadcrumbsSchema = {

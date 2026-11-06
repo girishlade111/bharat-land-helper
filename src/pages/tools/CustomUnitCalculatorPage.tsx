@@ -151,21 +151,27 @@ function CustomUnitCalculatorContent() {
             to={`${langPrefix}/tools/plot-area-calculator`}
             className="p-3 rounded-xl border border-border bg-card hover:border-primary/50 flex items-center justify-between transition-colors"
           >
-            <span className="font-semibold text-foreground">Plot Area Calculator</span>
+            <span className="font-semibold text-foreground">
+              {lang === "mr" ? "प्लॉट क्षेत्रफळ कॅल्क्युलेटर" : lang === "hi" ? "भूखंड क्षेत्रफल कैलकुलेटर" : "Plot Area Calculator"}
+            </span>
             <ArrowRight className="h-3.5 w-3.5 text-primary" />
           </Link>
           <Link
             to={`${langPrefix}/tools/land-unit-comparison`}
             className="p-3 rounded-xl border border-border bg-card hover:border-primary/50 flex items-center justify-between transition-colors"
           >
-            <span className="font-semibold text-foreground">Land Unit Comparison</span>
+            <span className="font-semibold text-foreground">
+              {lang === "mr" ? "प्रादेशिक एकक तुलना" : lang === "hi" ? "क्षेत्रीय इकाई तुलना" : "Land Unit Comparison"}
+            </span>
             <ArrowRight className="h-3.5 w-3.5 text-primary" />
           </Link>
           <Link
             to={`${langPrefix}/tools/compound-land-unit-converter`}
             className="p-3 rounded-xl border border-border bg-card hover:border-primary/50 flex items-center justify-between transition-colors"
           >
-            <span className="font-semibold text-foreground">Compound Converter</span>
+            <span className="font-semibold text-foreground">
+              {lang === "mr" ? "मिश्रित एकक कन्व्हर्टर" : lang === "hi" ? "मिश्रित इकाई परिवर्तक" : "Compound Converter"}
+            </span>
             <ArrowRight className="h-3.5 w-3.5 text-primary" />
           </Link>
         </div>

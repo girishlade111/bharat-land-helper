@@ -136,7 +136,9 @@ function CompoundConverterContent() {
 
         <div className="grid gap-3 sm:grid-cols-2 text-xs">
           <div className="p-3.5 rounded-xl border border-border/60 bg-muted/20 space-y-1.5">
-            <span className="font-bold text-foreground text-sm block">1. Uttar Pradesh / Delhi (Pucca System)</span>
+            <span className="font-bold text-foreground text-sm block">
+              {lang === "mr" ? "१. उत्तर प्रदेश / दिल्ली (पक्का प्रणाली)" : lang === "hi" ? "१. उत्तर प्रदेश / दिल्ली (पक्का प्रणाली)" : "1. Uttar Pradesh / Delhi (Pucca System)"}
+            </span>
             <p className="text-muted-foreground">
               <strong>1 Pucca Bigha</strong> = 20 Biswa = 400 Biswansi = 27,225 sq ft (3,025 sq yd = 55 yd × 55 yd Gunter jarib square).
             </p>
@@ -147,9 +149,11 @@ function CompoundConverterContent() {
           </div>
 
           <div className="p-3.5 rounded-xl border border-border/60 bg-muted/20 space-y-1.5">
-            <span className="font-bold text-foreground text-sm block">2. Bihar & Eastern UP (Standard Kattha)</span>
+            <span className="font-bold text-foreground text-sm block">
+              {lang === "mr" ? "२. बिहार व पूर्व उत्तर प्रदेश (मानक कट्ठा)" : lang === "hi" ? "२. बिहार एवं पूर्वी उत्तर प्रदेश (मानक कट्ठा)" : "2. Bihar & Eastern UP (Standard Kattha)"}
+            </span>
             <p className="text-muted-foreground">
-              <strong>1 Bigha</strong> = 20 Kattha = 400 Dhur = 27,225 sq ft.
+              <strong>1 Bigha</strong> = 20 Kattha = 400 Dhur = 27,225 sq ft (Standard 5.5-haath lagga).
             </p>
             <p className="text-muted-foreground text-[11px]">
               • 1 Kattha = 1,361.25 sq ft (20 Dhur)<br />
@@ -158,9 +162,11 @@ function CompoundConverterContent() {
           </div>
 
           <div className="p-3.5 rounded-xl border border-border/60 bg-muted/20 space-y-1.5">
-            <span className="font-bold text-foreground text-sm block">3. West Bengal (Standard Bengali System)</span>
+            <span className="font-bold text-foreground text-sm block">
+              {lang === "mr" ? "३. पश्चिम बंगाल (मानक बंगाली प्रणाली)" : lang === "hi" ? "३. पश्चिम बंगाल (मानक बंगाली प्रणाली)" : "3. West Bengal (Standard Bengali System)"}
+            </span>
             <p className="text-muted-foreground">
-              <strong>1 Bigha</strong> = 20 Kattha = 320 Chatak = 14,400 sq ft (1,600 sq yd).
+              <strong>1 Bigha</strong> = 20 Kattha = 320 Chatak = 14,400 sq ft (1,600 sq yd ≈ 0.3306 Acre; note: exact 1/3 Acre is 14,520 sq ft).
             </p>
             <p className="text-muted-foreground text-[11px]">
               • 1 Kattha (Cottah) = 720 sq ft (16 Chataks)<br />
@@ -169,13 +175,15 @@ function CompoundConverterContent() {
           </div>
 
           <div className="p-3.5 rounded-xl border border-border/60 bg-muted/20 space-y-1.5">
-            <span className="font-bold text-foreground text-sm block">4. Punjab & Haryana (Traditional Ghumaon)</span>
+            <span className="font-bold text-foreground text-sm block">
+              {lang === "mr" ? "४. पंजाब व हरियाणा (६६-इंच करम / घुमाओं प्रणाली)" : lang === "hi" ? "४. पंजाब एवं हरियाणा (६६-इंच करम / घुमाओं प्रणाली)" : "4. Punjab & Haryana (66-inch Karam / Ghumaon System)"}
+            </span>
             <p className="text-muted-foreground">
-              <strong>1 Ghumaon (Acre)</strong> = 8 Kanal = 160 Marla = 43,560 sq ft.
+              <strong>1 Ghumaon (Acre)</strong> = 8 Kanal = 160 Marla = 43,560 sq ft (Punjab Land Records Manual Sec 4.40).
             </p>
             <p className="text-muted-foreground text-[11px]">
               • 1 Kanal = 5,445 sq ft (20 Marla)<br />
-              • 1 Marla = 272.25 sq ft (9 Sarsahi)
+              • 1 Marla = 272.25 sq ft (9 Sarsahi = 9 sq karam of 66 in)
             </p>
           </div>
         </div>
@@ -185,13 +193,27 @@ function CompoundConverterContent() {
       <section className="space-y-2 rounded-2xl border border-border/60 bg-muted/30 p-5 text-xs text-muted-foreground leading-relaxed">
         <div className="flex items-center gap-2 text-foreground font-bold text-sm">
           <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-          <h3>Why Registry Deeds Quote Compound Units While Online RoR Quotes Decimals</h3>
+          <h3>
+            {lang === "mr"
+              ? "दस्तऐवजांमध्ये पारंपारिक एकके व ऑनलाइन महसुलात दशांश का असतात?"
+              : lang === "hi"
+              ? "दस्तावेजों में पारंपरिक इकाइयाँ और भूलेख में दशमलव क्यों होते हैं?"
+              : "Why Registry Deeds Quote Compound Units While Online RoR Quotes Decimals"}
+          </h3>
         </div>
         <p>
-          In modern state land registries (e.g., UP Bhulekh, Bihar Bhumi, MahaBhulekh), official computerized records record parcels in Metric Hectares (e.g. 0.4047 ha) or decimal Acres. However, ancestral sale deeds (Bainama), partition decrees (Bantwara), and local agricultural agreements retain traditional compound units (e.g. "२ बीघा, ४ बिस्वा").
+          {lang === "mr"
+            ? "महाराष्ट्र (MahaBhulekh) आणि इतर राज्यांमध्ये (UP Bhulekh, Bihar Bhumi) संगणकीकृत सातबारा व अभिलेख हेक्टर-आर किंवा दशांश एकरामध्ये नोंदवले जातात. परंतु जुने खरेदीखत, वाटणीपत्र व स्थानिक व्यवहारांमध्ये पारंपारिक एकके (उदा. '२ बीघा, ४ बिस्वा' किंवा '१ एकर २० गुंठे') वापरली जातात."
+            : lang === "hi"
+            ? "आधुनिक राज्य भूलेख पोर्टलों (जैसे UP Bhulekh, Bihar Bhumi, MahaBhulekh) में आधिकारिक कम्प्यूटरीकृत रिकॉर्ड मीट्रिक हेक्टेयर अथवा दशमलव एकड़ में दर्ज होते हैं। परंतु पैतृक बैनामा, बँटवारा आदेश और स्थानीय समझौतों में पारंपरिक मिश्रित इकाइयाँ (जैसे '२ बीघा, ४ बिस्वा') ही दर्ज मिलती हैं।"
+            : "In modern state land registries (e.g., UP Bhulekh, Bihar Bhumi, MahaBhulekh), official computerized records record parcels in Metric Hectares (e.g. 0.4047 ha) or decimal Acres. However, ancestral sale deeds (Bainama), partition decrees (Bantwara), and local agricultural agreements retain traditional compound units (e.g. '२ बीघा, ४ बिस्वा')."}
         </p>
         <p>
-          This compound unit converter bridges this gap by calculating the exact decimal and metric equivalent of ancestral parcel descriptions.
+          {lang === "mr"
+            ? "हे मिश्रित एकक कन्व्हर्टर जुन्या पारंपारिक नोंदींचे अचूक दशांश व मेट्रिक समतुल्य काढून यामधील अंतर भरून काढते."
+            : lang === "hi"
+            ? "यह मिश्रित परिवर्तक इन पारंपरिक पैतृक विवरणों का सटीक दशमलव एवं मीट्रिक समतुल्य प्रदान करता है।"
+            : "This compound unit converter bridges this gap by calculating the exact decimal and metric equivalent of ancestral parcel descriptions."}
         </p>
       </section>
 
@@ -205,21 +227,27 @@ function CompoundConverterContent() {
             to={`${langPrefix}/tools/plot-area-calculator`}
             className="p-3 rounded-xl border border-border bg-card hover:border-primary/50 flex items-center justify-between transition-colors"
           >
-            <span className="font-semibold text-foreground">Plot Area Calculator</span>
+            <span className="font-semibold text-foreground">
+              {lang === "mr" ? "प्लॉट क्षेत्रफळ कॅल्क्युलेटर" : lang === "hi" ? "भूखंड क्षेत्रफल कैलकुलेटर" : "Plot Area Calculator"}
+            </span>
             <ArrowRight className="h-3.5 w-3.5 text-primary" />
           </Link>
           <Link
             to={`${langPrefix}/tools/land-unit-comparison`}
             className="p-3 rounded-xl border border-border bg-card hover:border-primary/50 flex items-center justify-between transition-colors"
           >
-            <span className="font-semibold text-foreground">Regional Unit Matrix</span>
+            <span className="font-semibold text-foreground">
+              {lang === "mr" ? "प्रादेशिक एकक तुलना" : lang === "hi" ? "क्षेत्रीय इकाई तुलना" : "Regional Unit Matrix"}
+            </span>
             <ArrowRight className="h-3.5 w-3.5 text-primary" />
           </Link>
           <Link
-            to="/convert/acre-to-bigha/uttar-pradesh"
+            to={`${langPrefix}/tools/custom-land-unit-calculator`}
             className="p-3 rounded-xl border border-border bg-card hover:border-primary/50 flex items-center justify-between transition-colors"
           >
-            <span className="font-semibold text-foreground">Acre to Bigha (UP)</span>
+            <span className="font-semibold text-foreground">
+              {lang === "mr" ? "कस्टम स्थानिक एकक" : lang === "hi" ? "कस्टम स्थानीय इकाई" : "Custom Unit Manager"}
+            </span>
             <ArrowRight className="h-3.5 w-3.5 text-primary" />
           </Link>
         </div>

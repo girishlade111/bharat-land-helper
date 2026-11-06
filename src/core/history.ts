@@ -36,6 +36,7 @@ export interface ConversionHistoryItem {
 }
 
 export const HISTORY_STORAGE_KEY_V1 = "bharat_conversion_history_v1";
+export const HISTORY_STORAGE_KEY_LEGACY_ALT = "bharat_calc_history_v1";
 export const HISTORY_STORAGE_KEY_V2 = "bharat_conversion_history_v2";
 export const MAX_HISTORY_ITEMS = 50;
 
@@ -119,44 +120,77 @@ export function migrateV1Item(item: Record<string, unknown>): ConversionHistoryI
 
 /**
  * Loads calculation history from browser localStorage safely, performing transparent schema migration if needed.
+ * Safely inspects v2, v1 legacy, and legacy alt keys, merging without duplicates.
  */
 export function loadHistory(): ConversionHistoryItem[] {
   if (typeof window === "undefined" || !window.localStorage) {
     return [];
   }
   try {
-    // 1. Try loading v2
+    const itemsMap = new Map<string, ConversionHistoryItem>();
+    let needsSave = false;
+
+    // 1. Try loading v2 primary storage
     const rawV2 = window.localStorage.getItem(HISTORY_STORAGE_KEY_V2);
     if (rawV2) {
-      const parsed = JSON.parse(rawV2);
-      if (Array.isArray(parsed)) {
-        return parsed
-          .filter(
-            (item) =>
+      try {
+        const parsed = JSON.parse(rawV2);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((item) => {
+            if (
               item &&
               typeof item.id === "string" &&
               typeof item.fromValue === "number" &&
-              typeof item.toValue === "number",
-          )
-          .map((item) => (item.dataVersion === "v2" ? item : migrateV1Item(item)));
-      }
+              typeof item.toValue === "number"
+            ) {
+              itemsMap.set(item.id, item.dataVersion === "v2" ? item : migrateV1Item(item));
+            }
+          });
+        }
+      } catch {}
     }
 
-    // 2. Fall back to v1 legacy storage and migrate
+    // 2. Check legacy v1 storage (bharat_conversion_history_v1)
     const rawV1 = window.localStorage.getItem(HISTORY_STORAGE_KEY_V1);
     if (rawV1) {
-      const parsed = JSON.parse(rawV1);
-      if (Array.isArray(parsed)) {
-        const migrated = parsed
-          .filter((item) => item && typeof item.id === "string")
-          .map(migrateV1Item);
-        // Persist migrated items to v2
-        saveHistory(migrated);
-        return migrated;
-      }
+      try {
+        const parsed = JSON.parse(rawV1);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((item) => {
+            if (item && typeof item.id === "string" && !itemsMap.has(item.id)) {
+              itemsMap.set(item.id, migrateV1Item(item));
+              needsSave = true;
+            }
+          });
+        }
+      } catch {}
     }
 
-    return [];
+    // 3. Check legacy alt storage (bharat_calc_history_v1)
+    const rawAlt = window.localStorage.getItem(HISTORY_STORAGE_KEY_LEGACY_ALT);
+    if (rawAlt) {
+      try {
+        const parsed = JSON.parse(rawAlt);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((item) => {
+            if (item && typeof item.id === "string" && !itemsMap.has(item.id)) {
+              itemsMap.set(item.id, migrateV1Item(item));
+              needsSave = true;
+            }
+          });
+        }
+      } catch {}
+    }
+
+    const merged = Array.from(itemsMap.values())
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, MAX_HISTORY_ITEMS);
+
+    if (needsSave && merged.length > 0) {
+      saveHistory(merged);
+    }
+
+    return merged;
   } catch (err) {
     console.error("Failed to load conversion history:", err);
     return [];
