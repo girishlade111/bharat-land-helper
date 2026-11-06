@@ -1723,6 +1723,126 @@ async function main() {
     return { hasParcelName, hasPreservedSqft, hasLegacyNote };
   });
 
+  // TEST 44: Portable Custom Unit Share Across Isolated Browser Contexts
+  await runTest("TEST 44: Portable Custom Unit Share Across Isolated Browser Contexts", async () => {
+    // 1. Sender tab creates custom unit (20,000 sq ft)
+    const senderTabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/tools/custom-land-unit-calculator`), { method: "PUT" });
+    const senderTab = await senderTabRes.json();
+    const senderCdp = new CDPClient(senderTab.webSocketDebuggerUrl);
+    await senderCdp.connect();
+    await senderCdp.send("Page.enable");
+    await senderCdp.send("Runtime.enable");
+    await sleep(800);
+
+    await senderCdp.eval(`(() => {
+      const preset = {
+        id: "custom_cdp_test_20k",
+        name: "Panchayat Bigha",
+        factor: 20000,
+        referenceUnit: "sqft",
+        sqFtEquivalent: 20000,
+        createdAt: new Date().toISOString()
+      };
+      window.localStorage.setItem("bharat_custom_units_v1", JSON.stringify([preset]));
+      window.dispatchEvent(new Event("bharat_custom_units_updated"));
+    })()`);
+    await sleep(400);
+
+    // Sender loads unit into converter
+    await senderCdp.send("Page.navigate", { url: `${BASE_URL}/?v=1&from=custom_cdp_test_20k&to=acre&from_sqft=20000&from_name=Panchayat+Bigha` });
+    await sleep(1000);
+
+    const senderResult = await senderCdp.eval("document.querySelector('[data-testid=\"primary-result-value\"]')?.textContent?.trim() || ''");
+    senderCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${senderTab.id}`);
+
+    // 2. Recipient tab in isolated context (no custom presets in localStorage)
+    const recipientTabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/?v=1&from=custom_cdp_test_20k&to=acre&from_sqft=20000&from_name=Panchayat+Bigha`), { method: "PUT" });
+    const recipientTab = await recipientTabRes.json();
+    const recipientCdp = new CDPClient(recipientTab.webSocketDebuggerUrl);
+    await recipientCdp.connect();
+    await recipientCdp.send("Page.enable");
+    await recipientCdp.send("Runtime.enable");
+    await sleep(800);
+
+    // Ensure recipient has NO custom presets in storage
+    await recipientCdp.eval("window.localStorage.removeItem('bharat_custom_units_v1')");
+    await recipientCdp.send("Page.reload");
+    await sleep(1000);
+
+    const recipientInput = await recipientCdp.eval("document.querySelector('#area-input')?.value");
+    const recipientFrom = await recipientCdp.eval("document.querySelector('#from-unit-select')?.textContent?.trim() || ''");
+    const recipientResult = await recipientCdp.eval("document.querySelector('[data-testid=\"primary-result-value\"]')?.textContent?.trim() || ''");
+    const recipientStorage = await recipientCdp.eval("window.localStorage.getItem('bharat_custom_units_v1')");
+
+    recipientCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${recipientTab.id}`);
+
+    if (recipientInput !== "1") {
+      throw new Error(`Expected recipient input to be '1', got '${recipientInput}'`);
+    }
+    if (!recipientFrom.includes("Panchayat Bigha")) {
+      throw new Error(`Expected recipient From Unit to contain 'Panchayat Bigha', got '${recipientFrom}'`);
+    }
+    if (!recipientResult.startsWith("0.459")) {
+      throw new Error(`Expected recipient result to be approx 0.4591 Acre (20,000 sq ft), got '${recipientResult}'`);
+    }
+    if (recipientStorage !== null) {
+      throw new Error("Recipient localStorage should not be modified with installed presets");
+    }
+
+    return { senderResult, recipientFrom, recipientResult };
+  });
+
+  // TEST 45: Legacy Biswa MP Mapping & Historical 600 Sq Ft Factor in Real Browser
+  await runTest("TEST 45: Legacy Biswa MP Mapping & Historical 600 Sq Ft Factor in Real Browser", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/?v=20&u=biswa_mp&s=Madhya%20Pradesh`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    const inputVal = await tabCdp.eval("document.querySelector('#area-input')?.value");
+    const fromUnit = await tabCdp.eval("document.querySelector('#from-unit-select')?.textContent?.trim() || ''");
+
+    // Select To Unit = Square Feet
+    await tabCdp.eval(`(() => {
+      const trigger = document.querySelector('#to-unit-select');
+      if (trigger) trigger.click();
+    })()`);
+    await sleep(400);
+
+    await tabCdp.eval(`(() => {
+      const item = Array.from(document.querySelectorAll('[role="option"]')).find(el => el.textContent.includes('Square Feet') || el.textContent.includes('वर्ग फीट'));
+      if (item) item.click();
+    })()`);
+    await sleep(500);
+
+    const sqftVal = await tabCdp.eval("document.querySelector('[data-testid=\"primary-result-value\"]')?.textContent?.trim() || ''");
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    if (inputVal !== "20") {
+      throw new Error(`Expected input value to be '20', got '${inputVal}'`);
+    }
+    if (!fromUnit.includes("Biswa") && !fromUnit.includes("बिस्वा")) {
+      throw new Error(`Expected From Unit to be Biswa, got '${fromUnit}'`);
+    }
+    if (fromUnit.includes("Bigha (MP Gwalior") || fromUnit.includes("12,000")) {
+      throw new Error(`Expected From Unit NOT to be labeled as 12,000 sq ft Bigha, got '${fromUnit}'`);
+    }
+    // 20 biswa * 600 sqft = 12,000 sqft
+    const cleanSqft = sqftVal.replace(/,/g, "");
+    if (cleanSqft !== "12000") {
+      throw new Error(`Expected 20 Biswa MP = 12,000 sq ft, received '${sqftVal}'`);
+    }
+
+    return { inputVal, fromUnit, sqftVal };
+  });
+
   // Cleanup
   console.log("==================================================");
   console.log("E2E TESTS COMPLETE");

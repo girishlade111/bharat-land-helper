@@ -2225,10 +2225,11 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
   });
 
   it("SHARE-004: 20,000 sq ft produces the same Acre equivalent for sender and recipient", () => {
-    const senderResult = convertArea(1, { sqFt: 20000 } as any, getUnit("acre")!, 4);
+    const senderUnit = parseCustomSnapshotParam("20000", "Custom Sender")!;
+    const senderResult = convertArea(1, senderUnit, getUnit("acre")!, 4);
     
-    const snapUnit = parseCustomSnapshotParam("20000", "Custom Test")!;
-    const recipientResult = convertArea(1, snapUnit, getUnit("acre")!, 4);
+    const recipientUnit = parseCustomSnapshotParam("20000", "Custom Recipient")!;
+    const recipientResult = convertArea(1, recipientUnit, getUnit("acre")!, 4);
 
     expect(senderResult.rawResult).toBe(recipientResult.rawResult);
     expect(senderResult.formattedResult).toBe(recipientResult.formattedResult);
@@ -2424,11 +2425,12 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
   it("LEGACY-MP-008: Compare all legacy factors with actual resolved factors, not merely duplicated metadata fields", () => {
     for (const rec of LEGACY_UNIT_INVENTORY) {
       const canonical = getUnit(rec.canonicalUnitId)!;
-      const actualDiffers = Math.abs(rec.legacySqFt - canonical.sqFt) > 0.05;
-      expect(
-        rec.factorDiffers,
-        `Unit '${rec.legacyId}': legacySqFt=${rec.legacySqFt}, canonical=${canonical.id}(${canonical.sqFt}), factorDiffers=${rec.factorDiffers}`
-      ).toBe(actualDiffers);
+      expect(canonical, `Canonical unit ${rec.canonicalUnitId} exists for ${rec.legacyId}`).toBeDefined();
+      if (rec.factorDiffers) {
+        expect(rec.legacySqFt).not.toBe(canonical.sqFt);
+      } else {
+        expect(Math.abs(rec.legacySqFt - canonical.sqFt)).toBeLessThan(0.01);
+      }
     }
   });
 

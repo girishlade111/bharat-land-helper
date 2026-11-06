@@ -471,7 +471,8 @@ export function AppProvider({
     let nextTo = toUnitId;
 
     if (fromUnitId.startsWith("custom_") || fromUnitId.startsWith("custom-")) {
-      const exists = availableUnits.some((u) => u.id === fromUnitId);
+      const isSnapshot = !!getEphemeralSnapshotUnit(fromUnitId);
+      const exists = isSnapshot || availableUnits.some((u) => u.id === fromUnitId);
       if (!exists) {
         nextFrom = "acre";
         setFromUnitIdState("acre");
@@ -480,7 +481,8 @@ export function AppProvider({
     }
 
     if (toUnitId.startsWith("custom_") || toUnitId.startsWith("custom-")) {
-      const exists = availableUnits.some((u) => u.id === toUnitId);
+      const isSnapshot = !!getEphemeralSnapshotUnit(toUnitId);
+      const exists = isSnapshot || availableUnits.some((u) => u.id === toUnitId);
       if (!exists) {
         const regional = availableUnits.find((u) => u.category === "regional");
         nextTo = regional ? regional.id : "sqft";
