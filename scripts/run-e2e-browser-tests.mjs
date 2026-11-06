@@ -1156,6 +1156,203 @@ async function main() {
     };
   });
 
+  // TEST 31: Phase 3A Trilingual Language Toggle (en -> hi -> mr -> en)
+  await runTest("TEST 31: Phase 3A Trilingual Language Toggle (en -> hi -> mr -> en)", async () => {
+    // 1. Initial should be English
+    const initialLang = await cdp.eval("document.documentElement.lang");
+
+    // Click 1: Switch to Hindi
+    await cdp.eval("document.querySelector('#lang-toggle-btn')?.click()");
+    await sleep(600);
+    const hiLang = await cdp.eval("document.documentElement.lang");
+    const hiHeading = await cdp.eval("document.querySelector('#converter-heading')?.textContent?.trim()");
+
+    // Click 2: Switch to Marathi
+    await cdp.eval("document.querySelector('#lang-toggle-btn')?.click()");
+    await sleep(600);
+    const mrLang = await cdp.eval("document.documentElement.lang");
+    const mrHeading = await cdp.eval("document.querySelector('#converter-heading')?.textContent?.trim()");
+
+    // Click 3: Switch back to English
+    await cdp.eval("document.querySelector('#lang-toggle-btn')?.click()");
+    await sleep(600);
+    const enLang = await cdp.eval("document.documentElement.lang");
+    const enHeading = await cdp.eval("document.querySelector('#converter-heading')?.textContent?.trim()");
+
+    if (hiLang !== "hi" || !hiHeading?.includes("भूमि क्षेत्रफल")) {
+      throw new Error(`Expected Hindi state, got lang=${hiLang}, heading=${hiHeading}`);
+    }
+    if (mrLang !== "mr" || !mrHeading?.includes("जमीन क्षेत्रफळ")) {
+      throw new Error(`Expected Marathi state, got lang=${mrLang}, heading=${mrHeading}`);
+    }
+    if (enLang !== "en" || !enHeading?.includes("Indian Land Area")) {
+      throw new Error(`Expected English state, got lang=${enLang}, heading=${enHeading}`);
+    }
+
+    return { initialLang, hiLang, mrLang, enLang, cycleVerified: true };
+  });
+
+  // TEST 32: Phase 3A Dedicated Tools Hub Page (/tools)
+  await runTest("TEST 32: Phase 3A Dedicated Tools Hub Page (/tools)", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/tools`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    const title = await tabCdp.eval("document.title");
+    const h1 = await tabCdp.eval("document.querySelector('h1')?.textContent?.trim()");
+    const toolCardsCount = await tabCdp.eval("document.querySelectorAll('a[href*=\"/tools/\"]').length");
+    const breadcrumb = await tabCdp.eval("document.querySelector('nav[aria-label=\"Breadcrumb\"]')?.textContent?.trim()");
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    if (!title.includes("Indian Land Measurement Tools") && !title.includes("Bharat Land Converter")) {
+      throw new Error(`Unexpected title for /tools: ${title}`);
+    }
+    if (toolCardsCount < 4) {
+      throw new Error(`Expected at least 4 tool links, found ${toolCardsCount}`);
+    }
+
+    return { title, h1, toolCardsCount, breadcrumb };
+  });
+
+  // TEST 33: Phase 3A Plot Dimensions Calculator Dedicated Page (/tools/plot-area-calculator)
+  await runTest("TEST 33: Phase 3A Plot Dimensions Calculator Dedicated Page (/tools/plot-area-calculator)", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/tools/plot-area-calculator`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    const title = await tabCdp.eval("document.title");
+    const h1 = await tabCdp.eval("document.querySelector('h1')?.textContent?.trim()");
+    const hasSvg = await tabCdp.eval("Boolean(document.querySelector('svg rect'))");
+    const resultVal = await tabCdp.eval("document.querySelector('[data-testid=\"plot-primary-sqft\"]')?.textContent?.trim()");
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    if (!title.includes("Plot Area Calculator")) {
+      throw new Error(`Unexpected title for Plot Calculator: ${title}`);
+    }
+    if (!hasSvg) {
+      throw new Error("Schematic SVG plot diagram not rendered in DOM");
+    }
+
+    return { title, h1, defaultPlotAreaSqFt: resultVal, hasSvg };
+  });
+
+  // TEST 34: Phase 3A Compound Land Unit Dedicated Page (/tools/compound-land-unit-converter)
+  await runTest("TEST 34: Phase 3A Compound Land Unit Dedicated Page (/tools/compound-land-unit-converter)", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/tools/compound-land-unit-converter`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    const title = await tabCdp.eval("document.title");
+    const h1 = await tabCdp.eval("document.querySelector('h1')?.textContent?.trim()");
+    const totalSqFt = await tabCdp.eval("document.querySelector('[data-testid=\"compound-total-sqft\"]')?.textContent?.trim()");
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    if (!title.includes("Compound")) {
+      throw new Error(`Unexpected title for Compound Converter: ${title}`);
+    }
+
+    return { title, h1, defaultTotalSqFt: totalSqFt };
+  });
+
+  // TEST 35: Phase 3A Regional Land Unit Comparison Dedicated Page (/tools/land-unit-comparison)
+  await runTest("TEST 35: Phase 3A Regional Land Unit Comparison Dedicated Page (/tools/land-unit-comparison)", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/tools/land-unit-comparison`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    const title = await tabCdp.eval("document.title");
+    const bodyText = await tabCdp.eval("document.body.innerText");
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    if (bodyText.includes("Section 68")) {
+      throw new Error("Page contains invalid Section 68 citation for MP Bigha");
+    }
+    if (!bodyText.includes("Madhya Pradesh") && !bodyText.includes("27,225")) {
+      throw new Error("MP Bigha standard entry missing from comparison matrix");
+    }
+
+    return { title, section68Excluded: true, mpProvenanceVerified: true };
+  });
+
+  // TEST 36: Phase 3A Custom Land Unit Dedicated Page (/tools/custom-land-unit-calculator)
+  await runTest("TEST 36: Phase 3A Custom Land Unit Dedicated Page (/tools/custom-land-unit-calculator)", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/tools/custom-land-unit-calculator`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    const title = await tabCdp.eval("document.title");
+    const bodyText = await tabCdp.eval("document.body.innerText");
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    if (!bodyText.includes("LocalStorage") && !bodyText.includes("local device") && !bodyText.includes("लोकल स्टोरेज")) {
+      throw new Error("Custom unit manager page missing explicit local storage disclosure");
+    }
+
+    return { title, localStorageDisclosureVerified: true };
+  });
+
+  // TEST 37: Phase 3A Marathi Localized Direct Navigation (/mr and /mr/tools)
+  await runTest("TEST 37: Phase 3A Marathi Localized Direct Navigation (/mr and /mr/tools)", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/mr`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    const mrLang = await tabCdp.eval("document.documentElement.lang");
+    const mrHeading = await tabCdp.eval("document.querySelector('h1')?.textContent?.trim()");
+
+    // Navigate to /mr/tools
+    await tabCdp.send("Page.navigate", { url: `${BASE_URL}/mr/tools` });
+    await sleep(1000);
+
+    const mrToolsH1 = await tabCdp.eval("document.querySelector('h1')?.textContent?.trim()");
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    if (mrLang !== "mr") {
+      throw new Error(`Expected lang='mr', got '${mrLang}'`);
+    }
+    if (!mrHeading?.includes("भारत जमीन")) {
+      throw new Error(`Expected Marathi home heading, got '${mrHeading}'`);
+    }
+
+    return { mrLang, mrHomeH1: mrHeading, mrToolsH1 };
+  });
+
   // Cleanup
   console.log("==================================================");
   console.log("E2E TESTS COMPLETE");

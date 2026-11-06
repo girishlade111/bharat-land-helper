@@ -103,7 +103,7 @@ export function AppProvider({
   // Available units for the region (Standard + Regional + Custom)
   const availableUnits = useMemo(() => {
     return getUnitsForRegion(selectedRegion.code);
-  }, [selectedRegion.code, fromUnitId, toUnitId]);
+  }, [selectedRegion.code]);
 
   // From and To units
   const fromUnit = useMemo(() => {
