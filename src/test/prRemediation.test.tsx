@@ -41,6 +41,7 @@ import {
   LEGACY_UNIT_MAP,
   getLegacyUnitInfo,
   isLegacyUnitId,
+  parseCustomSnapshotParam,
   type ConversionHistoryItem,
 } from "../core";
 import { MemoryRouter, useLocation } from "react-router-dom";
@@ -2135,5 +2136,310 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
 
     expect(ctxRef!.fromUnit.id).toBe("bigha_wb");
     expect(ctxRef!.selectedRegion.code).toBe("WB");
+  });
+
+  // =========================================================================
+  // Phase 3: Custom Unit Share Portability (SHARE-001 to SHARE-010)
+  // =========================================================================
+
+  it("SHARE-001: Standard unit sharing remains unchanged without snapshot params", () => {
+    const search = buildConversionSearchParams({
+      value: "5",
+      fromUnitId: "guntha_mh",
+      toUnitId: "sqft",
+      regionCode: "MH",
+    });
+    expect(search).toBe("?v=5&from=guntha_mh&to=sqft");
+    expect(search.includes("from_sqft")).toBe(false);
+  });
+
+  it("SHARE-002: Custom source unit shares across isolated browsers using factor snapshot", () => {
+    const snap = parseCustomSnapshotParam(20000, "Village Bigha");
+    expect(snap).toBeDefined();
+    expect(snap!.sqFt).toBe(20000);
+
+    const search = buildConversionSearchParams({
+      value: "1",
+      fromUnitId: snap!.id,
+      toUnitId: "acre",
+      regionCode: "MH",
+      fromSqFt: 20000,
+      fromName: "Village Bigha",
+    });
+
+    expect(search).toContain("from_sqft=20000");
+    expect(search).toContain("from_name=Village+Bigha");
+
+    window.localStorage.clear();
+    window.history.replaceState(null, "", `/${search}`);
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>Result: {ctxRef.primaryResult?.formattedResult}</div>;
+    }
+
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.fromUnit.sqFt).toBe(20000);
+    expect(ctxRef!.toUnit.id).toBe("acre");
+    expect(ctxRef!.primaryResult?.rawResult).toBeCloseTo(20000 / 43560, 5);
+  });
+
+  it("SHARE-003: Custom target unit shares across isolated browsers using factor snapshot", () => {
+    const snap = parseCustomSnapshotParam(10000, "Local Ground");
+    expect(snap).toBeDefined();
+
+    const search = buildConversionSearchParams({
+      value: "1",
+      fromUnitId: "acre",
+      toUnitId: snap!.id,
+      regionCode: "MH",
+      toSqFt: 10000,
+      toName: "Local Ground",
+    });
+
+    expect(search).toContain("to_sqft=10000");
+
+    window.localStorage.clear();
+    window.history.replaceState(null, "", `/${search}`);
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>Result: {ctxRef.primaryResult?.formattedResult}</div>;
+    }
+
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.toUnit.sqFt).toBe(10000);
+    expect(ctxRef!.primaryResult?.rawResult).toBeCloseTo(4.356, 3);
+  });
+
+  it("SHARE-004: 20,000 sq ft produces the same Acre equivalent for sender and recipient", () => {
+    const senderResult = convertArea(1, { sqFt: 20000 } as any, getUnit("acre")!, 4);
+    
+    const snapUnit = parseCustomSnapshotParam("20000", "Custom Test")!;
+    const recipientResult = convertArea(1, snapUnit, getUnit("acre")!, 4);
+
+    expect(senderResult.rawResult).toBe(recipientResult.rawResult);
+    expect(senderResult.formattedResult).toBe(recipientResult.formattedResult);
+    expect(recipientResult.formattedResult).toBe("0.4591");
+  });
+
+  it("SHARE-005: Recipient does not require sender localStorage", () => {
+    window.localStorage.clear();
+    expect(window.localStorage.getItem("bharat_custom_units_v1")).toBeNull();
+
+    window.history.replaceState(null, "", "/?v=2&from=custom_xyz&from_sqft=20000&from_name=Farm+Unit&to=acre");
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>Value: {ctxRef.inputValue}</div>;
+    }
+
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.fromUnit.sqFt).toBe(20000);
+    expect(ctxRef!.primaryResult?.rawResult).toBeCloseTo((2 * 20000) / 43560, 5);
+  });
+
+  it("SHARE-006: Deleted custom preset does not silently change a shared calculation", () => {
+    window.localStorage.clear();
+    window.history.replaceState(null, "", "/?v=1&from=custom_deleted_123&from_sqft=15000&from_name=Deleted+Unit&to=acre");
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>From: {ctxRef.fromUnit.name}</div>;
+    }
+
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.fromUnit.sqFt).toBe(15000);
+    expect(ctxRef!.primaryResult?.rawResult).toBeCloseTo(15000 / 43560, 5);
+  });
+
+  it("SHARE-007: Malformed snapshot is rejected safely", () => {
+    expect(parseCustomSnapshotParam("not-a-number")).toBeNull();
+    expect(parseCustomSnapshotParam("")).toBeNull();
+    expect(parseCustomSnapshotParam(null)).toBeNull();
+    expect(parseCustomSnapshotParam(undefined)).toBeNull();
+
+    window.history.replaceState(null, "", "/?v=1&from=custom_corrupted&from_sqft=corrupt&to=acre");
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>From: {ctxRef.fromUnit.id}</div>;
+    }
+
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.fromUnit.id).toBe("acre");
+    expect(ctxRef!.legacyNotice).toBeDefined();
+  });
+
+  it("SHARE-008: Negative, zero, NaN, Infinity and oversized factors are rejected", () => {
+    expect(parseCustomSnapshotParam(-500)).toBeNull();
+    expect(parseCustomSnapshotParam(0)).toBeNull();
+    expect(parseCustomSnapshotParam(NaN)).toBeNull();
+    expect(parseCustomSnapshotParam(Infinity)).toBeNull();
+    expect(parseCustomSnapshotParam(-Infinity)).toBeNull();
+    expect(parseCustomSnapshotParam(10_000_001)).toBeNull();
+    expect(parseCustomSnapshotParam(10_000_000)).not.toBeNull();
+  });
+
+  it("SHARE-009: No private saved parcel data is included in shared URLs", () => {
+    window.localStorage.setItem("bharat-land-parcels-v2", JSON.stringify([{
+      id: "p-secret",
+      name: "Private Land Near River",
+      value: 10,
+      unitId: "acre",
+      stateCode: "MH",
+      sqftTotal: 435600,
+    }]));
+
+    const search = buildConversionSearchParams({
+      value: "1",
+      fromUnitId: "guntha_mh",
+      toUnitId: "sqft",
+      regionCode: "MH",
+    });
+
+    expect(search).not.toContain("p-secret");
+    expect(search).not.toContain("Private");
+    expect(search).not.toContain("River");
+  });
+
+  it("SHARE-010: Clipboard and share UX describes the actual operation accurately", () => {
+    const customUnit = parseCustomSnapshotParam(20000, "Village Bigha")!;
+    expect(customUnit.name).toContain("Village Bigha");
+    expect(customUnit.provenance.sourceName).toBe("Shared Custom Unit Snapshot");
+  });
+
+  // =========================================================================
+  // Phase 4: Legacy Biswa MP Mapping & Historical Verification (LEGACY-MP-001 to LEGACY-MP-009)
+  // =========================================================================
+
+  it("LEGACY-MP-001: Old biswa_mp resolves safely", () => {
+    const resolved = resolveUnit("biswa_mp");
+    expect(resolved).toBeDefined();
+    expect(resolved!.id).toBe("biswa_mp_gwalior");
+  });
+
+  it("LEGACY-MP-002: Historical factor remains 600 sq ft", () => {
+    const legacyInfo = getLegacyUnitInfo("biswa_mp");
+    expect(legacyInfo).toBeDefined();
+    expect(legacyInfo!.legacySqFt).toBe(600);
+    expect(legacyInfo!.canonicalSqFt).toBe(600);
+    expect(legacyInfo!.canonicalUnitId).toBe("biswa_mp_gwalior");
+    expect(legacyInfo!.factorDiffers).toBe(false);
+  });
+
+  it("LEGACY-MP-003: It never silently becomes 12,000 sq ft", () => {
+    const resolved = resolveUnit("biswa_mp")!;
+    expect(resolved.sqFt).toBe(600);
+    expect(resolved.sqFt).not.toBe(12000);
+  });
+
+  it("LEGACY-MP-004: Legacy share URL does not change numerical meaning without a clear compatibility notice", () => {
+    window.history.replaceState(null, "", "/?v=20&u=biswa_mp&s=Madhya%20Pradesh");
+
+    let ctxRef: ReturnType<typeof useApp> | null = null;
+    function Consumer() {
+      ctxRef = useApp();
+      return <div>Result: {ctxRef.primaryResult?.formattedResult}</div>;
+    }
+
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+
+    expect(ctxRef!.inputValue).toBe("20");
+    expect(ctxRef!.fromUnit.id).toBe("biswa_mp_gwalior");
+    expect(ctxRef!.fromUnit.sqFt).toBe(600);
+    const sqftResult = convertArea(20, ctxRef!.fromUnit, getUnit("sqft")!, 2);
+    expect(sqftResult.rawResult).toBe(12000);
+  });
+
+  it("LEGACY-MP-005: Legacy saved parcel remains mathematically consistent after migration", () => {
+    window.localStorage.removeItem("bharat-land-parcels-v2");
+    window.localStorage.removeItem("bharat_parcels_migrated_v1");
+    window.localStorage.setItem("bharat-land-parcels", JSON.stringify([{
+      id: "mp-legacy-parcel",
+      name: "Chambal Ancestral Plot",
+      value: 10,
+      unitId: "biswa_mp",
+      state: "Madhya Pradesh",
+      sqftTotal: 6000,
+    }]));
+
+    const parcels = migrateLegacyParcels();
+    const migrated = parcels.find(p => p.id === "mp-legacy-parcel");
+    expect(migrated).toBeDefined();
+    expect(migrated!.sqftTotal).toBe(6000);
+    expect(migrated!.unitId).toBe("biswa_mp_gwalior");
+  });
+
+  it("LEGACY-MP-006: Modern Gwalior Bigha remains 12,000 sq ft", () => {
+    const gwaliorBigha = getUnit("bigha_mp_gwalior");
+    expect(gwaliorBigha).toBeDefined();
+    expect(gwaliorBigha!.sqFt).toBe(12000);
+    expect(gwaliorBigha!.category).toBe("regional");
+    expect(gwaliorBigha!.regionCode).toBe("MP");
+  });
+
+  it("LEGACY-MP-007: Every old ID maps to a valid supported target or an explicit historical compatibility representation", () => {
+    expect(LEGACY_UNIT_INVENTORY.length).toBe(39);
+    for (const rec of LEGACY_UNIT_INVENTORY) {
+      const canonical = getUnit(rec.canonicalUnitId);
+      expect(canonical, `Canonical unit ${rec.canonicalUnitId} exists for legacyId ${rec.legacyId}`).toBeDefined();
+    }
+  });
+
+  it("LEGACY-MP-008: Compare all legacy factors with actual resolved factors, not merely duplicated metadata fields", () => {
+    for (const rec of LEGACY_UNIT_INVENTORY) {
+      const canonical = getUnit(rec.canonicalUnitId)!;
+      const actualDiffers = Math.abs(rec.legacySqFt - canonical.sqFt) > 0.05;
+      expect(
+        rec.factorDiffers,
+        `Unit '${rec.legacyId}': legacySqFt=${rec.legacySqFt}, canonical=${canonical.id}(${canonical.sqFt}), factorDiffers=${rec.factorDiffers}`
+      ).toBe(actualDiffers);
+    }
+  });
+
+  it("LEGACY-MP-009: No unrelated canonical conversion changes", () => {
+    expect(getUnit("acre")!.sqFt).toBe(43560);
+    expect(getUnit("guntha_mh")!.sqFt).toBe(1089);
+    expect(getUnit("bigha_up_pucca")!.sqFt).toBe(27225);
+    expect(getUnit("bigha_rj_pucca")!.sqFt).toBe(27225);
+    expect(getUnit("bigha_bihar_standard")!.sqFt).toBe(27225);
+    expect(getUnit("chatak_wb")!.sqFt).toBe(45);
+    expect(getUnit("kanal")!.sqFt).toBe(5445);
+    expect(getUnit("marla")!.sqFt).toBe(272.25);
   });
 });

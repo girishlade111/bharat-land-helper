@@ -17,6 +17,7 @@ import {
   type ConversionContext,
   buildConversionSearchParams,
   getLegacyUnitInfo,
+  parseCustomSnapshotParam,
 } from "@/core";
 import { toast } from "@/hooks/use-toast";
 import type { Lang } from "@/data/translations";
@@ -155,7 +156,7 @@ export function AppProvider({
   // From and To units
   const fromUnit = useMemo(() => {
     const candidate = getUnit(fromUnitId);
-    if (candidate && (!fromUnitId.startsWith("custom_") || availableUnits.some((u) => u.id === fromUnitId))) {
+    if (candidate && (!fromUnitId.startsWith("custom_") || candidate.provenance.sourceName === "Shared Custom Unit Snapshot" || availableUnits.some((u) => u.id === fromUnitId))) {
       return candidate;
     }
     return ALL_UNITS.find((u) => u.id === "acre")!;
@@ -163,7 +164,7 @@ export function AppProvider({
 
   const toUnit = useMemo(() => {
     const candidate = getUnit(toUnitId);
-    if (candidate && (!toUnitId.startsWith("custom_") || availableUnits.some((u) => u.id === toUnitId))) {
+    if (candidate && (!toUnitId.startsWith("custom_") || candidate.provenance.sourceName === "Shared Custom Unit Snapshot" || availableUnits.some((u) => u.id === toUnitId))) {
       return candidate;
     }
     // Default to the first regional unit, or sqft
@@ -231,11 +232,22 @@ export function AppProvider({
         variantId: varId || undefined,
       };
 
+      const fromSqFtParam = params.get("from_sqft") || params.get("c_from_sqft");
+      const fromNameParam = params.get("from_name") || params.get("c_from_name");
+      const toSqFtParam = params.get("to_sqft") || params.get("c_to_sqft");
+      const toNameParam = params.get("to_name") || params.get("c_to_name");
+
       if (from) {
+        let snapshotFrom: LandUnit | null = null;
+        if (fromSqFtParam) {
+          snapshotFrom = parseCustomSnapshotParam(fromSqFtParam, fromNameParam);
+        }
+
         const legacyFrom = getLegacyUnitInfo(from);
-        const resolvedFrom = resolveUnit(from, context);
-        // Do not restore deleted custom units from URL
-        if (resolvedFrom && (!from.startsWith("custom_") || getUnit(from))) {
+        const resolvedFrom = snapshotFrom || resolveUnit(from, context);
+
+        // Do not restore deleted custom units from URL unless a valid snapshot exists
+        if (resolvedFrom && (!from.startsWith("custom_") || snapshotFrom || getUnit(from))) {
           setFromUnitIdState(resolvedFrom.id);
           if (legacyFrom && legacyFrom.factorDiffers) {
             setLegacyNotice({
@@ -251,16 +263,34 @@ export function AppProvider({
           }
         } else {
           setFromUnitIdState(initialFromUnitId);
+          if (from.startsWith("custom_") || from === "custom") {
+            setLegacyNotice({
+              legacyUnitId: from,
+              legacyName: fromNameParam || "Custom Unit",
+              legacySqFt: 43560,
+              canonicalUnitId: initialFromUnitId,
+              canonicalName: "Acre",
+              canonicalSqFt: 43560,
+              factorDiffers: true,
+              notes: "The shared custom unit preset was not found on this device and had no valid snapshot; defaulted safely to Acre.",
+            });
+          }
         }
       } else {
         setFromUnitIdState(initialFromUnitId);
       }
 
       if (to) {
+        let snapshotTo: LandUnit | null = null;
+        if (toSqFtParam) {
+          snapshotTo = parseCustomSnapshotParam(toSqFtParam, toNameParam);
+        }
+
         const legacyTo = getLegacyUnitInfo(to);
-        const resolvedTo = resolveUnit(to, context);
-        // Do not restore deleted custom units from URL
-        if (resolvedTo && (!to.startsWith("custom_") || getUnit(to))) {
+        const resolvedTo = snapshotTo || resolveUnit(to, context);
+
+        // Do not restore deleted custom units from URL unless a valid snapshot exists
+        if (resolvedTo && (!to.startsWith("custom_") || snapshotTo || getUnit(to))) {
           setToUnitIdState(resolvedTo.id);
           if (legacyTo && legacyTo.factorDiffers) {
             setLegacyNotice((prev) => prev || {
@@ -276,6 +306,18 @@ export function AppProvider({
           }
         } else {
           setToUnitIdState(initialToUnitId);
+          if (to.startsWith("custom_") || to === "custom") {
+            setLegacyNotice((prev) => prev || {
+              legacyUnitId: to,
+              legacyName: toNameParam || "Custom Unit",
+              legacySqFt: 43560,
+              canonicalUnitId: initialToUnitId,
+              canonicalName: "Acre",
+              canonicalSqFt: 43560,
+              factorDiffers: true,
+              notes: "The shared custom unit preset was not found on this device and had no valid snapshot; defaulted safely to Acre.",
+            });
+          }
         }
       } else {
         setToUnitIdState(initialToUnitId);
@@ -309,6 +351,11 @@ export function AppProvider({
   const updateUrl = useCallback((val: string, fId: string, tId: string, rCode: string, lg: Lang) => {
     try {
       if (typeof window !== "undefined" && window.history?.replaceState) {
+        const currentFrom = getUnit(fId);
+        const currentTo = getUnit(tId);
+        const isCustomFrom = currentFrom?.regionCode === "CUSTOM" || fId.startsWith("custom");
+        const isCustomTo = currentTo?.regionCode === "CUSTOM" || tId.startsWith("custom");
+
         const newSearch = buildConversionSearchParams(
           {
             value: val,
@@ -316,6 +363,10 @@ export function AppProvider({
             toUnitId: tId,
             regionCode: rCode,
             lang: lg,
+            fromSqFt: isCustomFrom ? currentFrom?.sqFt : undefined,
+            fromName: isCustomFrom ? currentFrom?.name?.replace(/\s*\(Custom.*?\)/, "").trim() : undefined,
+            toSqFt: isCustomTo ? currentTo?.sqFt : undefined,
+            toName: isCustomTo ? currentTo?.name?.replace(/\s*\(Custom.*?\)/, "").trim() : undefined,
           },
           window.location.search,
           {
