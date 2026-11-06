@@ -406,3 +406,4 @@ export default function PlotCalculator({ onTransferToConverter }: PlotCalculator
     </section>
   );
 }
+

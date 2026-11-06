@@ -322,3 +322,4 @@ export default function ConversionHistory({ onLoadConversion }: ConversionHistor
     </section>
   );
 }
+
