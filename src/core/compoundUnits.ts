@@ -222,7 +222,8 @@ export function decomposeAreaIntoSystem(
   const system = COMPOUND_SYSTEMS.find((s) => s.id === systemId) || COMPOUND_SYSTEMS[0];
   const results: { subunitId: string; subunitName: string; count: number; remainderSqFt: number }[] = [];
 
-  let remaining = Math.max(0, totalSqFt);
+  const safeTotal = typeof totalSqFt === "number" && isFinite(totalSqFt) && totalSqFt > 0 ? totalSqFt : 0;
+  let remaining = safeTotal;
 
   for (let i = 0; i < system.subunits.length; i++) {
     const subunit = system.subunits[i];

@@ -27,7 +27,7 @@ interface PlotCalculatorProps {
 }
 
 export default function PlotCalculator({ onTransferToConverter }: PlotCalculatorProps) {
-  const { lang, selectedRegion, setInputValue, setFromUnitId } = useApp();
+  const { lang, selectedRegion, setInputValue, setFromUnitId, toUnit, setToUnitId, availableUnits } = useApp();
   const { toast } = useToast();
 
   const [lengthStr, setLengthStr] = useState<string>("50");
@@ -75,6 +75,12 @@ export default function PlotCalculator({ onTransferToConverter }: PlotCalculator
     const rounded = Math.round(calculation.areaSqFt * 1000) / 1000;
     setInputValue(String(rounded));
     setFromUnitId("sqft");
+
+    // Ensure To unit is not sqft so immediate conversion is meaningful
+    if (toUnit.id === "sqft") {
+      const regional = availableUnits.find((u) => u.category === "regional");
+      setToUnitId(regional ? regional.id : "acre");
+    }
 
     if (onTransferToConverter) {
       onTransferToConverter(rounded);
@@ -388,6 +394,11 @@ export default function PlotCalculator({ onTransferToConverter }: PlotCalculator
 
             <span className="text-[10px] text-muted-foreground text-center">
               Aspect Ratio: {calculation.aspectRatio.toFixed(2)}:1
+            </span>
+            <span className="text-[9px] text-muted-foreground/75 text-center italic">
+              {lang === "hi"
+                ? "योजनाबद्ध आरेख (Schematic): प्रदर्शन स्पष्टता के लिए पहलू अनुपात सामान्यीकृत है; यह स्केल-सटीक इंजीनियरिंग नक्शा नहीं है।"
+                : "Schematic Diagram: Aspect ratio is visually clamped for UI clarity; not a scale-accurate engineering or cadastral survey blueprint."}
             </span>
           </div>
         </div>
