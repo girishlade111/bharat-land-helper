@@ -88,10 +88,10 @@ export function AppProvider({
     return getRegion(regionCode) || ALL_REGIONS.find((r) => r.code === "MH")!;
   }, [regionCode]);
 
-  // Available units for the region (Standard + Regional)
+  // Available units for the region (Standard + Regional + Custom)
   const availableUnits = useMemo(() => {
     return getUnitsForRegion(selectedRegion.code);
-  }, [selectedRegion.code]);
+  }, [selectedRegion.code, fromUnitId, toUnitId]);
 
   // From and To units
   const fromUnit = useMemo(() => {
