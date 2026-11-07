@@ -42,6 +42,7 @@ import {
   getLegacyUnitInfo,
   isLegacyUnitId,
   parseCustomSnapshotParam,
+  getEphemeralSnapshotUnit,
   type ConversionHistoryItem,
 } from "../core";
 import { MemoryRouter, useLocation } from "react-router-dom";
@@ -2308,8 +2309,27 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
     expect(parseCustomSnapshotParam(NaN)).toBeNull();
     expect(parseCustomSnapshotParam(Infinity)).toBeNull();
     expect(parseCustomSnapshotParam(-Infinity)).toBeNull();
-    expect(parseCustomSnapshotParam(10_000_001)).toBeNull();
+    expect(parseCustomSnapshotParam(500_000_000_001)).toBeNull();
     expect(parseCustomSnapshotParam(10_000_000)).not.toBeNull();
+    expect(parseCustomSnapshotParam(435_600_000_000)).not.toBeNull(); // 10,000,000 Acres in sq ft
+  });
+
+  it("SHARE-011: Preserves exact factors in snapshot identities without rounding collisions", () => {
+    const snap1 = parseCustomSnapshotParam(0.0001, "Small Unit A")!;
+    const snap2 = parseCustomSnapshotParam(0.0004, "Small Unit B")!;
+    expect(snap1.id).not.toBe(snap2.id);
+    expect(getEphemeralSnapshotUnit(snap1.id)?.sqFt).toBe(0.0001);
+    expect(getEphemeralSnapshotUnit(snap2.id)?.sqFt).toBe(0.0004);
+    const result = convertArea(1, snap1, snap2);
+    expect(result.targetValue).toBeCloseTo(0.25, 4);
+  });
+
+  it("SHARE-012: Restores custom presets exceeding 10,000,000 sq ft (up to 10M acres)", () => {
+    // 1,000 acres = 43,560,000 sq ft
+    const largeSnap = parseCustomSnapshotParam(43_560_000, "Large Estate")!;
+    expect(largeSnap).not.toBeNull();
+    expect(largeSnap.sqFt).toBe(43_560_000);
+    expect(getEphemeralSnapshotUnit(largeSnap.id)).toBeDefined();
   });
 
   it("SHARE-009: No private saved parcel data is included in shared URLs", () => {

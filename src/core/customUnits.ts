@@ -217,6 +217,12 @@ export function customPresetToLandUnit(preset: CustomUnitPreset): LandUnit {
 }
 
 /**
+ * Maximum allowable square feet equivalent for a custom unit preset or snapshot.
+ * Corresponds to 10,000,000 Acres (435,600,000,000 sq ft) with safety headroom.
+ */
+export const MAX_CUSTOM_UNIT_SQFT = 500_000_000_000;
+
+/**
  * Ephemeral in-memory store for validated custom-unit snapshots extracted from shared links.
  * Enables portable calculation across separate browser sessions without requiring local persistence.
  */
@@ -227,11 +233,12 @@ export function getEphemeralSnapshotUnit(id: string): LandUnit | undefined {
   if (EPHEMERAL_SNAPSHOT_CACHE.has(id)) {
     return EPHEMERAL_SNAPSHOT_CACHE.get(id);
   }
-  const match = id.match(/^custom_snap_([0-9.]+)/);
+  const match = id.match(/^custom_snap_([0-9.eE+-]+)(?:_(.*))?$/);
   if (match) {
     const factor = parseFloat(match[1]);
-    if (!isNaN(factor) && isFinite(factor) && factor > 0 && factor <= 10_000_000) {
-      return parseCustomSnapshotParam(factor);
+    const name = match[2];
+    if (!isNaN(factor) && isFinite(factor) && factor > 0 && factor <= MAX_CUSTOM_UNIT_SQFT) {
+      return parseCustomSnapshotParam(factor, name);
     }
   }
   return undefined;
@@ -248,7 +255,7 @@ export function parseCustomSnapshotParam(
 ): LandUnit | null {
   if (factorInput === null || factorInput === undefined || factorInput === "") return null;
   const num = typeof factorInput === "number" ? factorInput : parseFloat(String(factorInput).trim().replace(/,/g, ""));
-  if (isNaN(num) || !isFinite(num) || num <= 0 || num > 10_000_000) {
+  if (isNaN(num) || !isFinite(num) || num <= 0 || num > MAX_CUSTOM_UNIT_SQFT) {
     return null;
   }
 
@@ -261,7 +268,8 @@ export function parseCustomSnapshotParam(
       .trim()
       .slice(0, 50) || "Custom Unit";
 
-  const snapId = `custom_snap_${Math.round(num * 1000) / 1000}`;
+  const cleanSlug = cleanName.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20);
+  const snapId = `custom_snap_${num}${cleanSlug ? `_${cleanSlug}` : ""}`;
 
   const unit: LandUnit = {
     id: snapId,
