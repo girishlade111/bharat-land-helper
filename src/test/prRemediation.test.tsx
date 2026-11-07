@@ -3125,4 +3125,300 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
       expect(res.formattedCurrency).toBe("₹ 0");
     });
   });
+
+  describe("Rate Unit Lifecycle Safety (RATE-LIFECYCLE-001 - RATE-LIFECYCLE-007)", () => {
+    beforeEach(() => {
+      window.localStorage.clear();
+    });
+
+    it("RATE-LIFECYCLE-001: Custom rate unit produces correct valuation", () => {
+      const res = saveCustomPreset("Village 20k", "20000", "sqft");
+      expect(res.success).toBe(true);
+      const customUnitId = res.preset!.id;
+
+      render(
+        <AppProvider>
+          <RateCalculator />
+        </AppProvider>
+      );
+
+      const toggle = screen.getByRole("button", { name: /Land Valuation Calculator|rateCalc/i });
+      act(() => {
+        fireEvent.click(toggle);
+      });
+
+      const selectTrigger = document.getElementById("rate-unit-select")!;
+      act(() => {
+        fireEvent.pointerDown(selectTrigger);
+      });
+
+      const customOption = Array.from(document.querySelectorAll('[role="option"]')).find(
+        (el) => el.textContent?.includes("Village 20k")
+      );
+      expect(customOption).toBeDefined();
+
+      act(() => {
+        fireEvent.click(customOption!);
+      });
+
+      // Default area is 1 Acre (43,560 sq ft). Rate is 5000 / Village 20k.
+      // 43560 / 20000 = 2.178 * 5000 = 10,890
+      const totalVal = document.getElementById("rate-total-value");
+      expect(totalVal).not.toBeNull();
+      expect(totalVal?.textContent).toContain("10,890");
+    });
+
+    it("RATE-LIFECYCLE-002: Deleting selected custom unit invalidates valuation", () => {
+      const res = saveCustomPreset("Village 20k", "20000", "sqft");
+      const customUnitId = res.preset!.id;
+
+      render(
+        <AppProvider>
+          <RateCalculator />
+        </AppProvider>
+      );
+
+      act(() => {
+        fireEvent.click(screen.getByRole("button", { name: /Land Valuation Calculator|rateCalc/i }));
+      });
+
+      const selectTrigger = document.getElementById("rate-unit-select")!;
+      act(() => {
+        fireEvent.pointerDown(selectTrigger);
+      });
+
+      const customOption = Array.from(document.querySelectorAll('[role="option"]')).find(
+        (el) => el.textContent?.includes("Village 20k")
+      );
+      act(() => {
+        fireEvent.click(customOption!);
+      });
+
+      expect(document.getElementById("rate-total-value")?.textContent).toContain("10,890");
+
+      // Delete custom preset
+      act(() => {
+        deleteCustomPreset(customUnitId);
+      });
+
+      // Valuation must be completely invalidated and removed from DOM
+      expect(document.getElementById("rate-total-value")).toBeNull();
+      expect(document.getElementById("rate-words-display")).toBeNull();
+    });
+
+    it("RATE-LIFECYCLE-003: The old numeric rate is not silently reused per sqft", () => {
+      const res = saveCustomPreset("Village 20k", "20000", "sqft");
+      const customUnitId = res.preset!.id;
+
+      render(
+        <AppProvider>
+          <RateCalculator />
+        </AppProvider>
+      );
+
+      act(() => {
+        fireEvent.click(screen.getByRole("button", { name: /Land Valuation Calculator|rateCalc/i }));
+      });
+
+      const selectTrigger = document.getElementById("rate-unit-select")!;
+      act(() => {
+        fireEvent.pointerDown(selectTrigger);
+      });
+
+      const customOption = Array.from(document.querySelectorAll('[role="option"]')).find(
+        (el) => el.textContent?.includes("Village 20k")
+      );
+      act(() => {
+        fireEvent.click(customOption!);
+      });
+
+      // Delete custom preset
+      act(() => {
+        deleteCustomPreset(customUnitId);
+      });
+
+      // Must NOT silently compute 43,560 * 5,000 = 21,78,00,000 per sqft
+      const valDisplay = document.getElementById("rate-total-value");
+      expect(valDisplay).toBeNull();
+      const bodyText = document.body.textContent || "";
+      expect(bodyText).not.toContain("21,78,00,000");
+    });
+
+    it("RATE-LIFECYCLE-004: User receives clear accessible error feedback and input is preserved", () => {
+      const res = saveCustomPreset("Village 20k", "20000", "sqft");
+      const customUnitId = res.preset!.id;
+
+      render(
+        <AppProvider>
+          <RateCalculator />
+        </AppProvider>
+      );
+
+      act(() => {
+        fireEvent.click(screen.getByRole("button", { name: /Land Valuation Calculator|rateCalc/i }));
+      });
+
+      const selectTrigger = document.getElementById("rate-unit-select")!;
+      act(() => {
+        fireEvent.pointerDown(selectTrigger);
+      });
+
+      const customOption = Array.from(document.querySelectorAll('[role="option"]')).find(
+        (el) => el.textContent?.includes("Village 20k")
+      );
+      act(() => {
+        fireEvent.click(customOption!);
+      });
+
+      // Delete custom preset
+      act(() => {
+        deleteCustomPreset(customUnitId);
+      });
+
+      const unitError = document.getElementById("rate-unit-error");
+      expect(unitError).not.toBeNull();
+      expect(unitError?.getAttribute("role")).toBe("alert");
+      expect(unitError?.textContent).toMatch(/selected rate unit is no longer available|उपलब्ध नहीं है/i);
+
+      expect(selectTrigger.getAttribute("aria-invalid")).toBe("true");
+      expect(selectTrigger.getAttribute("aria-describedby")).toBe("rate-unit-error");
+
+      // Preserves entered rate string
+      const rateInput = document.getElementById("land-rate-input") as HTMLInputElement;
+      expect(rateInput.value).toBe("5000");
+    });
+
+    it("RATE-LIFECYCLE-005: Selecting a new valid rate unit restores calculation", () => {
+      const res = saveCustomPreset("Village 20k", "20000", "sqft");
+      const customUnitId = res.preset!.id;
+
+      render(
+        <AppProvider>
+          <RateCalculator />
+        </AppProvider>
+      );
+
+      act(() => {
+        fireEvent.click(screen.getByRole("button", { name: /Land Valuation Calculator|rateCalc/i }));
+      });
+
+      const selectTrigger = document.getElementById("rate-unit-select")!;
+      act(() => {
+        fireEvent.pointerDown(selectTrigger);
+      });
+
+      const customOption = Array.from(document.querySelectorAll('[role="option"]')).find(
+        (el) => el.textContent?.includes("Village 20k")
+      );
+      act(() => {
+        fireEvent.click(customOption!);
+      });
+
+      // Delete custom preset
+      act(() => {
+        deleteCustomPreset(customUnitId);
+      });
+      expect(document.getElementById("rate-total-value")).toBeNull();
+
+      // Now explicitly choose Square Feet
+      act(() => {
+        fireEvent.pointerDown(selectTrigger);
+      });
+      const sqftOption = Array.from(document.querySelectorAll('[role="option"]')).find(
+        (el) => el.textContent?.includes("Square Feet") || el.textContent?.includes("वर्ग फीट")
+      );
+      expect(sqftOption).toBeDefined();
+
+      act(() => {
+        fireEvent.click(sqftOption!);
+      });
+
+      // Error cleared and valuation restored for Square Feet
+      expect(document.getElementById("rate-unit-error")).toBeNull();
+      expect(selectTrigger.getAttribute("aria-invalid")).toBe("false");
+      const totalVal = document.getElementById("rate-total-value");
+      expect(totalVal).not.toBeNull();
+      expect(totalVal?.textContent).toContain("21,78,00,000");
+    });
+
+    it("RATE-LIFECYCLE-006: Cross-tab custom-unit deletion is handled safely via storage event", () => {
+      const res = saveCustomPreset("CrossTab 10k", "10000", "sqft");
+      const customUnitId = res.preset!.id;
+
+      render(
+        <AppProvider>
+          <RateCalculator />
+        </AppProvider>
+      );
+
+      act(() => {
+        fireEvent.click(screen.getByRole("button", { name: /Land Valuation Calculator|rateCalc/i }));
+      });
+
+      const selectTrigger = document.getElementById("rate-unit-select")!;
+      act(() => {
+        fireEvent.pointerDown(selectTrigger);
+      });
+
+      const customOption = Array.from(document.querySelectorAll('[role="option"]')).find(
+        (el) => el.textContent?.includes("CrossTab 10k")
+      );
+      act(() => {
+        fireEvent.click(customOption!);
+      });
+
+      expect(document.getElementById("rate-total-value")).not.toBeNull();
+
+      // Simulate deletion in another tab (direct localStorage wipe + storage event)
+      act(() => {
+        window.localStorage.removeItem("bharat_custom_units_v1");
+        window.dispatchEvent(
+          new StorageEvent("storage", {
+            key: "bharat_custom_units_v1",
+            newValue: JSON.stringify([]),
+          })
+        );
+      });
+
+      // Valuation must be invalidated
+      expect(document.getElementById("rate-total-value")).toBeNull();
+      expect(document.getElementById("rate-unit-error")).not.toBeNull();
+      expect(selectTrigger.getAttribute("aria-invalid")).toBe("true");
+    });
+
+    it("RATE-LIFECYCLE-007: Normal rate calculations remain correct and preserve regional unit selections", () => {
+      render(
+        <AppProvider>
+          <RateCalculator />
+        </AppProvider>
+      );
+
+      act(() => {
+        fireEvent.click(screen.getByRole("button", { name: /Land Valuation Calculator|rateCalc/i }));
+      });
+
+      const rateInput = document.getElementById("land-rate-input") as HTMLInputElement;
+      act(() => {
+        fireEvent.change(rateInput, { target: { value: "1000000" } });
+      });
+
+      const selectTrigger = document.getElementById("rate-unit-select")!;
+      act(() => {
+        fireEvent.pointerDown(selectTrigger);
+      });
+
+      const acreOption = Array.from(document.querySelectorAll('[role="option"]')).find(
+        (el) => el.textContent?.includes("Acre") || el.textContent?.includes("एकड़")
+      );
+      expect(acreOption).toBeDefined();
+
+      act(() => {
+        fireEvent.click(acreOption!);
+      });
+
+      // 1 Acre @ 10,00,000 / Acre = 10,00,000
+      expect(document.getElementById("rate-total-value")?.textContent).toContain("10,00,000");
+      expect(document.getElementById("rate-unit-error")).toBeNull();
+    });
+  });
 });
