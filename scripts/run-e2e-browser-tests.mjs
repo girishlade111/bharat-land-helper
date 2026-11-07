@@ -242,7 +242,7 @@ async function main() {
   // TEST 02: Enter 1 Acre and convert to Square Feet (expected 43,560)
   await runTest("TEST 02: Enter 1 Acre and convert to Square Feet", async () => {
     await cdp.eval(`window.__setReactInput('#area-input', '1')`);
-    await sleep(200);
+    await sleep(400);
 
     // Click To Unit and choose Square Feet
     await cdp.eval(`
@@ -251,14 +251,14 @@ async function main() {
         window.__clickRadix(toSelect);
       })()
     `);
-    await sleep(400);
+    await sleep(600);
     await cdp.eval(`
       (() => {
         const item = Array.from(document.querySelectorAll('[role="option"]')).find(el => el.textContent.includes('Square Feet') || el.textContent.includes('वर्ग फीट'));
         if (item) window.__clickRadix(item);
       })()
     `);
-    await sleep(400);
+    await sleep(600);
 
     const resultVal = await cdp.eval(`document.querySelector('[data-testid="primary-result-value"]')?.textContent?.trim()`);
     if (resultVal !== "43,560") {
@@ -2226,6 +2226,145 @@ async function main() {
     }
 
     return { totalVal, words };
+  });
+
+  // TEST 52: Rate Unit Lifecycle & Region Switching Safety in Real Browser (RATE-LIFECYCLE-008)
+  await runTest("TEST 52: Rate Unit Lifecycle & Region Switching Safety in Real Browser (RATE-LIFECYCLE-008)", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    // Save custom preset with 20,000 sq ft
+    await tabCdp.eval(`(() => {
+      const preset = {
+        id: "custom_village_20k",
+        name: "Village 20k",
+        referenceUnit: "sqft",
+        factor: 20000,
+        sqFtEquivalent: 20000,
+        createdAt: new Date().toISOString()
+      };
+      localStorage.setItem("bharat_custom_units_v1", JSON.stringify([preset]));
+      window.dispatchEvent(new CustomEvent("bharat_custom_units_updated"));
+    })()`);
+    await sleep(400);
+
+    // Open Rate Calculator
+    await tabCdp.eval(`(() => {
+      const toggle = document.querySelector('#rate-calculator-toggle');
+      if (toggle) toggle.click();
+    })()`);
+    await sleep(400);
+
+    // Select custom unit
+    await tabCdp.eval(`(() => {
+      const trigger = document.querySelector('#rate-unit-select');
+      if (!trigger) throw new Error("Rate unit select trigger not found");
+      trigger.focus();
+      trigger.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+      trigger.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+      trigger.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true }));
+      trigger.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+      trigger.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    })()`);
+    await sleep(400);
+
+    await tabCdp.eval(`(() => {
+      const options = Array.from(document.querySelectorAll('[role="option"]'));
+      const opt = options.find(o => o.textContent.includes('Village 20k'));
+      if (!opt) throw new Error("Custom unit option 'Village 20k' not found");
+      opt.focus();
+      opt.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+      opt.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+      opt.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true }));
+      opt.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+      opt.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    })()`);
+    await sleep(400);
+
+    // Verify correct initial valuation: 1 Acre (43,560 sq ft) / 20,000 * 5,000 = ₹ 10,890
+    const initialVal = await tabCdp.eval(`document.querySelector('#rate-total-value')?.textContent?.trim() || ''`);
+    if (!initialVal.includes("10,890")) {
+      throw new Error(`Expected initial custom valuation '₹ 10,890', received '${initialVal}'`);
+    }
+
+    // Delete custom preset (simulate deletion)
+    await tabCdp.eval(`(() => {
+      localStorage.setItem("bharat_custom_units_v1", JSON.stringify([]));
+      window.dispatchEvent(new CustomEvent("bharat_custom_units_updated"));
+    })()`);
+    await sleep(400);
+
+    // Verify valuation invalidated and removed
+    const postDeleteValExists = await tabCdp.eval(`!!document.querySelector('#rate-total-value')`);
+    const unitError = await tabCdp.eval(`document.querySelector('#rate-unit-error')?.textContent?.trim() || ''`);
+    const isAriaInvalid = await tabCdp.eval(`document.querySelector('#rate-unit-select')?.getAttribute('aria-invalid')`);
+
+    if (postDeleteValExists) {
+      throw new Error("Valuation must be suppressed when custom unit is deleted");
+    }
+    if (!unitError || !unitError.length) {
+      throw new Error("Expected #rate-unit-error message when selected rate unit is deleted");
+    }
+    if (isAriaInvalid !== "true") {
+      throw new Error(`Expected aria-invalid="true" on rate unit select trigger, got '${isAriaInvalid}'`);
+    }
+
+    // Now user explicitly selects Square Feet
+    await tabCdp.eval(`(() => {
+      const trigger = document.querySelector('#rate-unit-select');
+      trigger.focus();
+      trigger.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+      trigger.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+      trigger.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true }));
+      trigger.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+      trigger.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    })()`);
+    await sleep(400);
+
+    await tabCdp.eval(`(() => {
+      const options = Array.from(document.querySelectorAll('[role="option"]'));
+      const opt = options.find(o => o.textContent.includes('Square Feet') || o.textContent.includes('वर्ग फीट'));
+      if (!opt) throw new Error("Square Feet option not found");
+      opt.focus();
+      opt.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+      opt.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+      opt.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true }));
+      opt.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+      opt.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    })()`);
+    await sleep(400);
+
+    const restoredVal = await tabCdp.eval(`document.querySelector('#rate-total-value')?.textContent?.trim() || ''`);
+    if (!restoredVal.includes("21,78,00,000")) {
+      throw new Error(`Expected restored valuation '₹ 21,78,00,000' for Square Feet, received '${restoredVal}'`);
+    }
+
+    // Test switching regions while rate unit is active: switch to Uttar Pradesh
+    await tabCdp.eval(`(() => {
+      const trigger = document.querySelector('#state-selector-trigger');
+      if (trigger) trigger.click();
+    })()`);
+    await sleep(300);
+    await tabCdp.eval(`(() => {
+      const item = Array.from(document.querySelectorAll('[role="option"]')).find(el => el.textContent.includes('Uttar Pradesh') || el.textContent.includes('उत्तर प्रदेश'));
+      if (item) item.click();
+    })()`);
+    await sleep(400);
+
+    const postRegionSwitchVal = await tabCdp.eval(`document.querySelector('#rate-total-value')?.textContent?.trim() || ''`);
+    if (!postRegionSwitchVal.includes("21,78,00,000")) {
+      throw new Error(`Expected valuation preserved across region switch, received '${postRegionSwitchVal}'`);
+    }
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    return { initialVal, postDeleteValExists, unitError, restoredVal, postRegionSwitchVal };
   });
 
   // Cleanup

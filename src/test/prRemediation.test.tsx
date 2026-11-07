@@ -3149,7 +3149,8 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
 
       const selectTrigger = document.getElementById("rate-unit-select")!;
       act(() => {
-        fireEvent.pointerDown(selectTrigger);
+        selectTrigger.focus();
+        fireEvent.keyDown(selectTrigger, { key: "ArrowDown", code: "ArrowDown" });
       });
 
       const customOption = Array.from(document.querySelectorAll('[role="option"]')).find(
@@ -3184,7 +3185,8 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
 
       const selectTrigger = document.getElementById("rate-unit-select")!;
       act(() => {
-        fireEvent.pointerDown(selectTrigger);
+        selectTrigger.focus();
+        fireEvent.keyDown(selectTrigger, { key: "ArrowDown", code: "ArrowDown" });
       });
 
       const customOption = Array.from(document.querySelectorAll('[role="option"]')).find(
@@ -3222,7 +3224,8 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
 
       const selectTrigger = document.getElementById("rate-unit-select")!;
       act(() => {
-        fireEvent.pointerDown(selectTrigger);
+        selectTrigger.focus();
+        fireEvent.keyDown(selectTrigger, { key: "ArrowDown", code: "ArrowDown" });
       });
 
       const customOption = Array.from(document.querySelectorAll('[role="option"]')).find(
@@ -3260,7 +3263,8 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
 
       const selectTrigger = document.getElementById("rate-unit-select")!;
       act(() => {
-        fireEvent.pointerDown(selectTrigger);
+        selectTrigger.focus();
+        fireEvent.keyDown(selectTrigger, { key: "ArrowDown", code: "ArrowDown" });
       });
 
       const customOption = Array.from(document.querySelectorAll('[role="option"]')).find(
@@ -3304,7 +3308,8 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
 
       const selectTrigger = document.getElementById("rate-unit-select")!;
       act(() => {
-        fireEvent.pointerDown(selectTrigger);
+        selectTrigger.focus();
+        fireEvent.keyDown(selectTrigger, { key: "ArrowDown", code: "ArrowDown" });
       });
 
       const customOption = Array.from(document.querySelectorAll('[role="option"]')).find(
@@ -3322,7 +3327,8 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
 
       // Now explicitly choose Square Feet
       act(() => {
-        fireEvent.pointerDown(selectTrigger);
+        selectTrigger.focus();
+        fireEvent.keyDown(selectTrigger, { key: "ArrowDown", code: "ArrowDown" });
       });
       const sqftOption = Array.from(document.querySelectorAll('[role="option"]')).find(
         (el) => el.textContent?.includes("Square Feet") || el.textContent?.includes("वर्ग फीट")
@@ -3357,7 +3363,8 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
 
       const selectTrigger = document.getElementById("rate-unit-select")!;
       act(() => {
-        fireEvent.pointerDown(selectTrigger);
+        selectTrigger.focus();
+        fireEvent.keyDown(selectTrigger, { key: "ArrowDown", code: "ArrowDown" });
       });
 
       const customOption = Array.from(document.querySelectorAll('[role="option"]')).find(
@@ -3404,7 +3411,8 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
 
       const selectTrigger = document.getElementById("rate-unit-select")!;
       act(() => {
-        fireEvent.pointerDown(selectTrigger);
+        selectTrigger.focus();
+        fireEvent.keyDown(selectTrigger, { key: "ArrowDown", code: "ArrowDown" });
       });
 
       const acreOption = Array.from(document.querySelectorAll('[role="option"]')).find(
