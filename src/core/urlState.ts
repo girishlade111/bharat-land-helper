@@ -1,5 +1,5 @@
 import type { Lang } from "@/data/translations";
-import { parseStrictCustomFactor } from "./customUnits";
+import { parseStrictCustomFactor, MAX_CUSTOM_UNIT_SQFT } from "./customUnits";
 
 export interface ConversionQueryState {
   value?: string;
@@ -86,7 +86,7 @@ export function buildConversionSearchParams(
 
   if (isCustomFrom) {
     const rawSqFt = state.fromSqFt !== undefined ? state.fromSqFt : existingFromSqFt;
-    const parsed = parseStrictCustomFactor(rawSqFt);
+    const parsed = parseStrictCustomFactor(rawSqFt, MAX_CUSTOM_UNIT_SQFT);
     if (parsed.isValid && parsed.value > 0) {
       params.set("from_sqft", String(parsed.value));
       const rawName = state.fromName !== undefined ? state.fromName : existingFromName;
@@ -117,7 +117,7 @@ export function buildConversionSearchParams(
 
   if (isCustomTo) {
     const rawSqFt = state.toSqFt !== undefined ? state.toSqFt : existingToSqFt;
-    const parsed = parseStrictCustomFactor(rawSqFt);
+    const parsed = parseStrictCustomFactor(rawSqFt, MAX_CUSTOM_UNIT_SQFT);
     if (parsed.isValid && parsed.value > 0) {
       params.set("to_sqft", String(parsed.value));
       const rawName = state.toName !== undefined ? state.toName : existingToName;

@@ -28,6 +28,7 @@ import CustomUnitManager from "../components/CustomUnitManager";
 import RateCalculator from "../components/RateCalculator";
 import {
   saveHistory,
+  loadHistory,
   saveCustomPreset,
   deleteCustomPreset,
   loadCustomPresets,
@@ -53,6 +54,7 @@ import {
   parseStrictRate,
   calculateLandValuation,
   type ConversionHistoryItem,
+  MAX_CUSTOM_UNIT_SQFT,
 } from "../core";
 import { MemoryRouter, useLocation } from "react-router-dom";
 
@@ -4017,6 +4019,522 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
 
       expect(capturedApp!.fromUnit.id).toBe("guntha_mh");
       expect(capturedApp!.fromUnit.sqFt).toBe(1089);
+    });
+  });
+
+  describe("High-Value Custom Snapshot Serialization (HVSNAP-001 - HVSNAP-010)", () => {
+    const defaults = {
+      defaultValue: "1",
+      defaultFromUnitId: "acre",
+      defaultToUnitId: "guntha_mh",
+      defaultRegionCode: "MH",
+      defaultLang: "en" as const,
+    };
+
+    it("HVSNAP-001: 1,000 Acres (43,560,000 sq ft) custom factor serialized without truncation or deletion", () => {
+      const search = buildConversionSearchParams(
+        {
+          fromUnitId: "custom_estate",
+          fromSqFt: 43560000,
+          fromName: "Tea Estate",
+          toUnitId: "sqft",
+        },
+        "",
+        defaults
+      );
+      const params = new URLSearchParams(search);
+      expect(params.get("from")).toBe("custom_estate");
+      expect(params.get("from_sqft")).toBe("43560000");
+      expect(params.get("from_name")).toBe("Tea Estate");
+    });
+
+    it("HVSNAP-002: Large custom source unit URL query parameter from_sqft=43560000 maintained when string factor provided", () => {
+      const search = buildConversionSearchParams(
+        {
+          fromUnitId: "custom_farm",
+          fromSqFt: 43560000,
+          toUnitId: "acre",
+        },
+        "",
+        defaults
+      );
+      const params = new URLSearchParams(search);
+      expect(params.get("from")).toBe("custom_farm");
+      expect(params.get("from_sqft")).toBe("43560000");
+    });
+
+    it("HVSNAP-003: Large custom target unit URL query parameter to_sqft=43560000 maintained", () => {
+      const search = buildConversionSearchParams(
+        {
+          fromUnitId: "acre",
+          toUnitId: "custom_ranch",
+          toSqFt: 43560000,
+          toName: "Large Ranch",
+        },
+        "",
+        defaults
+      );
+      const params = new URLSearchParams(search);
+      expect(params.get("to")).toBe("custom_ranch");
+      expect(params.get("to_sqft")).toBe("43560000");
+      expect(params.get("to_name")).toBe("Large Ranch");
+    });
+
+    it("HVSNAP-004: Dual large custom units (both source and target > 10,000,000 sq ft) serialized correctly", () => {
+      const search = buildConversionSearchParams(
+        {
+          fromUnitId: "custom_source_big",
+          fromSqFt: 43560000,
+          fromName: "Big Farm",
+          toUnitId: "custom_target_huge",
+          toSqFt: 87120000,
+          toName: "Huge Plantation",
+        },
+        "",
+        defaults
+      );
+      const params = new URLSearchParams(search);
+      expect(params.get("from_sqft")).toBe("43560000");
+      expect(params.get("from_name")).toBe("Big Farm");
+      expect(params.get("to_sqft")).toBe("87120000");
+      expect(params.get("to_name")).toBe("Huge Plantation");
+    });
+
+    it("HVSNAP-005: Language switching preserves high-value custom factor in URL query string", () => {
+      const search = buildConversionSearchParams(
+        {
+          lang: "hi",
+          fromUnitId: "custom_tea",
+          toUnitId: "acre",
+        },
+        "from=custom_tea&from_sqft=43560000&from_name=Tea+Estate&to=acre",
+        defaults
+      );
+      const params = new URLSearchParams(search);
+      expect(params.get("lang")).toBe("hi");
+      expect(params.get("from_sqft")).toBe("43560000");
+      expect(params.get("from_name")).toBe("Tea Estate");
+    });
+
+    it("HVSNAP-006: Isolated browser hydration restores exact numeric factor and unit identity for high-value custom unit", () => {
+      window.history.replaceState(null, "", "/?from=custom_large&from_sqft=43560000&from_name=Grand+Ranch&to=acre&v=2");
+
+      let capturedApp: ReturnType<typeof useApp> | null = null;
+      function Consumer() {
+        capturedApp = useApp();
+        return <div>{capturedApp.fromUnit.id}</div>;
+      }
+
+      render(
+        <AppProvider>
+          <Consumer />
+        </AppProvider>
+      );
+
+      expect(capturedApp!.fromUnit.sqFt).toBe(43560000);
+      expect(capturedApp!.fromUnit.name).toContain("Grand Ranch");
+      expect(capturedApp!.primaryResult?.rawResult).toBe(2000);
+    });
+
+    it("HVSNAP-007: Factor exactly at upper boundary MAX_CUSTOM_UNIT_SQFT (500,000,000,000) accepted and serialized", () => {
+      const search = buildConversionSearchParams(
+        {
+          fromUnitId: "custom_max",
+          fromSqFt: MAX_CUSTOM_UNIT_SQFT,
+          toUnitId: "sqft",
+        },
+        "",
+        defaults
+      );
+      const params = new URLSearchParams(search);
+      expect(params.get("from_sqft")).toBe(String(MAX_CUSTOM_UNIT_SQFT));
+    });
+
+    it("HVSNAP-008: Factor exceeding MAX_CUSTOM_UNIT_SQFT (> 500B) safely rejected and stripped", () => {
+      const search = buildConversionSearchParams(
+        {
+          fromUnitId: "custom_overflow",
+          fromSqFt: MAX_CUSTOM_UNIT_SQFT + 1,
+          toUnitId: "sqft",
+        },
+        "",
+        defaults
+      );
+      const params = new URLSearchParams(search);
+      expect(params.get("from_sqft")).toBeNull();
+    });
+
+    it("HVSNAP-009: Standard regional units unaffected by large factor boundary expansion", () => {
+      const search = buildConversionSearchParams(
+        {
+          fromUnitId: "acre",
+          toUnitId: "guntha_mh",
+        },
+        "",
+        defaults
+      );
+      const params = new URLSearchParams(search);
+      expect(params.get("from_sqft")).toBeNull();
+      expect(params.get("to_sqft")).toBeNull();
+    });
+
+    it("HVSNAP-010: Legacy alias c_from_sqft with high-value factor normalized to from_sqft without factor loss", () => {
+      const search = buildConversionSearchParams(
+        {
+          fromUnitId: "custom_old",
+        },
+        "from=custom_old&c_from_sqft=43560000&c_from_name=Old+Estate&to=sqft",
+        defaults
+      );
+      const params = new URLSearchParams(search);
+      expect(params.get("from_sqft")).toBe("43560000");
+      expect(params.get("from_name")).toBe("Old Estate");
+      expect(params.get("c_from_sqft")).toBeNull();
+      expect(params.get("c_from_name")).toBeNull();
+    });
+  });
+
+  describe("History Recovery Navigation (HISTNAV-001 - HISTNAV-007)", () => {
+    it("HISTNAV-001: Re-running normal history item calls onLoadConversion and updates conversion state", () => {
+      let ctxRef: ReturnType<typeof useApp> | null = null;
+      const onLoadConversion = vi.fn();
+
+      function TestHarness() {
+        ctxRef = useApp();
+        return (
+          <div>
+            <ConversionHistory onLoadConversion={onLoadConversion} />
+          </div>
+        );
+      }
+
+      const itemNormal: ConversionHistoryItem = {
+        id: "hist-normal-1",
+        dataVersion: "v2",
+        timestamp: new Date().toISOString(),
+        fromValue: 2,
+        fromUnitId: "acre",
+        fromUnitName: "Acre",
+        fromUnitSqFtSnapshot: 43560,
+        toValue: 80,
+        toUnitId: "guntha_mh",
+        toUnitName: "Guntha (MH)",
+        toUnitSqFtSnapshot: 1089,
+        formattedResult: "80",
+        stateCode: "MH",
+        stateName: "Maharashtra",
+        formula: "2 Acre = 80 Guntha (MH)",
+        isCustomUnit: false,
+        snapshotProvenance: "VERIFIED_SNAPSHOT",
+      };
+
+      saveHistory([itemNormal]);
+
+      render(
+        <AppProvider initialRegionCode="MH" initialFromUnitId="acre" initialToUnitId="guntha_mh" initialInputValue="1">
+          <TestHarness />
+        </AppProvider>
+      );
+
+      const rerunBtn = screen.getByTitle(/पुनः लोड करें|Re-run calculation/);
+      fireEvent.click(rerunBtn);
+
+      expect(onLoadConversion).toHaveBeenCalledTimes(1);
+      expect(onLoadConversion).toHaveBeenCalledWith(itemNormal);
+      expect(ctxRef!.inputValue).toBe("2");
+      expect(ctxRef!.fromUnit.id).toBe("acre");
+      expect(ctxRef!.toUnit.id).toBe("guntha_mh");
+    });
+
+    it("HISTNAV-002: Re-running history entry when target custom unit deleted triggers onLoadConversion", () => {
+      let ctxRef: ReturnType<typeof useApp> | null = null;
+      const onLoadConversion = vi.fn();
+
+      function TestHarness() {
+        ctxRef = useApp();
+        return (
+          <div>
+            <ConversionHistory onLoadConversion={onLoadConversion} />
+          </div>
+        );
+      }
+
+      const itemWithDeletedTarget: ConversionHistoryItem = {
+        id: "hist-del-target-nav",
+        dataVersion: "v2",
+        timestamp: new Date().toISOString(),
+        fromValue: 3,
+        fromUnitId: "acre",
+        fromUnitName: "Acre",
+        fromUnitSqFtSnapshot: 43560,
+        toValue: 120,
+        toUnitId: "custom_deleted_target",
+        toUnitName: "Old Plot Target",
+        toUnitSqFtSnapshot: 1089,
+        formattedResult: "120",
+        stateCode: "MH",
+        stateName: "Maharashtra",
+        formula: "3 Acre = 120 Old Plot Target",
+        isCustomUnit: true,
+        snapshotProvenance: "VERIFIED_SNAPSHOT",
+      };
+
+      saveHistory([itemWithDeletedTarget]);
+
+      render(
+        <AppProvider initialRegionCode="MH" initialFromUnitId="acre" initialToUnitId="guntha_mh" initialInputValue="1">
+          <TestHarness />
+        </AppProvider>
+      );
+
+      const rerunBtn = screen.getByTitle(/पुनः लोड करें|Re-run calculation/);
+      fireEvent.click(rerunBtn);
+
+      expect(onLoadConversion).toHaveBeenCalledTimes(1);
+      expect(onLoadConversion).toHaveBeenCalledWith(itemWithDeletedTarget);
+      expect(ctxRef!.inputValue).toBe("3");
+      expect(ctxRef!.fromUnit.id).toBe("acre");
+      expect(ctxRef!.toUnit.id).toBe("sqft");
+    });
+
+    it("HISTNAV-003: Re-running history entry when source custom unit deleted triggers onLoadConversion", () => {
+      let ctxRef: ReturnType<typeof useApp> | null = null;
+      const onLoadConversion = vi.fn();
+
+      function TestHarness() {
+        ctxRef = useApp();
+        return (
+          <div>
+            <ConversionHistory onLoadConversion={onLoadConversion} />
+          </div>
+        );
+      }
+
+      const itemSourceDeleted: ConversionHistoryItem = {
+        id: "hist-del-source-nav",
+        dataVersion: "v2",
+        timestamp: new Date().toISOString(),
+        fromValue: 4,
+        fromUnitId: "custom_deleted_source",
+        fromUnitName: "Grandfather Katha",
+        fromUnitSqFtSnapshot: 2500,
+        toValue: 10000,
+        toUnitId: "sqft",
+        toUnitName: "Square Feet",
+        toUnitSqFtSnapshot: 1,
+        formattedResult: "10,000",
+        stateCode: "UP",
+        stateName: "Uttar Pradesh",
+        formula: "4 Grandfather Katha = 10,000 Square Feet",
+        isCustomUnit: true,
+        snapshotProvenance: "VERIFIED_SNAPSHOT",
+      };
+
+      saveHistory([itemSourceDeleted]);
+
+      render(
+        <AppProvider initialRegionCode="UP" initialFromUnitId="sqft" initialToUnitId="acre" initialInputValue="1">
+          <TestHarness />
+        </AppProvider>
+      );
+
+      const rerunBtn = screen.getByTitle(/पुनः लोड करें|Re-run calculation/);
+      fireEvent.click(rerunBtn);
+
+      expect(onLoadConversion).toHaveBeenCalledTimes(1);
+      expect(onLoadConversion).toHaveBeenCalledWith(itemSourceDeleted);
+      expect(ctxRef!.inputValue).toBe("10000");
+      expect(ctxRef!.fromUnit.id).toBe("sqft");
+      expect(ctxRef!.toUnit.id).toBe("sqft");
+    });
+
+    it("HISTNAV-004: Re-running history entry when both units deleted triggers onLoadConversion", () => {
+      let ctxRef: ReturnType<typeof useApp> | null = null;
+      const onLoadConversion = vi.fn();
+
+      function TestHarness() {
+        ctxRef = useApp();
+        return (
+          <div>
+            <ConversionHistory onLoadConversion={onLoadConversion} />
+          </div>
+        );
+      }
+
+      const itemBothDeleted: ConversionHistoryItem = {
+        id: "hist-both-deleted-nav",
+        dataVersion: "v2",
+        timestamp: new Date().toISOString(),
+        fromValue: 5,
+        fromUnitId: "custom_old_source",
+        fromUnitName: "Old Source Custom",
+        fromUnitSqFtSnapshot: 4000,
+        toValue: 20,
+        toUnitId: "custom_old_target",
+        toUnitName: "Old Target Custom",
+        toUnitSqFtSnapshot: 1000,
+        formattedResult: "20",
+        stateCode: "RJ",
+        stateName: "Rajasthan",
+        formula: "5 Old Source = 20 Old Target",
+        isCustomUnit: true,
+        snapshotProvenance: "VERIFIED_SNAPSHOT",
+      };
+
+      saveHistory([itemBothDeleted]);
+
+      render(
+        <AppProvider initialRegionCode="RJ" initialFromUnitId="acre" initialToUnitId="sqft" initialInputValue="1">
+          <TestHarness />
+        </AppProvider>
+      );
+
+      const rerunBtn = screen.getByTitle(/पुनः लोड करें|Re-run calculation/);
+      fireEvent.click(rerunBtn);
+
+      expect(onLoadConversion).toHaveBeenCalledTimes(1);
+      expect(onLoadConversion).toHaveBeenCalledWith(itemBothDeleted);
+      expect(ctxRef!.inputValue).toBe("20000");
+      expect(ctxRef!.fromUnit.id).toBe("sqft");
+      expect(ctxRef!.toUnit.id).toBe("acre");
+    });
+
+    it("HISTNAV-005: Recovered conversion calculates area matching documented sq ft factor accurately", () => {
+      let ctxRef: ReturnType<typeof useApp> | null = null;
+      const onLoadConversion = vi.fn();
+
+      function TestHarness() {
+        ctxRef = useApp();
+        return (
+          <div>
+            <ConversionHistory onLoadConversion={onLoadConversion} />
+          </div>
+        );
+      }
+
+      const itemCustomSource: ConversionHistoryItem = {
+        id: "hist-factor-calc",
+        dataVersion: "v2",
+        timestamp: new Date().toISOString(),
+        fromValue: 5,
+        fromUnitId: "custom_deleted_factor",
+        fromUnitName: "Factor Test Unit",
+        fromUnitSqFtSnapshot: 20000,
+        toValue: 91.82736,
+        toUnitId: "guntha_mh",
+        toUnitName: "Guntha (MH)",
+        toUnitSqFtSnapshot: 1089,
+        formattedResult: "91.83",
+        stateCode: "MH",
+        stateName: "Maharashtra",
+        formula: "5 Factor Test Unit = 91.83 Guntha (MH)",
+        isCustomUnit: true,
+        snapshotProvenance: "VERIFIED_SNAPSHOT",
+      };
+
+      saveHistory([itemCustomSource]);
+
+      render(
+        <AppProvider initialRegionCode="MH" initialFromUnitId="acre" initialToUnitId="guntha_mh" initialInputValue="1">
+          <TestHarness />
+        </AppProvider>
+      );
+
+      const rerunBtn = screen.getByTitle(/पुनः लोड करें|Re-run calculation/);
+      fireEvent.click(rerunBtn);
+
+      expect(ctxRef!.inputValue).toBe("100000");
+      expect(ctxRef!.fromUnit.id).toBe("sqft");
+      expect(ctxRef!.toUnit.id).toBe("guntha_mh");
+      expect(ctxRef!.primaryResult?.rawResult).toBeCloseTo(100000 / 1089, 4);
+    });
+
+    it("HISTNAV-006: Region code preserved upon history recovery navigation", () => {
+      let ctxRef: ReturnType<typeof useApp> | null = null;
+      const onLoadConversion = vi.fn();
+
+      function TestHarness() {
+        ctxRef = useApp();
+        return (
+          <div>
+            <ConversionHistory onLoadConversion={onLoadConversion} />
+          </div>
+        );
+      }
+
+      const itemPunjab: ConversionHistoryItem = {
+        id: "hist-punjab-nav",
+        dataVersion: "v2",
+        timestamp: new Date().toISOString(),
+        fromValue: 2,
+        fromUnitId: "custom_punjab_deleted",
+        fromUnitName: "Punjab Custom",
+        fromUnitSqFtSnapshot: 5445,
+        toValue: 2,
+        toUnitId: "custom_punjab_del_target",
+        toUnitName: "Punjab Custom Target",
+        toUnitSqFtSnapshot: 5445,
+        formattedResult: "2",
+        stateCode: "PB",
+        stateName: "Punjab",
+        formula: "2 Punjab Custom = 2 Target",
+        isCustomUnit: true,
+        snapshotProvenance: "VERIFIED_SNAPSHOT",
+      };
+
+      saveHistory([itemPunjab]);
+
+      render(
+        <AppProvider initialRegionCode="MH" initialFromUnitId="acre" initialToUnitId="sqft" initialInputValue="1">
+          <TestHarness />
+        </AppProvider>
+      );
+
+      const rerunBtn = screen.getByTitle(/पुनः लोड करें|Re-run calculation/);
+      fireEvent.click(rerunBtn);
+
+      expect(onLoadConversion).toHaveBeenCalledTimes(1);
+      expect(ctxRef!.selectedRegion.code).toBe("PB");
+    });
+
+    it("HISTNAV-007: Original history item in localStorage remains unchanged after recovery navigation", () => {
+      const itemOriginal: ConversionHistoryItem = {
+        id: "hist-immutable-nav",
+        dataVersion: "v2",
+        timestamp: new Date().toISOString(),
+        fromValue: 10,
+        fromUnitId: "custom_deleted_source_imm",
+        fromUnitName: "Immutable Katha",
+        fromUnitSqFtSnapshot: 2500,
+        toValue: 25000,
+        toUnitId: "sqft",
+        toUnitName: "Square Feet",
+        toUnitSqFtSnapshot: 1,
+        formattedResult: "25,000",
+        stateCode: "BR",
+        stateName: "Bihar",
+        formula: "10 Immutable Katha = 25,000 Square Feet",
+        isCustomUnit: true,
+        snapshotProvenance: "VERIFIED_SNAPSHOT",
+      };
+
+      saveHistory([itemOriginal]);
+
+      render(
+        <AppProvider initialRegionCode="BR">
+          <ConversionHistory onLoadConversion={() => {}} />
+        </AppProvider>
+      );
+
+      const rerunBtn = screen.getByTitle(/पुनः लोड करें|Re-run calculation/);
+      fireEvent.click(rerunBtn);
+
+      const storedHistory = loadHistory();
+      expect(storedHistory).toHaveLength(1);
+      expect(storedHistory[0].fromUnitId).toBe("custom_deleted_source_imm");
+      expect(storedHistory[0].fromValue).toBe(10);
+      expect(storedHistory[0].fromUnitSqFtSnapshot).toBe(2500);
+      expect(storedHistory[0].toUnitId).toBe("sqft");
     });
   });
 });

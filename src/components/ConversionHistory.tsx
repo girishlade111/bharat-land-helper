@@ -139,6 +139,9 @@ export default function ConversionHistory({ onLoadConversion }: ConversionHistor
         toUnitId: fallbackTarget,
         regionCode: item.stateCode || undefined,
       });
+      if (onLoadConversion) {
+        onLoadConversion(item);
+      }
       toast({
         title: lang === "hi" ? "कस्टम लक्ष्य इकाई उपलब्ध नहीं" : "Custom Target Unit Removed",
         description:
@@ -160,6 +163,9 @@ export default function ConversionHistory({ onLoadConversion }: ConversionHistor
         toUnitId: resolvedTo.id,
         regionCode: item.stateCode || undefined,
       });
+      if (onLoadConversion) {
+        onLoadConversion(item);
+      }
       toast({
         title: lang === "hi" ? "कस्टम स्रोत इकाई उपलब्ध नहीं" : "Custom Source Unit Removed",
         description:
@@ -180,6 +186,9 @@ export default function ConversionHistory({ onLoadConversion }: ConversionHistor
         toUnitId: "acre",
         regionCode: item.stateCode || undefined,
       });
+      if (onLoadConversion) {
+        onLoadConversion(item);
+      }
       toast({
         title: lang === "hi" ? "कस्टम इकाइयाँ उपलब्ध नहीं" : "Custom Units Unavailable",
         description:

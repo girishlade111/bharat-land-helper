@@ -2580,6 +2580,152 @@ async function main() {
     return { inputVal, fromUnitLabel, toUnitLabel, primaryResult, storageState };
   });
 
+  // TEST 56: High-Value Custom Unit Snapshot Link (43,560,000 sq ft) in Isolated Browser Context (HVSNAP-011)
+  await runTest("TEST 56: High-Value Custom Unit Snapshot Link (43,560,000 sq ft) in Isolated Browser Context (HVSNAP-011)", async () => {
+    // 1,000 Acres = 43,560,000 sq ft. Value = 1. Target = Acre. Expected = 1,000 Acres.
+    const sharedHighValUrl = `${BASE_URL}/?v=1&from=custom_tea_estate&from_sqft=43560000&from_name=Grand+Tea+Estate&to=acre`;
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(sharedHighValUrl), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(800);
+
+    // Verify localStorage has no custom presets
+    await tabCdp.eval("window.localStorage.removeItem('bharat_custom_units_v1')");
+    await tabCdp.send("Page.reload");
+    await sleep(1000);
+
+    const inputVal = await tabCdp.eval("document.querySelector('#area-input')?.value || document.querySelector('input[inputmode=\"decimal\"]')?.value");
+    const fromUnitLabel = await tabCdp.eval("document.querySelector('#from-unit-select')?.textContent?.trim() || ''");
+    const toUnitLabel = await tabCdp.eval("document.querySelector('#to-unit-select')?.textContent?.trim() || ''");
+    const primaryResult = await tabCdp.eval("document.querySelector('[data-testid=\"primary-result-value\"]')?.textContent?.trim() || ''");
+    const currentUrl = await tabCdp.eval("window.location.href");
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    if (inputVal !== "1") {
+      throw new Error(`Expected input value '1', got '${inputVal}'`);
+    }
+    if (!fromUnitLabel.includes("Grand Tea Estate")) {
+      throw new Error(`Expected from unit label to include 'Grand Tea Estate', got '${fromUnitLabel}'`);
+    }
+    if (!toUnitLabel.includes("Acre") && !toUnitLabel.includes("एकड़")) {
+      throw new Error(`Expected to unit label to be Acre, got '${toUnitLabel}'`);
+    }
+    // 1 * 43,560,000 / 43,560 = 1,000 Acres
+    if (!primaryResult.includes("1,000") && primaryResult !== "1000") {
+      throw new Error(`Expected primary result '1,000' for 43,560,000 sq ft into Acre, received '${primaryResult}'`);
+    }
+    if (!currentUrl.includes("from_sqft=43560000")) {
+      throw new Error(`Expected URL to retain from_sqft=43560000, got '${currentUrl}'`);
+    }
+
+    return { inputVal, fromUnitLabel, toUnitLabel, primaryResult, currentUrl };
+  });
+
+  // TEST 57: Deleted Custom Unit History Re-Run Automatic Navigation to Converter Tab (HISTNAV-008)
+  await runTest("TEST 57: Deleted Custom Unit History Re-Run Automatic Navigation to Converter Tab (HISTNAV-008)", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    // 1. Inject a history item where the source custom unit is deleted, but has a 25,000 sq ft snapshot
+    await tabCdp.eval(`(() => {
+      const item = {
+        id: "hist-del-source-e2e",
+        dataVersion: "v2",
+        timestamp: new Date().toISOString(),
+        fromValue: 2,
+        fromUnitId: "custom_deleted_source_e2e",
+        fromUnitName: "Old Heritage Bigha",
+        fromUnitSqFtSnapshot: 25000,
+        toValue: 50000,
+        toUnitId: "sqft",
+        toUnitName: "Square Feet",
+        toUnitSqFtSnapshot: 1,
+        formattedResult: "50,000",
+        stateCode: "MH",
+        stateName: "Maharashtra",
+        formula: "2 Old Heritage Bigha = 50,000 Square Feet",
+        isCustomUnit: true,
+        snapshotProvenance: "VERIFIED_SNAPSHOT"
+      };
+      localStorage.setItem("bharat_conversion_history_v2", JSON.stringify([item]));
+      localStorage.setItem("bharat_custom_units_v1", JSON.stringify([]));
+    })()`);
+    await sleep(400);
+
+    // 2. Navigate to History tab by clicking #tab-history-btn
+    await tabCdp.eval(`(() => {
+      const historyTabBtn = document.querySelector('#tab-history-btn');
+      if (!historyTabBtn) throw new Error("#tab-history-btn not found");
+      historyTabBtn.click();
+    })()`);
+    await sleep(500);
+
+    // Verify History section is visible
+    const historySectionVisible = await tabCdp.eval(`Boolean(document.querySelector('section[aria-label="Conversion History and Export"]'))`);
+    if (!historySectionVisible) {
+      throw new Error("Conversion History section not visible after clicking #tab-history-btn");
+    }
+
+    // 3. Click the Re-Run calculation button inside the history item
+    await tabCdp.eval(`(() => {
+      const rerunBtn = document.querySelector('button[title*="Re-run calculation"]') ||
+                       document.querySelector('button[title*="पुनः लोड करें"]') ||
+                       document.querySelector('button[aria-label*="Re-run"]');
+      if (!rerunBtn) throw new Error("Re-run button not found in history card");
+      rerunBtn.click();
+    })()`);
+    await sleep(600);
+
+    // 4. Verify user was automatically navigated back to Area Converter tool
+    const converterSectionVisible = await tabCdp.eval(`Boolean(document.querySelector('#area-input'))`);
+    const historyBtnHasPrimary = await tabCdp.eval(`document.querySelector('#tab-history-btn')?.classList.contains('bg-primary')`);
+    const converterBtnHasPrimary = await tabCdp.eval(`document.querySelector('#tab-converter-btn')?.classList.contains('bg-primary')`);
+    
+    // 5. Verify the recovered state: 2 * 25,000 sq ft = 50,000 sq ft loaded into sqft
+    const inputVal = await tabCdp.eval(`document.querySelector('#area-input')?.value`);
+    const fromUnitLabel = await tabCdp.eval(`document.querySelector('#from-unit-select')?.textContent?.trim() || ''`);
+    const primaryResult = await tabCdp.eval(`document.querySelector('[data-testid=\"primary-result-value\"]')?.textContent?.trim() || ''`);
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    if (!converterSectionVisible) {
+      throw new Error("Area Converter (#area-input) is not visible after history recovery re-run");
+    }
+    if (historyBtnHasPrimary) {
+      throw new Error("History tab button still has active 'bg-primary' class after recovery");
+    }
+    if (!converterBtnHasPrimary) {
+      throw new Error("Converter tab button does not have active 'bg-primary' class after recovery");
+    }
+    if (inputVal !== "50000") {
+      throw new Error(`Expected input value to be recovered as '50000', got '${inputVal}'`);
+    }
+    if (!fromUnitLabel.includes("Square Feet") && !fromUnitLabel.includes("वर्ग फीट")) {
+      throw new Error(`Expected from unit to be Square Feet, got '${fromUnitLabel}'`);
+    }
+
+    return {
+      historySectionVisible,
+      converterSectionVisible,
+      historyBtnHasPrimary,
+      converterBtnHasPrimary,
+      inputVal,
+      fromUnitLabel,
+      primaryResult
+    };
+  });
+
   // Cleanup
   console.log("==================================================");
   console.log("E2E TESTS COMPLETE");
