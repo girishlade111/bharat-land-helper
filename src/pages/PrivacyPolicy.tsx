@@ -20,7 +20,7 @@ export default function PrivacyPolicy() {
             <h2 className="mb-3 text-base font-bold text-foreground">1. Introduction</h2>
             <p>
               Welcome to <strong>Bharat Land Converter</strong> ("we", "our", "us"), operated by <strong>Lade Stack</strong> (ladestack.in).
-              This Privacy Policy explains how we handle information when you use our website at bharatlandconverter.in (the "Service").
+              This Privacy Policy explains how we handle information when you use our website at land.ladestack.in (the "Service").
             </p>
             <p className="mt-2">
               We are committed to protecting your privacy. Our Service is designed to work entirely in your browser with
@@ -34,10 +34,10 @@ export default function PrivacyPolicy() {
             <ul className="mt-2 list-disc space-y-1.5 pl-5">
               <li><strong>No personal information</strong> — We do not ask for your name, email, phone number, or any personal details.</li>
               <li><strong>No account or login</strong> — There is no registration, login, or authentication system.</li>
-              <li><strong>No cookies for tracking</strong> — We do not use cookies to track your behavior or identity.</li>
-              <li><strong>No analytics tracking</strong> — We do not use Google Analytics, Facebook Pixel, or any third-party analytics tools.</li>
-              <li><strong>No server-side data storage</strong> — All your data stays in your browser's localStorage and is never sent to any server.</li>
-              <li><strong>No API calls</strong> — The application works 100% offline after the initial page load. No external APIs are called.</li>
+              <li><strong>No tracking cookies or advertising pixels</strong> — We do not use advertising cookies, Google Analytics, or Facebook Pixel to track your identity or build profiles.</li>
+              <li><strong>Privacy-friendly aggregate telemetry</strong> — We use privacy-preserving, cookieless Vercel Web Analytics strictly for aggregate visit counts and general region metrics; it does not collect personal data, store cookies, or track individual users.</li>
+              <li><strong>Zero server transmission of calculations</strong> — All your land measurements and calculations are processed strictly within your browser's memory and are never transmitted to any server.</li>
+              <li><strong>No server-side data storage</strong> — Your saved parcels stay exclusively in your device's browser localStorage.</li>
             </ul>
           </section>
 
@@ -67,8 +67,9 @@ export default function PrivacyPolicy() {
 
           <section className="rounded-xl border border-border/50 bg-card p-5">
             <h2 className="mb-3 text-base font-bold text-foreground">4. Third-Party Services</h2>
-            <p>Our website uses the following third-party services for functionality only:</p>
+            <p>Our website uses the following third-party services for functionality and performance monitoring:</p>
             <ul className="mt-2 list-disc space-y-1.5 pl-5">
+              <li><strong>Vercel Web Analytics</strong> — We use privacy-friendly, cookieless Vercel Web Analytics strictly to measure aggregate traffic (page views, generalized region, device type). It does not collect PII, store cookies, or record your land measurements, calculations, custom factors, or saved parcels.</li>
               <li><strong>Google Fonts</strong> — We load the Inter and Noto Sans Devanagari fonts from Google Fonts. Google may collect anonymized usage data as described in their <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Privacy Policy</a>.</li>
               <li><strong>WhatsApp Share</strong> — When you click the "WhatsApp Share" button, it opens WhatsApp's web interface (wa.me) with a pre-filled message. No data is sent to our servers.</li>
             </ul>
