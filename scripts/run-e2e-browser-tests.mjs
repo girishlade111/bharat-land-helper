@@ -1859,13 +1859,24 @@ async function main() {
     })()`);
     await sleep(200);
 
-    // Enter name
-    await tabCdp.eval(`window.__setReactInput('#custom-unit-name', 'Malformed Unit')`);
-    await sleep(200);
-
-    // Enter malformed factor: 20.000.50
-    await tabCdp.eval(`window.__setReactInput('#custom-unit-factor', '20.000.50')`);
-    await sleep(300);
+    // Enter name and malformed factor using native React input setter
+    await tabCdp.eval(`(() => {
+      const setInput = (sel, val) => {
+        const el = document.querySelector(sel);
+        if (!el) throw new Error("Element not found: " + sel);
+        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+        if (nativeSetter) {
+          nativeSetter.call(el, val);
+        } else {
+          el.value = val;
+        }
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      };
+      setInput('#custom-unit-name', 'Malformed Unit');
+      setInput('#custom-unit-factor', '20.000.50');
+    })()`);
+    await sleep(400);
 
     // Check error banner exists
     const errorText = await tabCdp.eval(`document.querySelector('#custom-unit-factor-error')?.textContent || ''`);
