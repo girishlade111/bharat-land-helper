@@ -43,6 +43,9 @@ import {
   isLegacyUnitId,
   parseCustomSnapshotParam,
   getEphemeralSnapshotUnit,
+  parseStrictCustomFactor,
+  validateCustomUnitInput,
+  getCustomLandUnits,
   type ConversionHistoryItem,
 } from "../core";
 import { MemoryRouter, useLocation } from "react-router-dom";
@@ -2463,5 +2466,159 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
     expect(getUnit("chatak_wb")!.sqFt).toBe(45);
     expect(getUnit("kanal")!.sqFt).toBe(5445);
     expect(getUnit("marla")!.sqFt).toBe(272.25);
+  });
+
+  // ==========================================
+  // Strict Numeric Input Hardening Tests
+  // ==========================================
+  it("NUMERIC-001: Reject 20.000.50 with multiple decimals", () => {
+    expect(parseStrictCustomFactor("20.000.50").isValid).toBe(false);
+    expect(validateCustomUnitInput("Custom Unit", "20.000.50", "sqft").isValid).toBe(false);
+  });
+
+  it("NUMERIC-002: Reject 3/4 fraction string without partial parsing", () => {
+    expect(parseStrictCustomFactor("3/4").isValid).toBe(false);
+    expect(validateCustomUnitInput("Custom Unit", "3/4", "sqft").isValid).toBe(false);
+  });
+
+  it("NUMERIC-003: Reject 100abc with trailing characters", () => {
+    expect(parseStrictCustomFactor("100abc").isValid).toBe(false);
+    expect(validateCustomUnitInput("Custom Unit", "100abc", "sqft").isValid).toBe(false);
+  });
+
+  it("NUMERIC-004: Accept ordinary positive decimal 20.5", () => {
+    const res = parseStrictCustomFactor("20.5");
+    expect(res.isValid).toBe(true);
+    expect(res.value).toBe(20.5);
+    const val = validateCustomUnitInput("Custom Unit", "20.5", "sqft");
+    expect(val.isValid).toBe(true);
+    expect(val.factor).toBe(20.5);
+    expect(val.sqFtEquivalent).toBe(20.5);
+  });
+
+  it("NUMERIC-005: Accept small positive factor 0.0001", () => {
+    const res = parseStrictCustomFactor("0.0001");
+    expect(res.isValid).toBe(true);
+    expect(res.value).toBe(0.0001);
+    const val = validateCustomUnitInput("Custom Unit", "0.0001", "sqft");
+    expect(val.isValid).toBe(true);
+    expect(val.factor).toBe(0.0001);
+  });
+
+  it("NUMERIC-006: Reject NaN and Infinity", () => {
+    expect(parseStrictCustomFactor(NaN).isValid).toBe(false);
+    expect(parseStrictCustomFactor(Infinity).isValid).toBe(false);
+    expect(parseStrictCustomFactor(-Infinity).isValid).toBe(false);
+    expect(validateCustomUnitInput("Custom Unit", NaN, "sqft").isValid).toBe(false);
+    expect(validateCustomUnitInput("Custom Unit", Infinity, "sqft").isValid).toBe(false);
+  });
+
+  it("NUMERIC-007: Reject zero and negative values", () => {
+    const zeroRes = parseStrictCustomFactor(0);
+    expect(zeroRes.isValid).toBe(false);
+    expect(zeroRes.error).toContain("greater than zero");
+    const negRes = parseStrictCustomFactor(-15);
+    expect(negRes.isValid).toBe(false);
+    expect(negRes.error).toContain("cannot be negative");
+    expect(validateCustomUnitInput("Custom Unit", 0, "sqft").isValid).toBe(false);
+    expect(validateCustomUnitInput("Custom Unit", "-5", "sqft").isValid).toBe(false);
+  });
+
+  it("NUMERIC-008: Accept correctly formatted 1,000, 1,00,000, and 1,000,000", () => {
+    expect(parseStrictCustomFactor("1,000").value).toBe(1000);
+    expect(parseStrictCustomFactor("1,00,000").value).toBe(100000);
+    expect(parseStrictCustomFactor("10,00,000").value).toBe(1000000);
+    expect(parseStrictCustomFactor("1,000,000").value).toBe(1000000);
+    expect(validateCustomUnitInput("Custom Unit", "1,000", "sqft").factor).toBe(1000);
+  });
+
+  it("NUMERIC-009: Reject malformed comma grouping such as 1,2,3 or 10,00", () => {
+    expect(parseStrictCustomFactor("1,2,3").isValid).toBe(false);
+    expect(parseStrictCustomFactor("10,00").isValid).toBe(false);
+    expect(parseStrictCustomFactor(",100").isValid).toBe(false);
+    expect(parseStrictCustomFactor("100,").isValid).toBe(false);
+    expect(validateCustomUnitInput("Custom Unit", "1,2,3", "sqft").isValid).toBe(false);
+  });
+
+  it("NUMERIC-010: Reject values exceeding supported bounds (> 10,000,000 for preset input)", () => {
+    expect(parseStrictCustomFactor("10,000,001", 10_000_000).isValid).toBe(false);
+    expect(validateCustomUnitInput("Custom Unit", "10000001", "sqft").isValid).toBe(false);
+    expect(validateCustomUnitInput("Custom Unit", "10000000", "sqft").isValid).toBe(true);
+  });
+
+  it("NUMERIC-011: Saving uses the exact validated factor", () => {
+    window.localStorage.clear();
+    const res = saveCustomPreset("Exact Factor Unit", "25.75", "sqft");
+    expect(res.success).toBe(true);
+    expect(res.preset?.factor).toBe(25.75);
+    expect(res.preset?.sqFtEquivalent).toBe(25.75);
+    const presets = loadCustomPresets();
+    expect(presets[0].factor).toBe(25.75);
+  });
+
+  it("NUMERIC-012: Invalid input is never persisted", () => {
+    window.localStorage.clear();
+    const res = saveCustomPreset("Malformed Unit", "20.000.50", "sqft");
+    expect(res.success).toBe(false);
+    expect(loadCustomPresets().length).toBe(0);
+  });
+
+  it("NUMERIC-013: Malformed URL snapshot is rejected completely", () => {
+    expect(parseCustomSnapshotParam("20.000.50")).toBeNull();
+    expect(parseCustomSnapshotParam("100abc")).toBeNull();
+    expect(parseCustomSnapshotParam("3/4")).toBeNull();
+    expect(parseCustomSnapshotParam("1,2,3")).toBeNull();
+  });
+
+  it("NUMERIC-014: Existing valid custom share URL still works in browser with empty localStorage", () => {
+    window.localStorage.clear();
+    const unit = parseCustomSnapshotParam(20000, "Village Bigha");
+    expect(unit).not.toBeNull();
+    expect(unit!.sqFt).toBe(20000);
+    const acreUnit = getUnit("acre")!;
+    const conv = convertArea(1, unit!, acreUnit);
+    expect(conv.rawResult).toBeCloseTo(20000 / 43560, 4);
+  });
+
+  it("NUMERIC-015: Two distinct small factors never produce the same snapshot identity", () => {
+    const unit1 = parseCustomSnapshotParam(0.0001, "Micro A")!;
+    const unit2 = parseCustomSnapshotParam(0.0004, "Micro B")!;
+    expect(unit1.id).not.toBe(unit2.id);
+    expect(unit1.sqFt).toBe(0.0001);
+    expect(unit2.sqFt).toBe(0.0004);
+  });
+
+  it("NUMERIC-016: Large valid factors consistent with preset editor restore successfully", () => {
+    // 1,000 acres = 43,560,000 sq ft
+    const large = parseCustomSnapshotParam(43560000, "Estate Unit");
+    expect(large).not.toBeNull();
+    expect(large!.sqFt).toBe(43560000);
+  });
+
+  it("NUMERIC-017: Saved custom units continue calculating correctly after reload", () => {
+    window.localStorage.clear();
+    saveCustomPreset("Reload Unit", 5000, "sqft");
+    const units = getCustomLandUnits();
+    const custom = units.find((u) => u.name.includes("Reload Unit"));
+    expect(custom).toBeDefined();
+    expect(custom!.sqFt).toBe(5000);
+    const conv = convertArea(2, custom!, getUnit("sqft")!);
+    expect(conv.rawResult).toBe(10000);
+  });
+
+  it("NUMERIC-018: Invalid numeric text displays a clear error", () => {
+    const val = validateCustomUnitInput("Custom Unit", "invalid_text", "sqft");
+    expect(val.isValid).toBe(false);
+    expect(val.error).toBe("Please enter a valid numeric conversion factor.");
+    expect(val.errorHi).toBe("कृपया एक मान्य संख्यात्मक रूपांतरण कारक दर्ज करें।");
+  });
+
+  it("NUMERIC-019: Strict parsing does not regress standard land conversions", () => {
+    const c1 = convertArea(1, "acre", "sqft");
+    expect(c1.rawResult).toBe(43560);
+    const c2 = convertArea(40, "guntha_mh", "acre");
+    expect(c2.rawResult).toBe(1);
+    const c3 = convertArea(1, "hectare", "sqm");
+    expect(c3.rawResult).toBeCloseTo(10000, 2);
   });
 });

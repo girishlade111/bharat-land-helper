@@ -60,8 +60,16 @@ export default function CustomUnitManager({ onApplyCustomUnit }: CustomUnitManag
       return;
     }
 
-    const numFactor = parseFloat(factorStr.replace(/,/g, "")) || 0;
-    const result = saveCustomPreset(name, numFactor, referenceUnit, note);
+    if (!validation.isValid) {
+      toast({
+        title: lang === "hi" ? "अमान्य रूपांतरण कारक" : "Invalid Conversion Factor",
+        description: lang === "hi" ? (validation.errorHi || "कृपया एक मान्य संख्यात्मक रूपांतरण कारक दर्ज करें।") : (validation.error || "Please enter a valid numeric conversion factor."),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const result = saveCustomPreset(name, factorStr, referenceUnit, note);
     if (result.success && result.preset) {
       setPresets(loadCustomPresets());
       toast({
@@ -190,6 +198,11 @@ export default function CustomUnitManager({ onApplyCustomUnit }: CustomUnitManag
               placeholder="e.g. 20000"
               className="h-10 rounded-xl text-sm font-mono font-semibold"
             />
+            {factorStr.trim() && !validation.isValid && (
+              <p id="custom-unit-factor-error" className="text-[11px] font-medium text-destructive mt-1">
+                {lang === "hi" ? validation.errorHi : validation.error}
+              </p>
+            )}
           </div>
 
           {/* Reference Unit */}

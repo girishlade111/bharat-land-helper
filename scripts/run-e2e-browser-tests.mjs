@@ -1843,6 +1843,59 @@ async function main() {
     return { inputVal, fromUnit, sqftVal };
   });
 
+  // TEST 46: Reject Malformed Custom Factor Input in Real Browser (NUMERIC-020)
+  await runTest("TEST 46: Reject Malformed Custom Factor Input in Real Browser (NUMERIC-020)", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/tools/custom-land-unit-calculator`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    // Ensure clean storage
+    await tabCdp.eval(`(() => {
+      window.localStorage.removeItem("bharat_custom_units_v1");
+    })()`);
+    await sleep(200);
+
+    // Enter name
+    await tabCdp.eval(`window.__setReactInput('#custom-unit-name', 'Malformed Unit')`);
+    await sleep(200);
+
+    // Enter malformed factor: 20.000.50
+    await tabCdp.eval(`window.__setReactInput('#custom-unit-factor', '20.000.50')`);
+    await sleep(300);
+
+    // Check error banner exists
+    const errorText = await tabCdp.eval(`document.querySelector('#custom-unit-factor-error')?.textContent || ''`);
+    if (!errorText.includes("valid numeric conversion factor") && !errorText.includes("संख्यात्मक रूपांतरण कारक")) {
+      throw new Error(`Expected inline error for malformed factor '20.000.50', found: '${errorText}'`);
+    }
+
+    // Attempt to submit form
+    await tabCdp.eval(`(() => {
+      const form = document.querySelector('form');
+      if (form) form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    })()`);
+    await sleep(400);
+
+    // Verify localStorage has 0 items
+    const savedCount = await tabCdp.eval(`(() => {
+      const data = window.localStorage.getItem("bharat_custom_units_v1");
+      return data ? JSON.parse(data).length : 0;
+    })()`);
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    if (savedCount !== 0) {
+      throw new Error(`Expected 0 saved presets in localStorage after malformed input, found: ${savedCount}`);
+    }
+
+    return { errorText, savedCount };
+  });
+
   // Cleanup
   console.log("==================================================");
   console.log("E2E TESTS COMPLETE");

@@ -67,6 +67,130 @@ export function calculateCustomUnitSqFt(factor: number, referenceUnit: CustomRef
   return factor * ref.toSqFt;
 }
 
+/**
+ * Strict regex for valid Indian comma grouping (e.g. 1,000 or 1,00,000 or 10,00,000)
+ */
+const INDIAN_COMMA_REGEX = /^\+?\d{1,2}(,\d{2})*,\d{3}(\.\d+)?$/;
+
+/**
+ * Strict regex for standard international 3-digit comma grouping (e.g. 1,000 or 1,000,000)
+ */
+const STANDARD_COMMA_REGEX = /^\+?\d{1,3}(,\d{3})+(\.\d+)?$/;
+
+/**
+ * Strict regex for plain positive decimal number or scientific notation:
+ * e.g. 20, 20.5, 0.0001, .5, 1e-4, 2.5E3
+ */
+const STRICT_NUMBER_REGEX = /^\+?(\d+(\.\d+)?|\.\d+)([eE][+-]?\d+)?$/;
+
+export interface StrictNumericResult {
+  isValid: boolean;
+  value: number;
+  error?: string;
+  errorHi?: string;
+}
+
+/**
+ * Strictly parses and validates a custom conversion factor.
+ * Parses the entire input, rejecting trailing characters, multiple decimals,
+ * malformed comma grouping, NaN, Infinity, negative values, and zero.
+ */
+export function parseStrictCustomFactor(
+  input: string | number | null | undefined,
+  maxBound: number = 10_000_000
+): StrictNumericResult {
+  if (input === null || input === undefined || input === "") {
+    return {
+      isValid: false,
+      value: 0,
+      error: "Please enter a valid numeric conversion factor.",
+      errorHi: "कृपया एक मान्य संख्यात्मक रूपांतरण कारक दर्ज करें।",
+    };
+  }
+
+  let num = 0;
+  if (typeof input === "number") {
+    if (isNaN(input) || !isFinite(input)) {
+      return {
+        isValid: false,
+        value: 0,
+        error: "Please enter a valid numeric conversion factor.",
+        errorHi: "कृपया एक मान्य संख्यात्मक रूपांतरण कारक दर्ज करें।",
+      };
+    }
+    num = input;
+  } else {
+    const trimmed = String(input).trim();
+    if (!trimmed) {
+      return {
+        isValid: false,
+        value: 0,
+        error: "Please enter a valid numeric conversion factor.",
+        errorHi: "कृपया एक मान्य संख्यात्मक रूपांतरण कारक दर्ज करें।",
+      };
+    }
+
+    let sanitized = trimmed;
+    if (trimmed.includes(",")) {
+      if (!INDIAN_COMMA_REGEX.test(trimmed) && !STANDARD_COMMA_REGEX.test(trimmed)) {
+        return {
+          isValid: false,
+          value: 0,
+          error: "Malformed number format: invalid comma grouping.",
+          errorHi: "अमान्य संख्या प्रारूप: अल्पविराम का अमान्य समूह।",
+        };
+      }
+      sanitized = trimmed.replace(/,/g, "");
+    }
+
+    if (!STRICT_NUMBER_REGEX.test(sanitized)) {
+      return {
+        isValid: false,
+        value: 0,
+        error: "Please enter a valid numeric conversion factor.",
+        errorHi: "कृपया एक मान्य संख्यात्मक रूपांतरण कारक दर्ज करें।",
+      };
+    }
+
+    num = Number(sanitized);
+    if (isNaN(num) || !isFinite(num)) {
+      return {
+        isValid: false,
+        value: 0,
+        error: "Please enter a valid numeric conversion factor.",
+        errorHi: "कृपया एक मान्य संख्यात्मक रूपांतरण कारक दर्ज करें।",
+      };
+    }
+  }
+
+  if (num === 0) {
+    return {
+      isValid: false,
+      value: 0,
+      error: "Conversion factor must be greater than zero.",
+      errorHi: "रूपांतरण कारक शून्य से अधिक होना चाहिए।",
+    };
+  }
+  if (num < 0) {
+    return {
+      isValid: false,
+      value: num,
+      error: "Conversion factor cannot be negative.",
+      errorHi: "रूपांतरण कारक ऋणात्मक नहीं हो सकता।",
+    };
+  }
+  if (num > maxBound) {
+    return {
+      isValid: false,
+      value: num,
+      error: `Factor exceeds maximum limit (${maxBound.toLocaleString("en-IN")}).`,
+      errorHi: `कारक अधिकतम सीमा (${maxBound.toLocaleString("en-IN")}) से अधिक है।`,
+    };
+  }
+
+  return { isValid: true, value: num };
+}
+
 export function validateCustomUnitInput(
   name: string,
   factorInput: string | number,
@@ -91,26 +215,19 @@ export function validateCustomUnitInput(
     };
   }
 
-  let num = 0;
-  if (typeof factorInput === "number") {
-    num = factorInput;
-  } else {
-    const clean = String(factorInput).trim().replace(/,/g, "");
-    num = parseFloat(clean);
+  const parsed = parseStrictCustomFactor(factorInput, 10_000_000);
+  if (!parsed.isValid) {
+    return {
+      isValid: false,
+      factor: 0,
+      sqFtEquivalent: 0,
+      error: parsed.error,
+      errorHi: parsed.errorHi,
+    };
   }
 
-  if (isNaN(num) || !isFinite(num)) {
-    return { isValid: false, factor: 0, sqFtEquivalent: 0, error: "Please enter a valid numeric conversion factor.", errorHi: "कृपया एक मान्य संख्यात्मक रूपांतरण कारक दर्ज करें।" };
-  }
-  if (num <= 0) {
-    return { isValid: false, factor: 0, sqFtEquivalent: 0, error: "Conversion factor must be greater than zero.", errorHi: "रूपांतरण कारक शून्य से अधिक होना चाहिए।" };
-  }
-  if (num > 10_000_000) {
-    return { isValid: false, factor: 0, sqFtEquivalent: 0, error: "Factor exceeds maximum limit (10,000,000).", errorHi: "कारक अधिकतम सीमा (10,000,000) से अधिक है।" };
-  }
-
-  const sqFt = calculateCustomUnitSqFt(num, referenceUnit);
-  return { isValid: true, factor: num, sqFtEquivalent: sqFt };
+  const sqFt = calculateCustomUnitSqFt(parsed.value, referenceUnit);
+  return { isValid: true, factor: parsed.value, sqFtEquivalent: sqFt };
 }
 
 export function loadCustomPresets(): CustomUnitPreset[] {
@@ -235,10 +352,10 @@ export function getEphemeralSnapshotUnit(id: string): LandUnit | undefined {
   }
   const match = id.match(/^custom_snap_([0-9.eE+-]+)(?:_(.*))?$/);
   if (match) {
-    const factor = parseFloat(match[1]);
-    const name = match[2];
-    if (!isNaN(factor) && isFinite(factor) && factor > 0 && factor <= MAX_CUSTOM_UNIT_SQFT) {
-      return parseCustomSnapshotParam(factor, name);
+    const parsed = parseStrictCustomFactor(match[1], MAX_CUSTOM_UNIT_SQFT);
+    if (parsed.isValid) {
+      const name = match[2];
+      return parseCustomSnapshotParam(parsed.value, name);
     }
   }
   return undefined;
@@ -253,11 +370,11 @@ export function parseCustomSnapshotParam(
   factorInput: string | number | null | undefined,
   nameInput?: string | null
 ): LandUnit | null {
-  if (factorInput === null || factorInput === undefined || factorInput === "") return null;
-  const num = typeof factorInput === "number" ? factorInput : parseFloat(String(factorInput).trim().replace(/,/g, ""));
-  if (isNaN(num) || !isFinite(num) || num <= 0 || num > MAX_CUSTOM_UNIT_SQFT) {
+  const parsed = parseStrictCustomFactor(factorInput, MAX_CUSTOM_UNIT_SQFT);
+  if (!parsed.isValid) {
     return null;
   }
+  const num = parsed.value;
 
   const rawName = (nameInput || "Custom Unit").trim();
   // Strip HTML tags, quotes, control characters, and limit to 50 characters
