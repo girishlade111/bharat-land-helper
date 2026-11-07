@@ -3063,7 +3063,7 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
       );
 
       // Open collapsible
-      const toggle = screen.getByRole("button", { name: /Rate Calculator|दर परिवर्तक/i });
+      const toggle = screen.getByRole("button", { name: /Land Valuation Calculator|rateCalc/i });
       act(() => {
         fireEvent.click(toggle);
       });
@@ -3094,7 +3094,7 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
         </AppProvider>
       );
 
-      const toggle = screen.getByRole("button", { name: /Rate Calculator|दर परिवर्तक/i });
+      const toggle = screen.getByRole("button", { name: /Land Valuation Calculator|rateCalc/i });
       act(() => {
         fireEvent.click(toggle);
       });

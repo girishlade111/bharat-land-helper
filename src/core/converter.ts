@@ -387,7 +387,10 @@ export function calculateLandValuation(
   }
 
   // Convert area into rate units
-  const equivalentUnits = (areaValue * fromUnit.sqFt) / rateUnit.sqFt;
+  const equivalentUnits =
+    fromUnit.id === rateUnit.id
+      ? areaValue
+      : (areaValue * fromUnit.sqFt) / rateUnit.sqFt;
   const totalValue = equivalentUnits * ratePerUnit;
 
   if (!isFinite(equivalentUnits) || !isFinite(totalValue) || totalValue > 1e16) {
