@@ -2321,7 +2321,7 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
     expect(getEphemeralSnapshotUnit(snap1.id)?.sqFt).toBe(0.0001);
     expect(getEphemeralSnapshotUnit(snap2.id)?.sqFt).toBe(0.0004);
     const result = convertArea(1, snap1, snap2);
-    expect(result.targetValue).toBeCloseTo(0.25, 4);
+    expect(result.rawResult).toBeCloseTo(0.25, 4);
   });
 
   it("SHARE-012: Restores custom presets exceeding 10,000,000 sq ft (up to 10M acres)", () => {
