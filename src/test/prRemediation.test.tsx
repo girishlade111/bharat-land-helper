@@ -3429,4 +3429,259 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
       expect(document.getElementById("rate-unit-error")).toBeNull();
     });
   });
+
+  describe("Locale Snapshot URL Portability (LOCALE-SNAPSHOT-001 - LOCALE-SNAPSHOT-014)", () => {
+    beforeEach(() => {
+      window.localStorage.clear();
+    });
+
+    it("LOCALE-SNAPSHOT-001: Standard Acre -> Sq Ft survives language change without snapshot params", () => {
+      const search = buildConversionSearchParams(
+        { value: "2", fromUnitId: "acre", toUnitId: "sqft", regionCode: "MH" },
+        "",
+        { defaultValue: "1", defaultFromUnitId: "acre", defaultRegionCode: "MH" }
+      );
+      expect(search).toContain("v=2");
+      expect(search).toContain("to=sqft");
+      expect(search).not.toContain("from_sqft");
+      expect(search).not.toContain("to_sqft");
+    });
+
+    it("LOCALE-SNAPSHOT-002: Custom source with 20,000 sq ft survives English -> Hindi", () => {
+      const search = buildConversionSearchParams(
+        {
+          value: "1",
+          fromUnitId: "custom_village_20k",
+          toUnitId: "acre",
+          regionCode: "MH",
+          fromSqFt: 20000,
+          fromName: "Village 20k",
+        },
+        "",
+        { defaultValue: "1", defaultFromUnitId: "acre", defaultRegionCode: "MH" }
+      );
+      expect(search).toContain("from=custom_village_20k");
+      expect(search).toContain("from_sqft=20000");
+      expect(search).toContain("from_name=Village+20k");
+    });
+
+    it("LOCALE-SNAPSHOT-003: Custom source survives Hindi -> Marathi", () => {
+      const search = buildConversionSearchParams(
+        {
+          value: "1",
+          fromUnitId: "custom_village_20k",
+          toUnitId: "acre",
+          regionCode: "MH",
+          fromSqFt: 20000,
+          fromName: "Village 20k",
+        },
+        "?from=custom_village_20k&from_sqft=20000&from_name=Village+20k",
+        { defaultValue: "1", defaultFromUnitId: "acre", defaultRegionCode: "MH" }
+      );
+      expect(search).toContain("from=custom_village_20k");
+      expect(search).toContain("from_sqft=20000");
+    });
+
+    it("LOCALE-SNAPSHOT-004: Custom source survives Marathi -> English", () => {
+      const search = buildConversionSearchParams(
+        {
+          value: "1",
+          fromUnitId: "custom_village_20k",
+          toUnitId: "acre",
+          regionCode: "MH",
+          fromSqFt: 20000,
+          fromName: "Village 20k",
+        },
+        "?from=custom_village_20k&from_sqft=20000&from_name=Village+20k",
+        { defaultValue: "1", defaultFromUnitId: "acre", defaultRegionCode: "MH" }
+      );
+      expect(search).toContain("from=custom_village_20k");
+      expect(search).toContain("from_sqft=20000");
+    });
+
+    it("LOCALE-SNAPSHOT-005: Custom target factor survives language switching", () => {
+      const search = buildConversionSearchParams(
+        {
+          value: "1",
+          fromUnitId: "acre",
+          toUnitId: "custom_farm_10k",
+          regionCode: "MH",
+          toSqFt: 10000,
+          toName: "Farm 10k",
+        },
+        "",
+        { defaultValue: "1", defaultFromUnitId: "acre", defaultRegionCode: "MH" }
+      );
+      expect(search).toContain("to=custom_farm_10k");
+      expect(search).toContain("to_sqft=10000");
+      expect(search).toContain("to_name=Farm+10k");
+    });
+
+    it("LOCALE-SNAPSHOT-006: Two distinct custom unit factors survive language switching without collision", () => {
+      const search = buildConversionSearchParams(
+        {
+          value: "1",
+          fromUnitId: "custom_village_20k",
+          toUnitId: "custom_farm_10k",
+          regionCode: "MH",
+          fromSqFt: 20000,
+          fromName: "Village 20k",
+          toSqFt: 10000,
+          toName: "Farm 10k",
+        },
+        "",
+        { defaultValue: "1", defaultFromUnitId: "acre", defaultRegionCode: "MH" }
+      );
+      expect(search).toContain("from=custom_village_20k");
+      expect(search).toContain("from_sqft=20000");
+      expect(search).toContain("to=custom_farm_10k");
+      expect(search).toContain("to_sqft=10000");
+    });
+
+    it("LOCALE-SNAPSHOT-007: Value, source, target and region remain correct across language changes", () => {
+      const search = buildConversionSearchParams(
+        {
+          value: "3.5",
+          fromUnitId: "custom_village_20k",
+          toUnitId: "sqft",
+          regionCode: "UP",
+          fromSqFt: 20000,
+          fromName: "Village 20k",
+        },
+        "",
+        { defaultValue: "1", defaultFromUnitId: "acre", defaultRegionCode: "MH" }
+      );
+      expect(search).toContain("v=3.5");
+      expect(search).toContain("from=custom_village_20k");
+      expect(search).toContain("to=sqft");
+      expect(search).toContain("s=UP");
+      expect(search).toContain("from_sqft=20000");
+    });
+
+    it("LOCALE-SNAPSHOT-008: Copied localized URL with empty localStorage preserves exact conversion", () => {
+      window.history.replaceState(
+        null,
+        "",
+        "/hi?v=1&from=custom_village_20k&to=acre&from_sqft=20000&from_name=Village+20k"
+      );
+
+      let capturedApp: ReturnType<typeof useApp> | null = null;
+      function Consumer() {
+        capturedApp = useApp();
+        return <div>{capturedApp.primaryResult?.formattedResult}</div>;
+      }
+
+      render(
+        <AppProvider initialLang="hi">
+          <Consumer />
+        </AppProvider>
+      );
+
+      expect(capturedApp).not.toBeNull();
+      expect(capturedApp!.fromUnit.sqFt).toBe(20000);
+      expect(capturedApp!.toUnit.id).toBe("acre");
+      // 1 * 20000 / 43560 = 0.4591368... -> 0.4591
+      expect(capturedApp!.primaryResult?.formattedResult).toBe("0.4591");
+    });
+
+    it("LOCALE-SNAPSHOT-009: Custom unit names restore correctly from snapshot parameters", () => {
+      window.history.replaceState(
+        null,
+        "",
+        "/mr?v=1&from=custom_snap_test&to=sqft&from_sqft=15000&from_name=Ancestral+Plot"
+      );
+
+      let capturedApp: ReturnType<typeof useApp> | null = null;
+      function Consumer() {
+        capturedApp = useApp();
+        return <div>{capturedApp.fromUnit.name}</div>;
+      }
+
+      render(
+        <AppProvider initialLang="mr">
+          <Consumer />
+        </AppProvider>
+      );
+
+      expect(capturedApp!.fromUnit.name).toBe("Ancestral Plot (Custom Snapshot)");
+      expect(capturedApp!.fromUnit.sqFt).toBe(15000);
+    });
+
+    it("LOCALE-SNAPSHOT-010: Switching back to standard units removes stale snapshot query parameters", () => {
+      const search = buildConversionSearchParams(
+        {
+          value: "1",
+          fromUnitId: "acre",
+          toUnitId: "sqft",
+          regionCode: "MH",
+        },
+        "?from_sqft=20000&from_name=Village+20k&to_sqft=10000",
+        { defaultValue: "1", defaultFromUnitId: "acre", defaultRegionCode: "MH" }
+      );
+      expect(search).not.toContain("from_sqft");
+      expect(search).not.toContain("from_name");
+      expect(search).not.toContain("to_sqft");
+      expect(search).not.toContain("to_name");
+    });
+
+    it("LOCALE-SNAPSHOT-011: No invalid localized conversion landing route is generated", () => {
+      const landing = resolveLocalizedDestination("/convert/acre-to-sqft", "hi");
+      expect(landing.hasDedicatedPage).toBe(false);
+      expect(landing.targetPath).toBe("/convert/acre-to-sqft");
+
+      const info = resolveLocalizedDestination("/about", "mr");
+      expect(info.hasDedicatedPage).toBe(false);
+      expect(info.targetPath).toBe("/about");
+
+      const home = resolveLocalizedDestination("/", "hi");
+      expect(home.hasDedicatedPage).toBe(true);
+      expect(home.targetPath).toBe("/hi");
+    });
+
+    it("LOCALE-SNAPSHOT-012: Refresh and direct navigation preserve valid snapshot state", () => {
+      window.history.replaceState(
+        null,
+        "",
+        "/?v=2&from=custom_village_20k&to=acre&from_sqft=20000&from_name=Village+20k"
+      );
+
+      let capturedApp: ReturnType<typeof useApp> | null = null;
+      function Consumer() {
+        capturedApp = useApp();
+        return <div>{capturedApp.inputValue}</div>;
+      }
+
+      render(
+        <AppProvider>
+          <Consumer />
+        </AppProvider>
+      );
+
+      expect(capturedApp!.inputValue).toBe("2");
+      expect(capturedApp!.fromUnit.sqFt).toBe(20000);
+      // 2 * 20000 / 43560 = 0.91827... -> 0.9183
+      expect(capturedApp!.primaryResult?.formattedResult).toBe("0.9183");
+    });
+
+    it("LOCALE-SNAPSHOT-013: Dedicated Share button remains compatible with snapshot structure", () => {
+      const parsed = parseCustomSnapshotParam("25000", "Custom Field");
+      expect(parsed).not.toBeNull();
+      expect(parsed?.sqFt).toBe(25000);
+      expect(parsed?.name).toBe("Custom Field (Custom Snapshot)");
+    });
+
+    it("LOCALE-SNAPSHOT-014: Invalid custom snapshots are rejected safely", () => {
+      const invalidNumber = parseCustomSnapshotParam("invalid_number", "Name");
+      expect(invalidNumber).toBeNull();
+
+      const negativeNumber = parseCustomSnapshotParam("-500", "Negative");
+      expect(negativeNumber).toBeNull();
+
+      const zeroNumber = parseCustomSnapshotParam("0", "Zero");
+      expect(zeroNumber).toBeNull();
+
+      const outOfBounds = parseCustomSnapshotParam("10000000000000", "Too Big");
+      expect(outOfBounds).toBeNull();
+    });
+  });
 });

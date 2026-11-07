@@ -2367,6 +2367,106 @@ async function main() {
     return { initialVal, postDeleteValExists, unitError, restoredVal, postRegionSwitchVal };
   });
 
+  // TEST 53: Portable Custom Unit Snapshot Across Language Navigation & Isolated Browser Contexts (LOCALE-SNAPSHOT-015)
+  await runTest("TEST 53: Portable Custom Unit Snapshot Across Language Navigation & Isolated Browser Contexts (LOCALE-SNAPSHOT-015)", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    // 1. Save custom preset with 20,000 sq ft in first browser tab
+    await tabCdp.eval(`(() => {
+      const preset = {
+        id: "custom_village_20k",
+        name: "Village 20k",
+        referenceUnit: "sqft",
+        factor: 20000,
+        sqFtEquivalent: 20000,
+        createdAt: new Date().toISOString()
+      };
+      localStorage.setItem("bharat_custom_units_v1", JSON.stringify([preset]));
+      window.dispatchEvent(new CustomEvent("bharat_custom_units_updated"));
+    })()`);
+    await sleep(400);
+
+    // Navigate to use this custom unit as 'from' unit with target 'acre' and value '1'
+    await tabCdp.send("Page.navigate", {
+      url: `${BASE_URL}/?v=1&from=custom_village_20k&to=acre&from_sqft=20000&from_name=Village+20k`
+    });
+    await sleep(1000);
+
+    // Verify initial calculation in tab 1
+    const initialResult = await tabCdp.eval("document.querySelector('[data-testid=\"primary-result-value\"]')?.textContent?.trim() || ''");
+    if (!initialResult.startsWith("0.459")) {
+      throw new Error(`Expected initial custom conversion ~0.4591 Acre, received '${initialResult}'`);
+    }
+
+    // 2. Click language toggle button to switch EN -> HI
+    await tabCdp.eval(`(() => {
+      const btn = document.querySelector('#lang-toggle-btn');
+      if (!btn) throw new Error("Language toggle button #lang-toggle-btn not found");
+      btn.click();
+    })()`);
+    await sleep(1000);
+
+    const hiUrl = await tabCdp.eval("window.location.href");
+    const hiLang = await tabCdp.eval("document.documentElement.lang");
+
+    if (hiLang !== "hi" || !hiUrl.includes("/hi")) {
+      throw new Error(`Expected language switch to Hindi (/hi, lang='hi'), received url='${hiUrl}', lang='${hiLang}'`);
+    }
+    if (!hiUrl.includes("from_sqft=20000")) {
+      throw new Error(`Expected Hindi URL to preserve from_sqft=20000 snapshot query parameter, received '${hiUrl}'`);
+    }
+    if (!hiUrl.includes("from_name=Village") && !hiUrl.includes("from_name=Village%2020k") && !hiUrl.includes("from_name=Village+20k")) {
+      throw new Error(`Expected Hindi URL to preserve from_name snapshot query parameter, received '${hiUrl}'`);
+    }
+
+    // Close first tab
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    // 3. Open second fresh tab in isolated context at the extracted Hindi URL
+    const recipientTabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(hiUrl), { method: "PUT" });
+    const recipientTab = await recipientTabRes.json();
+    const recipientCdp = new CDPClient(recipientTab.webSocketDebuggerUrl);
+    await recipientCdp.connect();
+    await recipientCdp.send("Page.enable");
+    await recipientCdp.send("Runtime.enable");
+    await sleep(800);
+
+    // Ensure second tab has NO custom presets in localStorage (isolated context / empty storage)
+    await recipientCdp.eval("window.localStorage.removeItem('bharat_custom_units_v1')");
+    await recipientCdp.send("Page.reload");
+    await sleep(1000);
+
+    const recipientInput = await recipientCdp.eval("document.querySelector('#area-input')?.value || document.querySelector('input[inputmode=\"decimal\"]')?.value");
+    const recipientFrom = await recipientCdp.eval("document.querySelector('#from-unit-select')?.textContent?.trim() || ''");
+    const recipientResult = await recipientCdp.eval("document.querySelector('[data-testid=\"primary-result-value\"]')?.textContent?.trim() || ''");
+    const recipientStorage = await recipientCdp.eval("window.localStorage.getItem('bharat_custom_units_v1')");
+
+    recipientCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${recipientTab.id}`);
+
+    if (recipientInput !== "1") {
+      throw new Error(`Expected recipient input to be '1', received '${recipientInput}'`);
+    }
+    if (!recipientFrom.includes("Village 20k")) {
+      throw new Error(`Expected recipient from unit label to retain 'Village 20k', received '${recipientFrom}'`);
+    }
+    if (!recipientResult.startsWith("0.459")) {
+      throw new Error(`Expected recipient result ~0.4591 Acre without localStorage preset, received '${recipientResult}'`);
+    }
+    if (recipientStorage !== null) {
+      throw new Error(`Expected recipient localStorage to remain unpolluted (null), received '${recipientStorage}'`);
+    }
+
+    return { hiUrl, hiLang, recipientInput, recipientFrom, recipientResult, recipientStorage };
+  });
+
   // Cleanup
   console.log("==================================================");
   console.log("E2E TESTS COMPLETE");

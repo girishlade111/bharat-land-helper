@@ -117,6 +117,9 @@ export default function Header() {
     const pathname = location.pathname;
     const { targetPath, hasDedicatedPage } = resolveLocalizedDestination(pathname, nextLang);
 
+    const isCustomFrom = fromUnit?.regionCode === "CUSTOM" || Boolean(fromUnit?.id.startsWith("custom"));
+    const isCustomTo = toUnit?.regionCode === "CUSTOM" || Boolean(toUnit?.id.startsWith("custom"));
+
     // Build query string using the live, committed conversion state rather than stale location.search
     const destinationSearch = buildConversionSearchParams(
       {
@@ -124,6 +127,10 @@ export default function Header() {
         fromUnitId: fromUnit?.id,
         toUnitId: toUnit?.id,
         regionCode: selectedRegion?.code,
+        fromSqFt: isCustomFrom ? fromUnit?.sqFt : undefined,
+        fromName: isCustomFrom ? fromUnit?.name?.replace(/\s*\(Custom.*?\)/, "").trim() : undefined,
+        toSqFt: isCustomTo ? toUnit?.sqFt : undefined,
+        toName: isCustomTo ? toUnit?.name?.replace(/\s*\(Custom.*?\)/, "").trim() : undefined,
       },
       typeof window !== "undefined" ? window.location.search : location.search,
       {
