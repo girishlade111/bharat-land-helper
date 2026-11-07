@@ -3684,4 +3684,339 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
       expect(outOfBounds).toBeNull();
     });
   });
+
+  describe("Legacy Snapshot Alias Normalization & Hydration Safety (ALIAS-001 - ALIAS-014)", () => {
+    afterEach(() => {
+      window.localStorage.clear();
+      window.history.replaceState(null, "", "/");
+    });
+
+    it("ALIAS-001: Legacy source snapshot URL remains readable", () => {
+      window.localStorage.clear();
+      window.history.replaceState(
+        null,
+        "",
+        "/?v=1&from=custom_legacy_src&c_from_sqft=20000&c_from_name=Village+20k&to=acre"
+      );
+
+      let capturedApp: ReturnType<typeof useApp> | null = null;
+      function Consumer() {
+        capturedApp = useApp();
+        return <div>{capturedApp.inputValue}</div>;
+      }
+
+      render(
+        <AppProvider>
+          <Consumer />
+        </AppProvider>
+      );
+
+      expect(capturedApp!.fromUnit.id).toContain("custom_snap_20000");
+      expect(capturedApp!.fromUnit.sqFt).toBe(20000);
+      expect(capturedApp!.fromUnit.name).toContain("Village 20k");
+      // 1 * 20000 / 43560 = 0.4591368... -> 0.4591
+      expect(capturedApp!.primaryResult?.formattedResult).toBe("0.4591");
+    });
+
+    it("ALIAS-002: Legacy target snapshot URL remains readable", () => {
+      window.localStorage.clear();
+      window.history.replaceState(
+        null,
+        "",
+        "/?v=1&from=acre&to=custom_legacy_tgt&c_to_sqft=10000&c_to_name=Local+Ground"
+      );
+
+      let capturedApp: ReturnType<typeof useApp> | null = null;
+      function Consumer() {
+        capturedApp = useApp();
+        return <div>{capturedApp.inputValue}</div>;
+      }
+
+      render(
+        <AppProvider>
+          <Consumer />
+        </AppProvider>
+      );
+
+      expect(capturedApp!.toUnit.id).toContain("custom_snap_10000");
+      expect(capturedApp!.toUnit.sqFt).toBe(10000);
+      expect(capturedApp!.toUnit.name).toContain("Local Ground");
+      // 1 Acre = 43560 / 10000 = 4.356
+      expect(capturedApp!.primaryResult?.formattedResult).toBe("4.356");
+    });
+
+    it("ALIAS-003: Changing custom source to Hectare removes c_from_sqft and c_from_name", () => {
+      const search = buildConversionSearchParams(
+        {
+          value: "1",
+          fromUnitId: "hectare",
+          toUnitId: "sqft",
+          regionCode: "MH",
+        },
+        "?from=custom_old&c_from_sqft=20000&c_from_name=Village+20k",
+        { defaultValue: "1", defaultFromUnitId: "acre", defaultRegionCode: "MH" }
+      );
+
+      expect(search).toContain("from=hectare");
+      expect(search).not.toContain("c_from_sqft");
+      expect(search).not.toContain("c_from_name");
+      expect(search).not.toContain("from_sqft");
+      expect(search).not.toContain("from_name");
+    });
+
+    it("ALIAS-004: Changing custom target to Acre removes c_to_sqft and c_to_name", () => {
+      const search = buildConversionSearchParams(
+        {
+          value: "1",
+          fromUnitId: "sqft",
+          toUnitId: "acre",
+          regionCode: "MH",
+        },
+        "?to=custom_old&c_to_sqft=10000&c_to_name=Local+Ground",
+        { defaultValue: "1", defaultFromUnitId: "acre", defaultRegionCode: "MH" }
+      );
+
+      expect(search).not.toContain("c_to_sqft");
+      expect(search).not.toContain("c_to_name");
+      expect(search).not.toContain("to_sqft");
+      expect(search).not.toContain("to_name");
+    });
+
+    it("ALIAS-005: Changing custom source removes stale canonical and legacy source snapshot parameters", () => {
+      const search = buildConversionSearchParams(
+        {
+          value: "1",
+          fromUnitId: "guntha_mh",
+          toUnitId: "sqft",
+          regionCode: "MH",
+        },
+        "?from=custom_old&from_sqft=20000&from_name=Village&c_from_sqft=20000&c_from_name=Village",
+        { defaultValue: "1", defaultFromUnitId: "acre", defaultRegionCode: "MH" }
+      );
+
+      expect(search).toContain("from=guntha_mh");
+      expect(search).not.toContain("c_from_sqft");
+      expect(search).not.toContain("c_from_name");
+      expect(search).not.toContain("from_sqft");
+      expect(search).not.toContain("from_name");
+    });
+
+    it("ALIAS-006: Standard unit cannot be overridden by an orphaned legacy source snapshot during hydration", () => {
+      window.localStorage.clear();
+      window.history.replaceState(null, "", "/?from=hectare&c_from_sqft=20000&to=sqft");
+
+      let capturedApp: ReturnType<typeof useApp> | null = null;
+      function Consumer() {
+        capturedApp = useApp();
+        return <div>{capturedApp.inputValue}</div>;
+      }
+
+      render(
+        <AppProvider>
+          <Consumer />
+        </AppProvider>
+      );
+
+      expect(capturedApp!.fromUnit.id).toBe("hectare");
+      expect(capturedApp!.fromUnit.name).toBe("Hectare (ha)");
+      // 1 Hectare = 107639.104 sq ft
+      expect(capturedApp!.fromUnit.sqFt).toBeCloseTo(107639.104, 2);
+    });
+
+    it("ALIAS-007: Standard unit cannot be overridden by an orphaned canonical source snapshot during hydration", () => {
+      window.localStorage.clear();
+      window.history.replaceState(null, "", "/?from=hectare&from_sqft=20000&to=sqft");
+
+      let capturedApp: ReturnType<typeof useApp> | null = null;
+      function Consumer() {
+        capturedApp = useApp();
+        return <div>{capturedApp.inputValue}</div>;
+      }
+
+      render(
+        <AppProvider>
+          <Consumer />
+        </AppProvider>
+      );
+
+      expect(capturedApp!.fromUnit.id).toBe("hectare");
+      expect(capturedApp!.fromUnit.name).toBe("Hectare (ha)");
+    });
+
+    it("ALIAS-008: Standard target cannot be overridden by either type of orphaned target snapshot", () => {
+      window.localStorage.clear();
+      window.history.replaceState(null, "", "/?from=sqft&to=acre&c_to_sqft=20000&to_sqft=20000");
+
+      let capturedApp: ReturnType<typeof useApp> | null = null;
+      function Consumer() {
+        capturedApp = useApp();
+        return <div>{capturedApp.inputValue}</div>;
+      }
+
+      render(
+        <AppProvider>
+          <Consumer />
+        </AppProvider>
+      );
+
+      expect(capturedApp!.toUnit.id).toBe("acre");
+      expect(capturedApp!.toUnit.name).toBe("Acre");
+    });
+
+    it("ALIAS-009: Valid custom snapshot is normalized to canonical parameter names and preserves the exact factor", () => {
+      const search = buildConversionSearchParams(
+        {
+          value: "1",
+          fromUnitId: "custom_old",
+          toUnitId: "sqft",
+          regionCode: "MH",
+        },
+        "?from=custom_old&c_from_sqft=20000&c_from_name=Village+20k",
+        { defaultValue: "1", defaultFromUnitId: "acre", defaultRegionCode: "MH" }
+      );
+
+      expect(search).toContain("from=custom_old");
+      expect(search).toContain("from_sqft=20000");
+      expect(search).toContain("from_name=Village+20k");
+      expect(search).not.toContain("c_from_sqft");
+      expect(search).not.toContain("c_from_name");
+    });
+
+    it("ALIAS-010: Dual-custom source and target snapshots remain distinct and mathematically correct", () => {
+      window.localStorage.clear();
+      window.history.replaceState(
+        null,
+        "",
+        "/?v=1&from=custom_src&c_from_sqft=20000&c_from_name=Source+20k&to=custom_tgt&c_to_sqft=10000&c_to_name=Target+10k"
+      );
+
+      let capturedApp: ReturnType<typeof useApp> | null = null;
+      function Consumer() {
+        capturedApp = useApp();
+        return <div>{capturedApp.inputValue}</div>;
+      }
+
+      render(
+        <AppProvider>
+          <Consumer />
+        </AppProvider>
+      );
+
+      expect(capturedApp!.fromUnit.sqFt).toBe(20000);
+      expect(capturedApp!.toUnit.sqFt).toBe(10000);
+      // 1 * 20000 / 10000 = 2
+      expect(capturedApp!.primaryResult?.formattedResult).toBe("2");
+    });
+
+    it("ALIAS-011: Language switching preserves valid custom snapshots", () => {
+      const search = buildConversionSearchParams(
+        {
+          value: "1",
+          fromUnitId: "custom_village_20k",
+          toUnitId: "acre",
+          regionCode: "MH",
+          fromSqFt: 20000,
+          fromName: "Village 20k",
+        },
+        "?from=custom_village_20k&c_from_sqft=20000&c_from_name=Village+20k",
+        { defaultValue: "1", defaultFromUnitId: "acre", defaultRegionCode: "MH" }
+      );
+
+      expect(search).toContain("from=custom_village_20k");
+      expect(search).toContain("from_sqft=20000");
+      expect(search).toContain("from_name=Village+20k");
+      expect(search).not.toContain("c_from_sqft");
+    });
+
+    it("ALIAS-012: Normal Acre, Hectare, Guntha and regional conversion URLs remain unaffected", () => {
+      const search = buildConversionSearchParams(
+        {
+          value: "5",
+          fromUnitId: "acre",
+          toUnitId: "guntha_mh",
+          regionCode: "MH",
+        },
+        "?v=5&from=acre&to=guntha_mh&s=MH",
+        { defaultValue: "1", defaultFromUnitId: "acre", defaultRegionCode: "MH" }
+      );
+
+      expect(search).toBe("?v=5&to=guntha_mh");
+      expect(search).not.toContain("sqft");
+      expect(search).not.toContain("c_");
+    });
+
+    it("ALIAS-013: Refreshing after replacing a custom unit with Hectare retains the Hectare conversion", () => {
+      window.history.replaceState(null, "", "/?from=custom_old&c_from_sqft=20000&to=sqft");
+
+      let capturedApp: ReturnType<typeof useApp> | null = null;
+      function Consumer() {
+        capturedApp = useApp();
+        return (
+          <div>
+            <button onClick={() => capturedApp?.setFromUnitId("hectare")}>Change to Hectare</button>
+          </div>
+        );
+      }
+
+      const { rerender } = render(
+        <AppProvider>
+          <Consumer />
+        </AppProvider>
+      );
+
+      expect(capturedApp!.fromUnit.sqFt).toBe(20000);
+
+      act(() => {
+        capturedApp!.setFromUnitId("hectare");
+      });
+
+      // Browser URL updated by setConversionState -> updateUrl
+      expect(window.location.search).toContain("from=hectare");
+      expect(window.location.search).not.toContain("c_from_sqft");
+      expect(window.location.search).not.toContain("from_sqft");
+
+      // Simulate browser reload by re-mounting AppProvider at updated URL
+      rerender(
+        <AppProvider key="reloaded">
+          <Consumer />
+        </AppProvider>
+      );
+
+      expect(capturedApp!.fromUnit.id).toBe("hectare");
+      expect(capturedApp!.fromUnit.name).toBe("Hectare (ha)");
+    });
+
+    it("ALIAS-014: Browser Back/Forward does not resurrect stale factors", () => {
+      // User started with custom unit
+      window.history.replaceState(null, "", "/?from=custom_old&c_from_sqft=20000&to=sqft");
+
+      let capturedApp: ReturnType<typeof useApp> | null = null;
+      function Consumer() {
+        capturedApp = useApp();
+        return <div>{capturedApp.fromUnit.id}</div>;
+      }
+
+      render(
+        <AppProvider>
+          <Consumer />
+        </AppProvider>
+      );
+
+      expect(capturedApp!.fromUnit.sqFt).toBe(20000);
+
+      // User changed to Hectare
+      act(() => {
+        capturedApp!.setFromUnitId("hectare");
+      });
+
+      // Simulate popstate event navigating forward to standard Guntha
+      act(() => {
+        window.history.replaceState(null, "", "/?from=guntha_mh&to=sqft");
+        window.dispatchEvent(new PopStateEvent("popstate"));
+      });
+
+      expect(capturedApp!.fromUnit.id).toBe("guntha_mh");
+      expect(capturedApp!.fromUnit.sqFt).toBe(1089);
+    });
+  });
 });

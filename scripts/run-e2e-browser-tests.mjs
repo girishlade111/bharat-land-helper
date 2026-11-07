@@ -2467,6 +2467,119 @@ async function main() {
     return { hiUrl, hiLang, recipientInput, recipientFrom, recipientResult, recipientStorage };
   });
 
+  // TEST 54: Legacy Snapshot Alias URL, Unit Switching to Standard, Refresh & Hydration Integrity (ALIAS-015)
+  await runTest("TEST 54: Legacy Snapshot Alias URL, Unit Switching to Standard, Refresh & Hydration Integrity (ALIAS-015)", async () => {
+    // 1. Open URL with legacy snapshot aliases c_from_sqft=20000 and c_from_name=Village+20k
+    const legacyUrl = `${BASE_URL}/?v=1&from=custom_old&c_from_sqft=20000&c_from_name=Village+20k&to=acre`;
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(legacyUrl), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    // Initial check: custom snapshot hydrated from legacy alias, evaluates 20000 / 43560 = 0.4591 Acre
+    const initialResult = await tabCdp.eval("document.querySelector('[data-testid=\"primary-result-value\"]')?.textContent?.trim() || ''");
+    const initialFromLabel = await tabCdp.eval("document.querySelector('#from-unit-select')?.textContent?.trim() || ''");
+
+    if (!initialFromLabel.includes("Village 20k")) {
+      throw new Error(`Expected initial custom snapshot 'Village 20k', got '${initialFromLabel}'`);
+    }
+    if (!initialResult.startsWith("0.459")) {
+      throw new Error(`Expected initial conversion ~0.4591 Acre, received '${initialResult}'`);
+    }
+
+    // 2. Switch source unit to Hectare
+    await tabCdp.eval(`(() => {
+      const trigger = document.querySelector('#from-unit-select');
+      if (trigger) trigger.click();
+    })()`);
+    await sleep(400);
+
+    await tabCdp.eval(`(() => {
+      const item = Array.from(document.querySelectorAll('[role="option"]')).find(el => el.textContent.includes('Hectare') || el.textContent.includes('हेक्टेयर'));
+      if (item) item.click();
+    })()`);
+    await sleep(600);
+
+    // 3. Verify URL no longer contains legacy aliases or snapshot factors
+    const updatedUrl = await tabCdp.eval("window.location.href");
+    if (updatedUrl.includes("c_from_sqft") || updatedUrl.includes("from_sqft")) {
+      throw new Error(`Expected URL to clear snapshot parameters after switching to Hectare, got '${updatedUrl}'`);
+    }
+    if (!updatedUrl.includes("from=hectare")) {
+      throw new Error(`Expected URL to contain 'from=hectare', got '${updatedUrl}'`);
+    }
+
+    // 4. Reload the page (simulate user refreshing the browser)
+    await tabCdp.send("Page.reload");
+    await sleep(1000);
+
+    // 5. Verify source unit remains Hectare, NOT resurrected custom snapshot
+    const postReloadFrom = await tabCdp.eval("document.querySelector('#from-unit-select')?.textContent?.trim() || ''");
+    const postReloadResult = await tabCdp.eval("document.querySelector('[data-testid=\"primary-result-value\"]')?.textContent?.trim() || ''");
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    if (!postReloadFrom.includes("Hectare") && !postReloadFrom.includes("हेक्टेयर")) {
+      throw new Error(`Expected source unit to remain Hectare after reload, received '${postReloadFrom}'`);
+    }
+    // 1 Hectare to Acre = ~2.471 Acre
+    if (!postReloadResult.startsWith("2.471")) {
+      throw new Error(`Expected conversion result ~2.471 Acre for Hectare after reload, received '${postReloadResult}'`);
+    }
+
+    return { initialResult, updatedUrl, postReloadFrom, postReloadResult };
+  });
+
+  // TEST 55: Backward-Compatible Custom Snapshot Sharing in Clean Isolated Browser Context (ALIAS-016)
+  await runTest("TEST 55: Backward-Compatible Custom Snapshot Sharing in Clean Isolated Browser Context (ALIAS-016)", async () => {
+    // Open a fresh tab with legacy query parameters in an isolated context
+    const sharedLegacyUrl = `${BASE_URL}/?v=2&from=custom_shared_legacy&c_from_sqft=15000&c_from_name=Shared+Plot&to=sqft`;
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(sharedLegacyUrl), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(800);
+
+    // Verify localStorage has no custom presets
+    await tabCdp.eval("window.localStorage.removeItem('bharat_custom_units_v1')");
+    await tabCdp.send("Page.reload");
+    await sleep(1000);
+
+    const inputVal = await tabCdp.eval("document.querySelector('#area-input')?.value || document.querySelector('input[inputmode=\"decimal\"]')?.value");
+    const fromUnitLabel = await tabCdp.eval("document.querySelector('#from-unit-select')?.textContent?.trim() || ''");
+    const toUnitLabel = await tabCdp.eval("document.querySelector('#to-unit-select')?.textContent?.trim() || ''");
+    const primaryResult = await tabCdp.eval("document.querySelector('[data-testid=\"primary-result-value\"]')?.textContent?.trim() || ''");
+    const storageState = await tabCdp.eval("window.localStorage.getItem('bharat_custom_units_v1')");
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    if (inputVal !== "2") {
+      throw new Error(`Expected input value '2', got '${inputVal}'`);
+    }
+    if (!fromUnitLabel.includes("Shared Plot")) {
+      throw new Error(`Expected from unit label to include 'Shared Plot', got '${fromUnitLabel}'`);
+    }
+    if (!toUnitLabel.includes("Square Feet") && !toUnitLabel.includes("वर्ग फीट")) {
+      throw new Error(`Expected to unit label to be Square Feet, got '${toUnitLabel}'`);
+    }
+    // 2 * 15000 = 30,000 sq ft
+    if (primaryResult !== "30,000" && !primaryResult.includes("30,000")) {
+      throw new Error(`Expected primary result '30,000' for 2 * 15,000 sq ft, received '${primaryResult}'`);
+    }
+    if (storageState !== null) {
+      throw new Error(`Expected localStorage to remain unpolluted (null), received '${storageState}'`);
+    }
+
+    return { inputVal, fromUnitLabel, toUnitLabel, primaryResult, storageState };
+  });
+
   // Cleanup
   console.log("==================================================");
   console.log("E2E TESTS COMPLETE");

@@ -242,7 +242,8 @@ export function AppProvider({
       let snapshotTo: LandUnit | null = null;
 
       if (from) {
-        if (fromSqFtParam) {
+        const isCustomFromId = from.startsWith("custom") || from === "custom";
+        if (fromSqFtParam && isCustomFromId) {
           snapshotFrom = parseCustomSnapshotParam(fromSqFtParam, fromNameParam);
         }
 
@@ -250,7 +251,7 @@ export function AppProvider({
         const resolvedFrom = snapshotFrom || resolveUnit(from, context);
 
         // Do not restore deleted custom units from URL unless a valid snapshot exists
-        if (resolvedFrom && (!from.startsWith("custom_") || snapshotFrom || getUnit(from))) {
+        if (resolvedFrom && (!isCustomFromId || snapshotFrom || getUnit(from))) {
           setFromUnitIdState(resolvedFrom.id);
           if (legacyFrom && legacyFrom.factorDiffers) {
             setLegacyNotice({
@@ -266,7 +267,7 @@ export function AppProvider({
           }
         } else {
           setFromUnitIdState(initialFromUnitId);
-          if (from.startsWith("custom_") || from === "custom") {
+          if (isCustomFromId) {
             setLegacyNotice({
               legacyUnitId: from,
               legacyName: fromNameParam || "Custom Unit",
@@ -284,7 +285,8 @@ export function AppProvider({
       }
 
       if (to) {
-        if (toSqFtParam) {
+        const isCustomToId = to.startsWith("custom") || to === "custom";
+        if (toSqFtParam && isCustomToId) {
           snapshotTo = parseCustomSnapshotParam(toSqFtParam, toNameParam);
         }
 
@@ -292,7 +294,7 @@ export function AppProvider({
         const resolvedTo = snapshotTo || resolveUnit(to, context);
 
         // Do not restore deleted custom units from URL unless a valid snapshot exists
-        if (resolvedTo && (!to.startsWith("custom_") || snapshotTo || getUnit(to))) {
+        if (resolvedTo && (!isCustomToId || snapshotTo || getUnit(to))) {
           setToUnitIdState(resolvedTo.id);
           if (legacyTo && legacyTo.factorDiffers) {
             setLegacyNotice((prev) => prev || {
@@ -308,7 +310,7 @@ export function AppProvider({
           }
         } else {
           setToUnitIdState(initialToUnitId);
-          if (to.startsWith("custom_") || to === "custom") {
+          if (isCustomToId) {
             setLegacyNotice((prev) => prev || {
               legacyUnitId: to,
               legacyName: toNameParam || "Custom Unit",

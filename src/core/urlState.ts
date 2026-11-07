@@ -1,4 +1,5 @@
 import type { Lang } from "@/data/translations";
+import { parseStrictCustomFactor } from "./customUnits";
 
 export interface ConversionQueryState {
   value?: string;
@@ -73,21 +74,61 @@ export function buildConversionSearchParams(
     params.delete("lang");
   }
 
-  // Custom unit snapshot parameters (for portable cross-browser sharing)
-  if (state.fromSqFt && state.fromUnitId && (state.fromUnitId.startsWith("custom") || state.fromUnitId === "custom")) {
-    params.set("from_sqft", String(state.fromSqFt));
-    if (state.fromName) {
-      params.set("from_name", state.fromName);
+  // Source unit custom snapshot serialization and legacy alias normalization
+  const existingFromSqFt = params.get("from_sqft") || params.get("c_from_sqft");
+  const existingFromName = params.get("from_name") || params.get("c_from_name");
+  params.delete("c_from_sqft");
+  params.delete("c_from_name");
+
+  const isCustomFrom = Boolean(
+    state.fromUnitId && (state.fromUnitId.startsWith("custom") || state.fromUnitId === "custom")
+  );
+
+  if (isCustomFrom) {
+    const rawSqFt = state.fromSqFt !== undefined ? state.fromSqFt : existingFromSqFt;
+    const parsed = parseStrictCustomFactor(rawSqFt);
+    if (parsed.isValid && parsed.value > 0) {
+      params.set("from_sqft", String(parsed.value));
+      const rawName = state.fromName !== undefined ? state.fromName : existingFromName;
+      if (rawName && rawName.trim()) {
+        params.set("from_name", rawName.trim());
+      } else {
+        params.delete("from_name");
+      }
+    } else {
+      params.delete("from_sqft");
+      params.delete("from_name");
     }
   } else {
     params.delete("from_sqft");
     params.delete("from_name");
   }
 
-  if (state.toSqFt && state.toUnitId && (state.toUnitId.startsWith("custom") || state.toUnitId === "custom")) {
-    params.set("to_sqft", String(state.toSqFt));
-    if (state.toName) {
-      params.set("to_name", state.toName);
+  // Target unit custom snapshot serialization and legacy alias normalization
+  const existingToSqFt = params.get("to_sqft") || params.get("c_to_sqft");
+  const existingToName = params.get("to_name") || params.get("c_to_name");
+  params.delete("c_to_sqft");
+  params.delete("c_to_name");
+
+  const effectiveToUnitId = state.toUnitId !== undefined ? state.toUnitId : params.get("to") || undefined;
+  const isCustomTo = Boolean(
+    effectiveToUnitId && (effectiveToUnitId.startsWith("custom") || effectiveToUnitId === "custom")
+  );
+
+  if (isCustomTo) {
+    const rawSqFt = state.toSqFt !== undefined ? state.toSqFt : existingToSqFt;
+    const parsed = parseStrictCustomFactor(rawSqFt);
+    if (parsed.isValid && parsed.value > 0) {
+      params.set("to_sqft", String(parsed.value));
+      const rawName = state.toName !== undefined ? state.toName : existingToName;
+      if (rawName && rawName.trim()) {
+        params.set("to_name", rawName.trim());
+      } else {
+        params.delete("to_name");
+      }
+    } else {
+      params.delete("to_sqft");
+      params.delete("to_name");
     }
   } else {
     params.delete("to_sqft");
