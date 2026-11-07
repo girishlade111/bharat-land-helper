@@ -25,6 +25,7 @@ import ConversionHistory from "../components/ConversionHistory";
 import PlotCalculator from "../components/PlotCalculator";
 import CompoundUnitConverter from "../components/CompoundUnitConverter";
 import CustomUnitManager from "../components/CustomUnitManager";
+import RateCalculator from "../components/RateCalculator";
 import {
   saveHistory,
   saveCustomPreset,
@@ -49,6 +50,8 @@ import {
   parseStrictCompoundQuantity,
   calculateCompoundArea,
   decomposeAreaIntoSystem,
+  parseStrictRate,
+  calculateLandValuation,
   type ConversionHistoryItem,
 } from "../core";
 import { MemoryRouter, useLocation } from "react-router-dom";
@@ -2932,6 +2935,194 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
       expect(resNum.success).toBe(true);
       expect(resNum.preset?.factor).toBe(1000);
       expect(resNum.preset?.sqFtEquivalent).toBe(1000);
+    });
+  });
+
+  describe("Rate Calculator Strict Validation (RATE-001 - RATE-019)", () => {
+    it("RATE-001: Reject fraction '3/4' as malformed rate input", () => {
+      const res = parseStrictRate("3/4");
+      expect(res.isValid).toBe(false);
+      expect(res.error).toBe("Please enter a valid numeric rate.");
+    });
+
+    it("RATE-002: Reject malformed decimal '20.000.50'", () => {
+      const res = parseStrictRate("20.000.50");
+      expect(res.isValid).toBe(false);
+      expect(res.error).toBe("Please enter a valid numeric rate.");
+    });
+
+    it("RATE-003: Reject trailing characters '5000abc'", () => {
+      const res = parseStrictRate("5000abc");
+      expect(res.isValid).toBe(false);
+      expect(res.error).toBe("Please enter a valid numeric rate.");
+    });
+
+    it("RATE-004: Reject malformed comma grouping '1,2,3'", () => {
+      const res = parseStrictRate("1,2,3");
+      expect(res.isValid).toBe(false);
+      expect(res.error).toBe("Malformed number format: invalid comma grouping.");
+    });
+
+    it("RATE-005: Accept ordinary positive integer '5000'", () => {
+      const res = parseStrictRate("5000");
+      expect(res.isValid).toBe(true);
+      expect(res.value).toBe(5000);
+    });
+
+    it("RATE-006: Accept positive decimal rate '5000.75'", () => {
+      const res = parseStrictRate("5000.75");
+      expect(res.isValid).toBe(true);
+      expect(res.value).toBe(5000.75);
+    });
+
+    it("RATE-007: Accept Indian formatted number '1,00,000'", () => {
+      const res = parseStrictRate("1,00,000");
+      expect(res.isValid).toBe(true);
+      expect(res.value).toBe(100000);
+    });
+
+    it("RATE-008: Accept international formatted number '1,000,000'", () => {
+      const res = parseStrictRate("1,000,000");
+      expect(res.isValid).toBe(true);
+      expect(res.value).toBe(1000000);
+    });
+
+    it("RATE-009: Reject NaN and Infinity", () => {
+      expect(parseStrictRate("NaN").isValid).toBe(false);
+      expect(parseStrictRate("Infinity").isValid).toBe(false);
+      expect(parseStrictRate(NaN).isValid).toBe(false);
+      expect(parseStrictRate(Infinity).isValid).toBe(false);
+    });
+
+    it("RATE-010: Reject negative rates", () => {
+      const res = parseStrictRate("-500");
+      expect(res.isValid).toBe(false);
+      expect(res.error).toBe("Rate cannot be negative.");
+      expect(parseStrictRate(-500).isValid).toBe(false);
+    });
+
+    it("RATE-011: Verify zero-rate policy (valid zero value, zero valuation without error)", () => {
+      const res = parseStrictRate("0");
+      expect(res.isValid).toBe(true);
+      expect(res.value).toBe(0);
+      const val = calculateLandValuation(100, getUnit("sqft")!, 0, getUnit("sqft")!);
+      expect(val.totalValue).toBe(0);
+      expect(val.formattedCurrency).toBe("₹ 0");
+    });
+
+    it("RATE-012: Reject numerical overflow exceeding 1 trillion per unit", () => {
+      const resOverflow = parseStrictRate("1000000000001");
+      expect(resOverflow.isValid).toBe(false);
+      expect(resOverflow.error).toContain("Rate exceeds maximum allowable limit");
+
+      const resExp = parseStrictRate("1e999");
+      expect(resExp.isValid).toBe(false);
+    });
+
+    it("RATE-013: 1,000 sq ft × ₹5,000 per sq ft equals ₹50,00,000 (₹ 50 Lakh)", () => {
+      const sqft = getUnit("sqft")!;
+      const val = calculateLandValuation(1000, sqft, 5000, sqft);
+      expect(val.totalValue).toBe(5000000);
+      expect(val.formattedCurrency).toBe("₹ 50,00,000");
+      expect(val.wordsEn).toBe("₹ 50 Lakh");
+      expect(val.wordsHi).toBe("₹ 50 लाख");
+    });
+
+    it("RATE-014: Verify rate per Acre (2 Acre @ ₹1,00,000/Acre = ₹2,00,000)", () => {
+      const acre = getUnit("acre")!;
+      const val = calculateLandValuation(2, acre, 100000, acre);
+      expect(val.totalValue).toBe(200000);
+      expect(val.formattedCurrency).toBe("₹ 2,00,000");
+      expect(val.wordsEn).toBe("₹ 2 Lakh");
+    });
+
+    it("RATE-015: Verify rate per Guntha (1 Acre @ ₹50,000/Guntha = ₹20,00,000)", () => {
+      const acre = getUnit("acre")!;
+      const guntha = getUnit("guntha_mh")!;
+      const val = calculateLandValuation(1, acre, 50000, guntha);
+      // 1 Acre = 40 Guntha -> 40 * 50,000 = 20,00,000
+      expect(val.equivalentUnits).toBe(40);
+      expect(val.totalValue).toBe(2000000);
+      expect(val.formattedCurrency).toBe("₹ 20,00,000");
+      expect(val.wordsEn).toBe("₹ 20 Lakh");
+    });
+
+    it("RATE-016: Verify rate per Square Meter (100 sq m @ ₹1,00,000/sq m = ₹1,00,000)", () => {
+      const sqm = getUnit("sqm")!;
+      const val = calculateLandValuation(100, sqm, 1000, sqm);
+      expect(val.totalValue).toBe(100000);
+      expect(val.formattedCurrency).toBe("₹ 1,00,000");
+      expect(val.wordsEn).toBe("₹ 1 Lakh");
+    });
+
+    it("RATE-017: Changing valid rate to invalid clears previous result and shows inline error", () => {
+      render(
+        <AppProvider>
+          <RateCalculator />
+        </AppProvider>
+      );
+
+      // Open collapsible
+      const toggle = screen.getByRole("button", { name: /Rate Calculator|दर परिवर्तक/i });
+      act(() => {
+        fireEvent.click(toggle);
+      });
+
+      const rateInput = screen.getByLabelText(/Rate per Unit|दर प्रति इकाई/i);
+      expect(rateInput).toBeInTheDocument();
+
+      // Change to invalid "3/4"
+      act(() => {
+        fireEvent.change(rateInput, { target: { value: "3/4" } });
+      });
+
+      // Previous valuation must disappear
+      expect(document.getElementById("rate-total-value")).toBeNull();
+
+      // Inline error and aria-invalid must appear
+      expect(rateInput.getAttribute("aria-invalid")).toBe("true");
+      expect(rateInput.getAttribute("aria-describedby")).toBe("rate-input-error");
+      const errorMsg = document.getElementById("rate-input-error");
+      expect(errorMsg).not.toBeNull();
+      expect(errorMsg?.textContent).toContain("Please enter a valid numeric rate.");
+    });
+
+    it("RATE-018: Changing invalid rate to valid recalculates correctly", () => {
+      render(
+        <AppProvider>
+          <RateCalculator />
+        </AppProvider>
+      );
+
+      const toggle = screen.getByRole("button", { name: /Rate Calculator|दर परिवर्तक/i });
+      act(() => {
+        fireEvent.click(toggle);
+      });
+
+      const rateInput = screen.getByLabelText(/Rate per Unit|दर प्रति इकाई/i);
+
+      // Enter invalid
+      act(() => {
+        fireEvent.change(rateInput, { target: { value: "20.000.50" } });
+      });
+      expect(document.getElementById("rate-total-value")).toBeNull();
+      expect(rateInput.getAttribute("aria-invalid")).toBe("true");
+
+      // Enter valid 1000
+      act(() => {
+        fireEvent.change(rateInput, { target: { value: "1000" } });
+      });
+      expect(rateInput.getAttribute("aria-invalid")).toBe("false");
+      expect(document.getElementById("rate-input-error")).toBeNull();
+      expect(document.getElementById("rate-total-value")).not.toBeNull();
+    });
+
+    it("RATE-019: Deleted custom rate unit fails safely without crashing", () => {
+      const sqft = getUnit("sqft")!;
+      const dummyDeletedUnit = { id: "custom_deleted", name: "Deleted", sqFt: 0 } as any;
+      const res = calculateLandValuation(100, sqft, 5000, dummyDeletedUnit);
+      expect(res.totalValue).toBe(0);
+      expect(res.formattedCurrency).toBe("₹ 0");
     });
   });
 });

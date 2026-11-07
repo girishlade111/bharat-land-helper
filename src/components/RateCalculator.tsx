@@ -1,12 +1,12 @@
 import { useState, useMemo } from "react";
 import { useApp } from "@/context/AppContext";
-import { calculateLandValuation, getUnit } from "@/core";
+import { calculateLandValuation, getUnit, parseStrictRate } from "@/core";
 import { t } from "@/data/translations";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { Calculator, ChevronDown, IndianRupee } from "lucide-react";
+import { ChevronDown, IndianRupee, AlertCircle } from "lucide-react";
 
 export default function RateCalculator() {
   const { lang, fromUnit, validation, availableUnits } = useApp();
@@ -18,15 +18,20 @@ export default function RateCalculator() {
     return getUnit(rateUnitId) || availableUnits[0];
   }, [rateUnitId, availableUnits]);
 
-  const rateNum = parseFloat(rateStr.replace(/,/g, ""));
+  const parsedRate = useMemo(() => {
+    return parseStrictRate(rateStr);
+  }, [rateStr]);
+
+  const isRateInvalid = !parsedRate.isValid && !parsedRate.isEmpty;
+  const rateNum = parsedRate.isValid ? parsedRate.value : 0;
   const areaValue = validation.isValid ? validation.parsedValue : 0;
 
   const valuation = useMemo(() => {
-    if (!validation.isValid || isNaN(rateNum) || rateNum <= 0) {
+    if (!validation.isValid || !parsedRate.isValid || rateNum <= 0) {
       return null;
     }
     return calculateLandValuation(areaValue, fromUnit, rateNum, rateUnit);
-  }, [validation, areaValue, fromUnit, rateNum, rateUnit]);
+  }, [validation, areaValue, fromUnit, parsedRate.isValid, rateNum, rateUnit]);
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -66,9 +71,27 @@ export default function RateCalculator() {
                 value={rateStr}
                 onChange={(e) => setRateStr(e.target.value)}
                 placeholder="5000"
-                className="h-11 rounded-xl border-border/70 pl-8 text-base font-bold tabular-nums bg-background"
+                aria-invalid={isRateInvalid}
+                aria-describedby={isRateInvalid ? "rate-input-error" : undefined}
+                className={`h-11 rounded-xl border-border/70 pl-8 text-base font-bold tabular-nums bg-background transition-colors ${
+                  isRateInvalid ? "border-destructive text-destructive focus-visible:ring-destructive" : ""
+                }`}
               />
             </div>
+            {isRateInvalid && (
+              <p
+                id="rate-input-error"
+                role="alert"
+                className="mt-1 text-xs font-medium text-destructive flex items-center gap-1"
+              >
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                <span>
+                  {lang === "hi"
+                    ? parsedRate.errorHi || "कृपया एक मान्य संख्यात्मक दर दर्ज करें।"
+                    : parsedRate.error || "Please enter a valid numeric rate."}
+                </span>
+              </p>
+            )}
           </div>
 
           <div>

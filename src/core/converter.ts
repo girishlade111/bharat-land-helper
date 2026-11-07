@@ -179,6 +179,152 @@ export function convertOneToAll(
 }
 
 /**
+ * Strict regex for valid Indian comma grouping (e.g. 1,000 or 1,00,000 or 10,00,000)
+ */
+const INDIAN_COMMA_REGEX = /^\+?\d{1,2}(,\d{2})*,\d{3}(\.\d+)?$/;
+
+/**
+ * Strict regex for standard international 3-digit comma grouping (e.g. 1,000 or 1,000,000)
+ */
+const STANDARD_COMMA_REGEX = /^\+?\d{1,3}(,\d{3})+(\.\d+)?$/;
+
+/**
+ * Strict regex for plain non-negative decimal number or scientific notation:
+ * e.g. 0, 5000, 5000.75, 0.0001, .5, 1e-4, 2.5E3
+ */
+const STRICT_NUMBER_REGEX = /^\+?(\d+(\.\d+)?|\.\d+)([eE][+-]?\d+)?$/;
+
+export interface StrictRateResult {
+  isValid: boolean;
+  value: number;
+  isEmpty?: boolean;
+  error?: string;
+  errorHi?: string;
+}
+
+/**
+ * Strictly parses and validates a property valuation rate per unit.
+ * Allows valid positive integers, decimals, 0, and properly formatted commas.
+ * Rejects partial strings (e.g. '3/4', '20.000.50', '5000abc'), malformed comma groups ('1,2,3'),
+ * negative numbers, NaN, and Infinity.
+ */
+export function parseStrictRate(
+  input: string | number | null | undefined,
+  maxBound: number = 1_000_000_000_000 // ₹ 1 trillion per unit max bound
+): StrictRateResult {
+  if (input === null || input === undefined) {
+    return {
+      isValid: false,
+      value: 0,
+      isEmpty: true,
+      error: "Please enter a valid numeric rate.",
+      errorHi: "कृपया एक मान्य संख्यात्मक दर दर्ज करें।",
+    };
+  }
+
+  if (typeof input === "number") {
+    if (isNaN(input) || !isFinite(input)) {
+      return {
+        isValid: false,
+        value: 0,
+        error: "Please enter a valid finite number.",
+        errorHi: "कृपया एक मान्य परिमित संख्या दर्ज करें।",
+      };
+    }
+    if (input < 0) {
+      return {
+        isValid: false,
+        value: 0,
+        error: "Rate cannot be negative.",
+        errorHi: "दर ऋणात्मक नहीं हो सकती।",
+      };
+    }
+    if (input > maxBound) {
+      return {
+        isValid: false,
+        value: 0,
+        error: `Rate exceeds maximum allowable limit (₹ ${maxBound.toLocaleString("en-IN")}).`,
+        errorHi: `दर अधिकतम स्वीकार्य सीमा (₹ ${maxBound.toLocaleString("en-IN")}) से अधिक है।`,
+      };
+    }
+    return { isValid: true, value: input, isEmpty: false };
+  }
+
+  const rawStr = String(input);
+  const trimmed = rawStr.trim();
+  if (trimmed === "") {
+    return {
+      isValid: false,
+      value: 0,
+      isEmpty: true,
+      error: "Please enter a valid numeric rate.",
+      errorHi: "कृपया एक मान्य संख्यात्मक दर दर्ज करें।",
+    };
+  }
+
+  if (trimmed.startsWith("-")) {
+    return {
+      isValid: false,
+      value: 0,
+      error: "Rate cannot be negative.",
+      errorHi: "दर ऋणात्मक नहीं हो सकती।",
+    };
+  }
+
+  let sanitized = trimmed;
+  if (trimmed.includes(",")) {
+    if (!INDIAN_COMMA_REGEX.test(trimmed) && !STANDARD_COMMA_REGEX.test(trimmed)) {
+      return {
+        isValid: false,
+        value: 0,
+        error: "Malformed number format: invalid comma grouping.",
+        errorHi: "अमान्य संख्या प्रारूप: अल्पविराम का अमान्य समूह।",
+      };
+    }
+    sanitized = trimmed.replace(/,/g, "");
+  }
+
+  if (!STRICT_NUMBER_REGEX.test(sanitized)) {
+    return {
+      isValid: false,
+      value: 0,
+      error: "Please enter a valid numeric rate.",
+      errorHi: "कृपया एक मान्य संख्यात्मक दर दर्ज करें।",
+    };
+  }
+
+  const num = Number(sanitized);
+  if (isNaN(num) || !isFinite(num)) {
+    return {
+      isValid: false,
+      value: 0,
+      error: "Please enter a valid finite number.",
+      errorHi: "कृपया एक मान्य परिमित संख्या दर्ज करें।",
+    };
+  }
+
+  if (num < 0) {
+    return {
+      isValid: false,
+      value: 0,
+      error: "Rate cannot be negative.",
+      errorHi: "दर ऋणात्मक नहीं हो सकती।",
+    };
+  }
+
+  if (num > maxBound) {
+    return {
+      isValid: false,
+      value: 0,
+      error: `Rate exceeds maximum allowable limit (₹ ${maxBound.toLocaleString("en-IN")}).`,
+      errorHi: `दर अधिकतम स्वीकार्य सीमा (₹ ${maxBound.toLocaleString("en-IN")}) से अधिक है।`,
+    };
+  }
+
+  return { isValid: true, value: num, isEmpty: false };
+}
+
+/**
  * Computes land valuation based on area and rate per unit.
  */
 export function calculateLandValuation(
@@ -187,7 +333,49 @@ export function calculateLandValuation(
   ratePerUnit: number,
   rateUnit: LandUnit,
 ): RateCalculationResult {
-  if (areaValue <= 0 || ratePerUnit <= 0) {
+  // Validate units
+  if (
+    !fromUnit ||
+    typeof fromUnit.sqFt !== "number" ||
+    !isFinite(fromUnit.sqFt) ||
+    fromUnit.sqFt <= 0 ||
+    !rateUnit ||
+    typeof rateUnit.sqFt !== "number" ||
+    !isFinite(rateUnit.sqFt) ||
+    rateUnit.sqFt <= 0
+  ) {
+    return {
+      totalValue: 0,
+      formattedCurrency: "₹ 0",
+      wordsEn: "Zero Rupees",
+      wordsHi: "शून्य रुपये",
+      equivalentUnits: 0,
+      calculationBreakdown: "Invalid unit configuration",
+    };
+  }
+
+  // Validate area & rate
+  if (
+    typeof areaValue !== "number" ||
+    isNaN(areaValue) ||
+    !isFinite(areaValue) ||
+    areaValue < 0 ||
+    typeof ratePerUnit !== "number" ||
+    isNaN(ratePerUnit) ||
+    !isFinite(ratePerUnit) ||
+    ratePerUnit < 0
+  ) {
+    return {
+      totalValue: 0,
+      formattedCurrency: "₹ 0",
+      wordsEn: "Zero Rupees",
+      wordsHi: "शून्य रुपये",
+      equivalentUnits: 0,
+      calculationBreakdown: "Invalid area or rate",
+    };
+  }
+
+  if (areaValue === 0 || ratePerUnit === 0) {
     return {
       totalValue: 0,
       formattedCurrency: "₹ 0",
@@ -201,6 +389,17 @@ export function calculateLandValuation(
   // Convert area into rate units
   const equivalentUnits = (areaValue * fromUnit.sqFt) / rateUnit.sqFt;
   const totalValue = equivalentUnits * ratePerUnit;
+
+  if (!isFinite(equivalentUnits) || !isFinite(totalValue) || totalValue > 1e16) {
+    return {
+      totalValue: 0,
+      formattedCurrency: "₹ 0",
+      wordsEn: "Value exceeds supported limits",
+      wordsHi: "मूल्य समर्थित सीमा से अधिक है",
+      equivalentUnits: 0,
+      calculationBreakdown: "Calculated value exceeds maximum limits",
+    };
+  }
 
   const formattedCurrency = "₹ " + formatIndianNumber(totalValue, { maxDecimals: 2 });
   
