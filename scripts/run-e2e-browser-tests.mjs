@@ -2036,6 +2036,198 @@ async function main() {
     return { totalDisplay, hasTransferToast };
   });
 
+  // TEST 49: Reject Malformed Land Rate Input in Real Browser (RATE-020)
+  await runTest("TEST 49: Reject Malformed Land Rate Input in Real Browser (RATE-020)", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    // Open Rate Calculator collapsible
+    await tabCdp.eval(`(() => {
+      const toggle = document.querySelector('#rate-calculator-toggle');
+      if (toggle) toggle.click();
+    })()`);
+    await sleep(400);
+
+    // Inject input helper and enter malformed rate "3/4"
+    await tabCdp.eval(`(() => {
+      const el = document.querySelector('#land-rate-input');
+      if (!el) throw new Error("Rate input not found");
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+      if (setter) setter.call(el, '3/4');
+      else el.value = '3/4';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    })()`);
+    await sleep(400);
+
+    const ariaInvalid = await tabCdp.eval(`document.querySelector('#land-rate-input')?.getAttribute('aria-invalid')`);
+    const errorText = await tabCdp.eval(`document.querySelector('#rate-input-error')?.textContent?.trim() || ''`);
+    const totalValExists = await tabCdp.eval(`!!document.querySelector('#rate-total-value')`);
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    if (ariaInvalid !== "true") {
+      throw new Error(`Expected aria-invalid="true" for '3/4', got '${ariaInvalid}'`);
+    }
+    if (!errorText || errorText.length === 0) {
+      throw new Error("Expected inline error message for malformed rate input '3/4', but none found");
+    }
+    if (totalValExists) {
+      throw new Error("Expected total valuation to be hidden/suppressed when rate input is invalid");
+    }
+
+    return { ariaInvalid, errorText, totalValSuppressed: !totalValExists };
+  });
+
+  // TEST 50: Calculate Valid Land Valuation in Real Browser (RATE-021)
+  await runTest("TEST 50: Calculate Valid Land Valuation in Real Browser (RATE-021)", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    // Verify 1 Acre input by default (or set if needed)
+    await tabCdp.eval(`(() => {
+      const areaEl = document.querySelector('#area-input');
+      if (areaEl && areaEl.value !== '1') {
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+        if (setter) setter.call(areaEl, '1');
+        else areaEl.value = '1';
+        areaEl.dispatchEvent(new Event('input', { bubbles: true }));
+        areaEl.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    })()`);
+    await sleep(300);
+
+    // Open Rate Calculator collapsible
+    await tabCdp.eval(`(() => {
+      const toggle = document.querySelector('#rate-calculator-toggle');
+      if (toggle) toggle.click();
+    })()`);
+    await sleep(400);
+
+    // Set valid rate "5000"
+    await tabCdp.eval(`(() => {
+      const el = document.querySelector('#land-rate-input');
+      if (!el) throw new Error("Rate input not found");
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+      if (setter) setter.call(el, '5000');
+      else el.value = '5000';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    })()`);
+    await sleep(400);
+
+    const totalVal = await tabCdp.eval(`document.querySelector('#rate-total-value')?.textContent?.trim() || ''`);
+    const words = await tabCdp.eval(`document.querySelector('#rate-words-display')?.textContent?.trim() || ''`);
+    const ariaInvalid = await tabCdp.eval(`document.querySelector('#land-rate-input')?.getAttribute('aria-invalid')`);
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    // 1 Acre = 43,560 sq ft * 5000 / sq ft = 21,78,00,000
+    if (!totalVal.includes("21,78,00,000")) {
+      throw new Error(`Expected valuation '₹ 21,78,00,000', got '${totalVal}'`);
+    }
+    if (ariaInvalid === "true") {
+      throw new Error("Expected aria-invalid to be false for valid rate 5000");
+    }
+
+    return { totalVal, words, ariaInvalid };
+  });
+
+  // TEST 51: Update Valuation on Rate Unit Change in Real Browser (RATE-022)
+  await runTest("TEST 51: Update Valuation on Rate Unit Change in Real Browser (RATE-022)", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    // Set 1 Acre input
+    await tabCdp.eval(`(() => {
+      const areaEl = document.querySelector('#area-input');
+      if (areaEl) {
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+        if (setter) setter.call(areaEl, '1');
+        else areaEl.value = '1';
+        areaEl.dispatchEvent(new Event('input', { bubbles: true }));
+        areaEl.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    })()`);
+    await sleep(300);
+
+    // Open Rate Calculator
+    await tabCdp.eval(`(() => {
+      const toggle = document.querySelector('#rate-calculator-toggle');
+      if (toggle) toggle.click();
+    })()`);
+    await sleep(400);
+
+    // Set rate to "1000000"
+    await tabCdp.eval(`(() => {
+      const el = document.querySelector('#land-rate-input');
+      if (!el) throw new Error("Rate input not found");
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+      if (setter) setter.call(el, '1000000');
+      else el.value = '1000000';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    })()`);
+    await sleep(300);
+
+    // Click #rate-unit-select to open dropdown
+    await tabCdp.eval(`(() => {
+      const selectTrigger = document.querySelector('#rate-unit-select');
+      if (!selectTrigger) throw new Error("Rate unit select trigger not found");
+      selectTrigger.focus();
+      selectTrigger.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+      selectTrigger.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+      selectTrigger.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true }));
+      selectTrigger.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+      selectTrigger.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    })()`);
+    await sleep(400);
+
+    // Select Acre option
+    await tabCdp.eval(`(() => {
+      const options = Array.from(document.querySelectorAll('[role="option"]'));
+      const acreOption = options.find(opt => opt.textContent.includes('Acre') || opt.textContent.includes('एकड़'));
+      if (!acreOption) throw new Error("Acre option not found in rate unit select dropdown");
+      acreOption.focus();
+      acreOption.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+      acreOption.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+      acreOption.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true }));
+      acreOption.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+      acreOption.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    })()`);
+    await sleep(400);
+
+    const totalVal = await tabCdp.eval(`document.querySelector('#rate-total-value')?.textContent?.trim() || ''`);
+    const words = await tabCdp.eval(`document.querySelector('#rate-words-display')?.textContent?.trim() || ''`);
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    // 1 Acre at 10,00,000 / Acre = 10,00,000 (₹ 10,00,000 / ₹ 10 Lakh)
+    if (!totalVal.includes("10,00,00")) {
+      throw new Error(`Expected valuation '₹ 10,00,000' for 1 Acre @ ₹ 10,00,000/Acre, got '${totalVal}'`);
+    }
+
+    return { totalVal, words };
+  });
+
   // Cleanup
   console.log("==================================================");
   console.log("E2E TESTS COMPLETE");

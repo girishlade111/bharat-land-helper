@@ -3119,7 +3119,7 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
 
     it("RATE-019: Deleted custom rate unit fails safely without crashing", () => {
       const sqft = getUnit("sqft")!;
-      const dummyDeletedUnit = { id: "custom_deleted", name: "Deleted", sqFt: 0 } as any;
+      const dummyDeletedUnit = { id: "custom_deleted", name: "Deleted", sqFt: 0 } as unknown as Parameters<typeof calculateLandValuation>[3];
       const res = calculateLandValuation(100, sqft, 5000, dummyDeletedUnit);
       expect(res.totalValue).toBe(0);
       expect(res.formattedCurrency).toBe("₹ 0");
