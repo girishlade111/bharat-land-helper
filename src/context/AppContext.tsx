@@ -238,8 +238,10 @@ export function AppProvider({
       const toSqFtParam = params.get("to_sqft") || params.get("c_to_sqft");
       const toNameParam = params.get("to_name") || params.get("c_to_name");
 
+      let snapshotFrom: LandUnit | null = null;
+      let snapshotTo: LandUnit | null = null;
+
       if (from) {
-        let snapshotFrom: LandUnit | null = null;
         if (fromSqFtParam) {
           snapshotFrom = parseCustomSnapshotParam(fromSqFtParam, fromNameParam);
         }
@@ -282,7 +284,6 @@ export function AppProvider({
       }
 
       if (to) {
-        let snapshotTo: LandUnit | null = null;
         if (toSqFtParam) {
           snapshotTo = parseCustomSnapshotParam(toSqFtParam, toNameParam);
         }

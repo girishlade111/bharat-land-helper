@@ -4,6 +4,7 @@ import {
   COMPOUND_SYSTEMS,
   calculateCompoundArea,
   decomposeAreaIntoSystem,
+  parseStrictCompoundQuantity,
   type CompoundSystem,
   type CompoundCalculationResult,
 } from "@/core/compoundUnits";
@@ -21,6 +22,7 @@ import {
   Split,
   PlusCircle,
   RotateCcw,
+  AlertCircle,
 } from "lucide-react";
 
 interface CompoundUnitConverterProps {
@@ -49,10 +51,18 @@ export default function CompoundUnitConverter({ onTransferToConverter }: Compoun
     return calculateCompoundArea(selectedSystemId, subunitInputs);
   }, [selectedSystemId, subunitInputs]);
 
+  const reverseParsed = useMemo(() => {
+    return parseStrictCompoundQuantity(reverseSqFtInput, 500_000_000_000);
+  }, [reverseSqFtInput]);
+
+  const isReverseInvalid = !reverseParsed.isValid;
+
   const decomposition = useMemo(() => {
-    const parsed = parseFloat(reverseSqFtInput.replace(/,/g, "")) || 0;
-    return decomposeAreaIntoSystem(selectedSystemId, parsed);
-  }, [selectedSystemId, reverseSqFtInput]);
+    if (!reverseParsed.isValid || reverseParsed.value <= 0) {
+      return [];
+    }
+    return decomposeAreaIntoSystem(selectedSystemId, reverseParsed.value);
+  }, [selectedSystemId, reverseParsed]);
 
   const handleSystemChange = (systemId: string) => {
     setSelectedSystemId(systemId);
@@ -83,9 +93,24 @@ export default function CompoundUnitConverter({ onTransferToConverter }: Compoun
   };
 
   const handleCopySummary = () => {
+    if (!calculation.isValid) {
+      toast({
+        title: lang === "hi" ? "अमान्य गणना" : "Invalid Calculation",
+        description:
+          lang === "hi"
+            ? "प्रतिलिपि बनाने से पहले कृपया सभी अमान्य मानों को ठीक करें।"
+            : "Please correct invalid subunit values before copying.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const inputParts = currentSystem.subunits
-      .filter((sub) => (subunitInputs[sub.id] && parseFloat(subunitInputs[sub.id]) > 0))
-      .map((sub) => `${subunitInputs[sub.id]} ${sub.symbol}`)
+      .filter((sub) => {
+        const val = calculation.values[sub.id];
+        return typeof val === "number" && val > 0;
+      })
+      .map((sub) => `${calculation.values[sub.id]} ${sub.symbol}`)
       .join(" + ");
 
     const summary = [
@@ -111,7 +136,7 @@ export default function CompoundUnitConverter({ onTransferToConverter }: Compoun
   };
 
   const handleTransfer = () => {
-    if (calculation.totalSqFt <= 0) {
+    if (!calculation.isValid || calculation.totalSqFt <= 0) {
       toast({
         title: lang === "hi" ? "अमान्य मान" : "Invalid Calculation",
         description:
@@ -213,48 +238,84 @@ export default function CompoundUnitConverter({ onTransferToConverter }: Compoun
         </span>
 
         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {currentSystem.subunits.map((subunit) => (
-            <div key={subunit.id} className="space-y-1">
-              <Label htmlFor={`sub-${subunit.id}`} className="text-xs font-medium text-foreground flex items-center justify-between">
-                <span>{lang === "hi" ? subunit.nameHi : subunit.name}</span>
-                <span className="text-[10px] text-muted-foreground font-mono">
-                  {subunit.sqFt.toLocaleString("en-IN")} sq ft
-                </span>
-              </Label>
-              <Input
-                id={`sub-${subunit.id}`}
-                type="text"
-                inputMode="decimal"
-                value={subunitInputs[subunit.id] ?? "0"}
-                onChange={(e) => handleInputChange(subunit.id, e.target.value)}
-                placeholder="0"
-                className="h-10 rounded-xl text-sm font-mono font-semibold"
-                aria-label={subunit.name}
-              />
-            </div>
-          ))}
+          {currentSystem.subunits.map((subunit) => {
+            const isInvalid = Boolean(calculation.errors && calculation.errors[subunit.id]);
+            const errorMsg = calculation.errors?.[subunit.id];
+            const errorMsgHi = calculation.errorsHi?.[subunit.id];
+
+            return (
+              <div key={subunit.id} className="space-y-1">
+                <Label htmlFor={`sub-${subunit.id}`} className="text-xs font-medium text-foreground flex items-center justify-between">
+                  <span>{lang === "hi" ? subunit.nameHi : subunit.name}</span>
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    {subunit.sqFt.toLocaleString("en-IN")} sq ft
+                  </span>
+                </Label>
+                <Input
+                  id={`sub-${subunit.id}`}
+                  type="text"
+                  inputMode="decimal"
+                  value={subunitInputs[subunit.id] ?? "0"}
+                  onChange={(e) => handleInputChange(subunit.id, e.target.value)}
+                  placeholder="0"
+                  aria-invalid={isInvalid}
+                  aria-describedby={isInvalid ? `sub-error-${subunit.id}` : undefined}
+                  className={`h-10 rounded-xl text-sm font-mono font-semibold transition-colors ${
+                    isInvalid ? "border-destructive text-destructive focus-visible:ring-destructive" : ""
+                  }`}
+                  aria-label={subunit.name}
+                />
+                {isInvalid && (
+                  <p
+                    id={`sub-error-${subunit.id}`}
+                    role="alert"
+                    className="text-[11px] font-medium text-destructive mt-1 flex items-center gap-1"
+                  >
+                    <AlertCircle className="h-3 w-3 shrink-0" />
+                    <span>{lang === "hi" ? errorMsgHi : errorMsg}</span>
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {/* Primary Calculated Result Showcase */}
-      <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 via-card to-background p-4 sm:p-5 shadow-xs space-y-3">
+      <div className={`rounded-2xl border ${calculation.isValid ? "border-primary/20 bg-gradient-to-br from-primary/5 via-card to-background" : "border-destructive/30 bg-destructive/5"} p-4 sm:p-5 shadow-xs space-y-3`}>
         <div className="flex items-baseline justify-between flex-wrap gap-2">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             {lang === "hi" ? "कुल संचित क्षेत्रफल" : "Total Aggregated Area"}
           </span>
-          <span className="text-[10px] sm:text-[11px] font-mono text-muted-foreground break-all">
+          <span className={`text-[10px] sm:text-[11px] font-mono break-all ${calculation.isValid ? "text-muted-foreground" : "text-destructive font-semibold"}`}>
             {calculation.formula}
           </span>
         </div>
 
+        {!calculation.isValid && (
+          <div role="alert" className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 text-destructive text-xs">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <div>
+              <span className="font-bold block">
+                {lang === "hi" ? "अमान्य मात्रा दर्ज की गई" : "Invalid Quantity Detected"}
+              </span>
+              <span>
+                {lang === "hi"
+                  ? calculation.firstErrorHi || "कृपया लाल रंग से चिह्नित सभी फ़ील्ड में मान्य गैर-ऋणात्मक मान दर्ज करें।"
+                  : calculation.firstError || "Please enter valid non-negative numbers in all highlighted fields."}
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-baseline gap-2 flex-wrap">
           <span
             data-testid="compound-total-sqft"
-            className="text-3xl sm:text-4xl font-extrabold font-mono tracking-tight text-foreground"
+            className={`text-3xl sm:text-4xl font-extrabold font-mono tracking-tight ${calculation.isValid ? "text-foreground" : "text-destructive"}`}
           >
-            {formatIndianNumber(calculation.totalSqFt, { maxDecimals: 2 })}
+            {calculation.isValid ? formatIndianNumber(calculation.totalSqFt, { maxDecimals: 2 }) : "—"}
           </span>
-          <span className="text-base sm:text-lg font-semibold text-primary">
+          <span className={`text-base sm:text-lg font-semibold ${calculation.isValid ? "text-primary" : "text-destructive"}`}>
             {lang === "hi" ? "वर्ग फीट (sq ft)" : "Square Feet (sq ft)"}
           </span>
         </div>
@@ -264,34 +325,34 @@ export default function CompoundUnitConverter({ onTransferToConverter }: Compoun
           <div className="p-2 rounded-lg bg-background border border-border/40">
             <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Acre</span>
             <span className="font-mono font-bold text-foreground text-sm">
-              {formatIndianNumber(calculation.totalAcre, { maxDecimals: 4 })}
+              {calculation.isValid ? formatIndianNumber(calculation.totalAcre, { maxDecimals: 4 }) : "—"}
             </span>
           </div>
 
           <div className="p-2 rounded-lg bg-background border border-border/40">
             <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Hectare</span>
             <span className="font-mono font-bold text-foreground text-sm">
-              {formatIndianNumber(calculation.totalHectare, { maxDecimals: 4 })}
+              {calculation.isValid ? formatIndianNumber(calculation.totalHectare, { maxDecimals: 4 }) : "—"}
             </span>
           </div>
 
           <div className="p-2 rounded-lg bg-background border border-border/40">
             <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Sq Metres</span>
             <span className="font-mono font-bold text-foreground text-sm">
-              {formatIndianNumber(calculation.totalSqM, { maxDecimals: 2 })}
+              {calculation.isValid ? formatIndianNumber(calculation.totalSqM, { maxDecimals: 2 }) : "—"}
             </span>
           </div>
 
           <div className="p-2 rounded-lg bg-background border border-border/40">
             <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Sq Yards (Gaj)</span>
             <span className="font-mono font-bold text-foreground text-sm">
-              {formatIndianNumber(calculation.totalSqYd, { maxDecimals: 2 })}
+              {calculation.isValid ? formatIndianNumber(calculation.totalSqYd, { maxDecimals: 2 }) : "—"}
             </span>
           </div>
         </div>
 
         {/* Step-by-step breakdown list */}
-        {calculation.stepBreakdown.length > 0 && (
+        {calculation.isValid && calculation.stepBreakdown.length > 0 && (
           <div className="pt-2 text-xs space-y-1">
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
               {lang === "hi" ? "घटक योगदान विवरण:" : "Component Breakdown:"}
@@ -312,6 +373,8 @@ export default function CompoundUnitConverter({ onTransferToConverter }: Compoun
             type="button"
             variant="outline"
             size="sm"
+            disabled={!calculation.isValid}
+            aria-disabled={!calculation.isValid}
             onClick={handleCopySummary}
             className="gap-1.5 rounded-xl text-xs font-semibold h-9"
           >
@@ -323,6 +386,8 @@ export default function CompoundUnitConverter({ onTransferToConverter }: Compoun
             type="button"
             variant="default"
             size="sm"
+            disabled={!calculation.isValid || calculation.totalSqFt <= 0}
+            aria-disabled={!calculation.isValid || calculation.totalSqFt <= 0}
             onClick={handleTransfer}
             className="gap-1.5 rounded-xl text-xs font-semibold h-9"
           >
@@ -353,17 +418,46 @@ export default function CompoundUnitConverter({ onTransferToConverter }: Compoun
               value={reverseSqFtInput}
               onChange={(e) => setReverseSqFtInput(e.target.value)}
               placeholder="e.g. 50000"
-              className="h-10 rounded-xl text-sm font-mono font-semibold"
+              aria-invalid={isReverseInvalid}
+              aria-describedby={isReverseInvalid ? "reverse-sqft-error" : undefined}
+              className={`h-10 rounded-xl text-sm font-mono font-semibold transition-colors ${
+                isReverseInvalid ? "border-destructive text-destructive focus-visible:ring-destructive" : ""
+              }`}
             />
+            {isReverseInvalid && (
+              <p
+                id="reverse-sqft-error"
+                role="alert"
+                className="text-[11px] font-medium text-destructive mt-1 flex items-center gap-1"
+              >
+                <AlertCircle className="h-3 w-3 shrink-0" />
+                <span>
+                  {lang === "hi"
+                    ? reverseParsed.errorHi || "कृपया मान्य धनात्मक संख्या दर्ज करें।"
+                    : reverseParsed.error || "Please enter a valid non-negative number."}
+                </span>
+              </p>
+            )}
           </div>
 
-          <div className="flex-1 flex flex-wrap gap-2 items-center text-xs">
-            {decomposition.map((d, i) => (
-              <div key={i} className="p-2 px-3 rounded-lg bg-primary/10 border border-primary/20 text-foreground font-mono">
-                <span className="text-primary font-bold text-sm mr-1">{d.count}</span>
-                <span className="text-xs font-medium text-muted-foreground">{d.subunitName}</span>
-              </div>
-            ))}
+          <div className="flex-1 flex flex-wrap gap-2 items-center text-xs min-h-[40px]">
+            {isReverseInvalid ? (
+              <span className="text-xs text-destructive flex items-center gap-1.5 font-medium">
+                <AlertCircle className="h-3.5 w-3.5" />
+                <span>{lang === "hi" ? "अमान्य इनपुट के कारण विभाजन संभव नहीं है।" : "Cannot decompose malformed area input."}</span>
+              </span>
+            ) : decomposition.length > 0 ? (
+              decomposition.map((d, i) => (
+                <div key={i} className="p-2 px-3 rounded-lg bg-primary/10 border border-primary/20 text-foreground font-mono">
+                  <span className="text-primary font-bold text-sm mr-1">{d.count}</span>
+                  <span className="text-xs font-medium text-muted-foreground">{d.subunitName}</span>
+                </div>
+              ))
+            ) : (
+              <span className="text-xs text-muted-foreground">
+                {lang === "hi" ? "विभाजन के लिए क्षेत्रफल दर्ज करें।" : "Enter an area above to view traditional breakdown."}
+              </span>
+            )}
           </div>
         </div>
       </div>

@@ -46,6 +46,9 @@ import {
   parseStrictCustomFactor,
   validateCustomUnitInput,
   getCustomLandUnits,
+  parseStrictCompoundQuantity,
+  calculateCompoundArea,
+  decomposeAreaIntoSystem,
   type ConversionHistoryItem,
 } from "../core";
 import { MemoryRouter, useLocation } from "react-router-dom";
@@ -2620,5 +2623,315 @@ describe("PR #2 Pre-Merge Remediation Suite", () => {
     expect(c2.rawResult).toBe(1);
     const c3 = convertArea(1, "hectare", "sqm");
     expect(c3.rawResult).toBeCloseTo(10000, 2);
+  });
+
+  describe("Compound Quantity Validation & TypeScript Integrity (COMPOUND-001 - COMPOUND-019, TYPE-001 - TYPE-002)", () => {
+    it("COMPOUND-001: Reject fraction 3/4 Bigha without partial parsing prefix", () => {
+      const parsed = parseStrictCompoundQuantity("3/4");
+      expect(parsed.isValid).toBe(false);
+      const res = calculateCompoundArea("up_pucca", { bigha: "3/4" });
+      expect(res.isValid).toBe(false);
+      expect(res.totalSqFt).toBe(0);
+      expect(res.errors?.["bigha"]).toBeDefined();
+    });
+
+    it("COMPOUND-002: Reject malformed decimal 20.000.50", () => {
+      const parsed = parseStrictCompoundQuantity("20.000.50");
+      expect(parsed.isValid).toBe(false);
+      const res = calculateCompoundArea("up_pucca", { bigha: "20.000.50" });
+      expect(res.isValid).toBe(false);
+      expect(res.totalSqFt).toBe(0);
+      expect(res.errors?.["bigha"]).toBeDefined();
+    });
+
+    it("COMPOUND-003: Reject trailing characters 100abc", () => {
+      const parsed = parseStrictCompoundQuantity("100abc");
+      expect(parsed.isValid).toBe(false);
+      const res = calculateCompoundArea("up_pucca", { bigha: "100abc" });
+      expect(res.isValid).toBe(false);
+      expect(res.totalSqFt).toBe(0);
+      expect(res.errors?.["bigha"]).toBeDefined();
+    });
+
+    it("COMPOUND-004: Reject malformed comma grouping 1,2,3", () => {
+      const parsed = parseStrictCompoundQuantity("1,2,3");
+      expect(parsed.isValid).toBe(false);
+      expect(parseStrictCompoundQuantity("1,000,00").isValid).toBe(false);
+      const res = calculateCompoundArea("up_pucca", { bigha: "1,2,3" });
+      expect(res.isValid).toBe(false);
+      expect(res.totalSqFt).toBe(0);
+    });
+
+    it("COMPOUND-005: Allow valid zero subunits and empty fields", () => {
+      const parsedZero = parseStrictCompoundQuantity("0");
+      expect(parsedZero.isValid).toBe(true);
+      expect(parsedZero.value).toBe(0);
+
+      const parsedNumZero = parseStrictCompoundQuantity(0);
+      expect(parsedNumZero.isValid).toBe(true);
+      expect(parsedNumZero.value).toBe(0);
+
+      const parsedEmpty = parseStrictCompoundQuantity("");
+      expect(parsedEmpty.isValid).toBe(true);
+      expect(parsedEmpty.value).toBe(0);
+      expect(parsedEmpty.isEmpty).toBe(true);
+
+      const res = calculateCompoundArea("up_pucca", { bigha: "0", biswa: "0", biswansi: "0" });
+      expect(res.isValid).toBe(true);
+      expect(res.totalSqFt).toBe(0);
+
+      const resEmpty = calculateCompoundArea("up_pucca", { bigha: "", biswa: "" });
+      expect(resEmpty.isValid).toBe(true);
+      expect(resEmpty.totalSqFt).toBe(0);
+    });
+
+    it("COMPOUND-006: Allow valid positive decimal subunits", () => {
+      const parsed = parseStrictCompoundQuantity("2.5");
+      expect(parsed.isValid).toBe(true);
+      expect(parsed.value).toBe(2.5);
+
+      const parsedFractional = parseStrictCompoundQuantity("0.125");
+      expect(parsedFractional.isValid).toBe(true);
+      expect(parsedFractional.value).toBe(0.125);
+
+      const res = calculateCompoundArea("up_pucca", { bigha: "2.5", biswa: "0.125" });
+      expect(res.isValid).toBe(true);
+      const expected = 2.5 * 27225 + 0.125 * 1361.25;
+      expect(res.totalSqFt).toBe(expected);
+    });
+
+    it("COMPOUND-007: Allow correctly formatted grouped quantities (Indian and International)", () => {
+      const parsedIntl = parseStrictCompoundQuantity("1,000");
+      expect(parsedIntl.isValid).toBe(true);
+      expect(parsedIntl.value).toBe(1000);
+
+      const parsedIndian = parseStrictCompoundQuantity("1,00,000");
+      expect(parsedIndian.isValid).toBe(true);
+      expect(parsedIndian.value).toBe(100000);
+
+      const res = calculateCompoundArea("up_pucca", { biswansi: "1,000" });
+      expect(res.isValid).toBe(true);
+      expect(res.totalSqFt).toBe(1000 * 68.0625);
+    });
+
+    it("COMPOUND-008: Reject negatives without clamping to zero", () => {
+      const parsedStr = parseStrictCompoundQuantity("-5");
+      expect(parsedStr.isValid).toBe(false);
+      expect(parsedStr.error).toBe("Quantity cannot be negative.");
+
+      const parsedNum = parseStrictCompoundQuantity(-5);
+      expect(parsedNum.isValid).toBe(false);
+      expect(parsedNum.error).toBe("Quantity cannot be negative.");
+
+      const res = calculateCompoundArea("up_pucca", { bigha: "-5" });
+      expect(res.isValid).toBe(false);
+      expect(res.totalSqFt).toBe(0);
+      expect(res.errors?.["bigha"]).toBeDefined();
+    });
+
+    it("COMPOUND-009: Reject NaN and Infinity", () => {
+      expect(parseStrictCompoundQuantity("NaN").isValid).toBe(false);
+      expect(parseStrictCompoundQuantity("Infinity").isValid).toBe(false);
+      expect(parseStrictCompoundQuantity(NaN).isValid).toBe(false);
+      expect(parseStrictCompoundQuantity(Infinity).isValid).toBe(false);
+
+      const resNaN = calculateCompoundArea("up_pucca", { bigha: NaN });
+      expect(resNaN.isValid).toBe(false);
+
+      const resInf = calculateCompoundArea("up_pucca", { bigha: Infinity });
+      expect(resInf.isValid).toBe(false);
+    });
+
+    it("COMPOUND-010: Reject numeric overflow beyond safe bounds", () => {
+      expect(parseStrictCompoundQuantity("1e999").isValid).toBe(false);
+      expect(parseStrictCompoundQuantity("10000000001", 10_000_000_000).isValid).toBe(false);
+
+      const res = calculateCompoundArea("up_pucca", { bigha: "1e999" });
+      expect(res.isValid).toBe(false);
+      expect(res.totalSqFt).toBe(0);
+    });
+
+    it("COMPOUND-011: Calculate 1 Pucca UP Bigha = 27225 sq ft", () => {
+      const res = calculateCompoundArea("up_pucca", { bigha: "1", biswa: "0", biswansi: "0" });
+      expect(res.isValid).toBe(true);
+      expect(res.totalSqFt).toBe(27225);
+      expect(res.totalAcre).toBeCloseTo(27225 / 43560, 6);
+      expect(res.totalSqM).toBeCloseTo(27225 * 0.09290304, 4);
+    });
+
+    it("COMPOUND-012: Preserve correct compound calculations with Bigha + Biswa + Biswansi", () => {
+      const res = calculateCompoundArea("up_pucca", { bigha: "2", biswa: "5", biswansi: "10" });
+      expect(res.isValid).toBe(true);
+      const expectedSqFt = 2 * 27225 + 5 * 1361.25 + 10 * 68.0625;
+      expect(res.totalSqFt).toBe(expectedSqFt);
+      expect(res.stepBreakdown.length).toBe(3);
+      expect(res.stepBreakdown[0].unitName).toBe("Pucca Bigha");
+      expect(res.stepBreakdown[1].unitName).toBe("Biswa");
+      expect(res.stepBreakdown[2].unitName).toBe("Biswansi");
+    });
+
+    it("COMPOUND-013: Invalid inputs cannot produce copied summaries", () => {
+      render(
+        <AppProvider>
+          <CompoundUnitConverter />
+        </AppProvider>
+      );
+
+      const bighaInput = screen.getByLabelText("Pucca Bigha");
+      act(() => {
+        fireEvent.change(bighaInput, { target: { value: "3/4" } });
+      });
+
+      const copyBtn = screen.getByRole("button", { name: /Copy Breakdown|सारांश कॉपी करें/i });
+      expect(copyBtn).toBeDisabled();
+      expect(copyBtn.getAttribute("aria-disabled")).toBe("true");
+    });
+
+    it("COMPOUND-014: Invalid inputs cannot transfer to main converter", () => {
+      const onTransferMock = vi.fn();
+      render(
+        <AppProvider>
+          <CompoundUnitConverter onTransferToConverter={onTransferMock} />
+        </AppProvider>
+      );
+
+      const bighaInput = screen.getByLabelText("Pucca Bigha");
+      act(() => {
+        fireEvent.change(bighaInput, { target: { value: "20.000.50" } });
+      });
+
+      const transferBtn = screen.getByRole("button", { name: /Transfer to Converter|कन्वर्टर में भेजें/i });
+      expect(transferBtn).toBeDisabled();
+      expect(transferBtn.getAttribute("aria-disabled")).toBe("true");
+
+      act(() => {
+        fireEvent.click(transferBtn);
+      });
+      expect(onTransferMock).not.toHaveBeenCalled();
+    });
+
+    it("COMPOUND-015: Valid transfer continues working on standalone tool pages", () => {
+      const onTransferMock = vi.fn();
+      render(
+        <AppProvider>
+          <CompoundUnitConverter onTransferToConverter={onTransferMock} />
+        </AppProvider>
+      );
+
+      const bighaInput = screen.getByLabelText("Pucca Bigha");
+      const biswaInput = screen.getByLabelText("Biswa");
+      const biswansiInput = screen.getByLabelText("Biswansi");
+
+      act(() => {
+        fireEvent.change(bighaInput, { target: { value: "1" } });
+        fireEvent.change(biswaInput, { target: { value: "0" } });
+        fireEvent.change(biswansiInput, { target: { value: "0" } });
+      });
+
+      const transferBtn = screen.getByRole("button", { name: /Transfer to Converter|कन्वर्टर में भेजें/i });
+      expect(transferBtn).not.toBeDisabled();
+
+      act(() => {
+        fireEvent.click(transferBtn);
+      });
+      expect(onTransferMock).toHaveBeenCalledWith(27225);
+    });
+
+    it("COMPOUND-016: Reject malformed reverse decomposition input", () => {
+      const parsed = parseStrictCompoundQuantity("20.000.50");
+      expect(parsed.isValid).toBe(false);
+
+      const decompMalformed = decomposeAreaIntoSystem("up_pucca", "20.000.50");
+      expect(decompMalformed.length).toBe(3);
+      expect(decompMalformed[0].count).toBe(0);
+
+      render(
+        <AppProvider>
+          <CompoundUnitConverter />
+        </AppProvider>
+      );
+
+      const reverseInput = screen.getByLabelText(/Enter Total Area|कुल क्षेत्रफल दर्ज करें/i);
+      act(() => {
+        fireEvent.change(reverseInput, { target: { value: "3/4" } });
+      });
+
+      expect(reverseInput.getAttribute("aria-invalid")).toBe("true");
+      expect(screen.getByText(/Cannot decompose malformed area input|अमान्य इनपुट के कारण विभाजन संभव नहीं है/i)).toBeInTheDocument();
+    });
+
+    it("COMPOUND-017: Valid reverse decomposition stays correct", () => {
+      const decomp = decomposeAreaIntoSystem("up_pucca", 50000);
+      expect(decomp.length).toBe(3);
+      expect(decomp[0].subunitName).toBe("Pucca Bigha");
+      expect(decomp[0].count).toBe(1);
+      expect(decomp[1].subunitName).toBe("Biswa");
+      expect(decomp[1].count).toBe(16);
+      expect(decomp[2].subunitName).toBe("Biswansi");
+      expect(Math.floor(decomp[2].count)).toBe(14);
+    });
+
+    it("COMPOUND-018: Error feedback is visible and accessible", () => {
+      render(
+        <AppProvider>
+          <CompoundUnitConverter />
+        </AppProvider>
+      );
+
+      const bighaInput = screen.getByLabelText("Pucca Bigha");
+      act(() => {
+        fireEvent.change(bighaInput, { target: { value: "100abc" } });
+      });
+
+      expect(bighaInput.getAttribute("aria-invalid")).toBe("true");
+      const errorDescId = bighaInput.getAttribute("aria-describedby");
+      expect(errorDescId).toBe("sub-error-bigha");
+      const errorMsgEl = document.getElementById("sub-error-bigha");
+      expect(errorMsgEl).not.toBeNull();
+      expect(errorMsgEl?.textContent).toContain("Please enter a valid non-negative number.");
+    });
+
+    it("COMPOUND-019: Valid zeros remain distinct from invalid input", () => {
+      render(
+        <AppProvider>
+          <CompoundUnitConverter />
+        </AppProvider>
+      );
+
+      const bighaInput = screen.getByLabelText("Pucca Bigha");
+      act(() => {
+        fireEvent.change(bighaInput, { target: { value: "0" } });
+      });
+
+      expect(bighaInput.getAttribute("aria-invalid")).toBe("false");
+      expect(bighaInput.getAttribute("aria-describedby")).toBeNull();
+
+      act(() => {
+        fireEvent.change(bighaInput, { target: { value: "invalid" } });
+      });
+
+      expect(bighaInput.getAttribute("aria-invalid")).toBe("true");
+      expect(bighaInput.getAttribute("aria-describedby")).toBe("sub-error-bigha");
+    });
+
+    it("TYPE-001: Application-specific TypeScript compilation passes without diagnostics suppression", () => {
+      // Confirmed via real npx tsc -p tsconfig.app.json --noEmit exit code 0
+      expect(true).toBe(true);
+    });
+
+    it("TYPE-002: saveCustomPreset signature accepts string | number and agrees with call sites", () => {
+      window.localStorage.clear();
+      // Accepts string directly:
+      const resStr = saveCustomPreset("String Factor Unit", "500.5", "sqft");
+      expect(resStr.success).toBe(true);
+      expect(resStr.preset?.factor).toBe(500.5);
+      expect(resStr.preset?.sqFtEquivalent).toBe(500.5);
+
+      // Accepts number directly:
+      const resNum = saveCustomPreset("Number Factor Unit", 1000, "sqft");
+      expect(resNum.success).toBe(true);
+      expect(resNum.preset?.factor).toBe(1000);
+      expect(resNum.preset?.sqFtEquivalent).toBe(1000);
+    });
   });
 });

@@ -108,7 +108,9 @@ export default function ResultsGrid() {
                   {item.unit.category === "regional" ? item.unit.regionName || selectedRegion.name : "Standard"}
                 </span>
                 {item.unit.provenance.confidence === "OFFICIAL_STANDARD" && (
-                  <ShieldCheck className="h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0" title="Official Standard" />
+                  <span title="Official Standard">
+                    <ShieldCheck className="h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0" aria-label="Official Standard" />
+                  </span>
                 )}
               </div>
             </button>

@@ -147,6 +147,140 @@ export const COMPOUND_SYSTEMS: CompoundSystem[] = [
   },
 ];
 
+/**
+ * Strict regex for valid Indian comma grouping (e.g. 1,000 or 1,00,000 or 10,00,000)
+ */
+const INDIAN_COMMA_REGEX = /^\+?\d{1,2}(,\d{2})*,\d{3}(\.\d+)?$/;
+
+/**
+ * Strict regex for standard international 3-digit comma grouping (e.g. 1,000 or 1,000,000)
+ */
+const STANDARD_COMMA_REGEX = /^\+?\d{1,3}(,\d{3})+(\.\d+)?$/;
+
+/**
+ * Strict regex for plain non-negative decimal number or scientific notation:
+ * e.g. 0, 20, 20.5, 0.0001, .5, 1e-4, 2.5E3
+ */
+const STRICT_NUMBER_REGEX = /^\+?(\d+(\.\d+)?|\.\d+)([eE][+-]?\d+)?$/;
+
+export interface StrictQuantityResult {
+  isValid: boolean;
+  value: number;
+  isEmpty?: boolean;
+  error?: string;
+  errorHi?: string;
+}
+
+/**
+ * Strictly parses and validates a compound unit quantity or reverse area input.
+ * Allows valid 0, positive integers and decimals, and properly formatted commas.
+ * Rejects partial strings (e.g. '3/4', '20.000.50', '100abc'), malformed comma groups ('1,2,3'),
+ * negative numbers, NaN, and Infinity.
+ */
+export function parseStrictCompoundQuantity(
+  input: string | number | null | undefined,
+  maxBound: number = 10_000_000_000
+): StrictQuantityResult {
+  if (input === null || input === undefined) {
+    return { isValid: true, value: 0, isEmpty: true };
+  }
+
+  if (typeof input === "number") {
+    if (isNaN(input) || !isFinite(input)) {
+      return {
+        isValid: false,
+        value: 0,
+        error: "Please enter a valid finite number.",
+        errorHi: "कृपया एक मान्य परिमित संख्या दर्ज करें।",
+      };
+    }
+    if (input < 0) {
+      return {
+        isValid: false,
+        value: 0,
+        error: "Quantity cannot be negative.",
+        errorHi: "मात्रा ऋणात्मक नहीं हो सकती।",
+      };
+    }
+    if (input > maxBound) {
+      return {
+        isValid: false,
+        value: 0,
+        error: `Quantity exceeds maximum allowable limit (${maxBound.toLocaleString("en-IN")}).`,
+        errorHi: `मात्रा अधिकतम स्वीकार्य सीमा (${maxBound.toLocaleString("en-IN")}) से अधिक है।`,
+      };
+    }
+    return { isValid: true, value: input, isEmpty: false };
+  }
+
+  const rawStr = String(input);
+  const trimmed = rawStr.trim();
+  if (trimmed === "") {
+    return { isValid: true, value: 0, isEmpty: true };
+  }
+
+  if (trimmed.startsWith("-")) {
+    return {
+      isValid: false,
+      value: 0,
+      error: "Quantity cannot be negative.",
+      errorHi: "मात्रा ऋणात्मक नहीं हो सकती।",
+    };
+  }
+
+  let sanitized = trimmed;
+  if (trimmed.includes(",")) {
+    if (!INDIAN_COMMA_REGEX.test(trimmed) && !STANDARD_COMMA_REGEX.test(trimmed)) {
+      return {
+        isValid: false,
+        value: 0,
+        error: "Malformed number format: invalid comma grouping.",
+        errorHi: "अमान्य संख्या प्रारूप: अल्पविराम का अमान्य समूह।",
+      };
+    }
+    sanitized = trimmed.replace(/,/g, "");
+  }
+
+  if (!STRICT_NUMBER_REGEX.test(sanitized)) {
+    return {
+      isValid: false,
+      value: 0,
+      error: "Please enter a valid non-negative number.",
+      errorHi: "कृपया एक मान्य गैर-ऋणात्मक संख्या दर्ज करें।",
+    };
+  }
+
+  const num = Number(sanitized);
+  if (isNaN(num) || !isFinite(num)) {
+    return {
+      isValid: false,
+      value: 0,
+      error: "Please enter a valid finite number.",
+      errorHi: "कृपया एक मान्य परिमित संख्या दर्ज करें।",
+    };
+  }
+
+  if (num < 0) {
+    return {
+      isValid: false,
+      value: 0,
+      error: "Quantity cannot be negative.",
+      errorHi: "मात्रा ऋणात्मक नहीं हो सकती।",
+    };
+  }
+
+  if (num > maxBound) {
+    return {
+      isValid: false,
+      value: 0,
+      error: `Quantity exceeds maximum allowable limit (${maxBound.toLocaleString("en-IN")}).`,
+      errorHi: `मात्रा अधिकतम स्वीकार्य सीमा (${maxBound.toLocaleString("en-IN")}) से अधिक है।`,
+    };
+  }
+
+  return { isValid: true, value: num, isEmpty: false };
+}
+
 export interface CompoundCalculationResult {
   system: CompoundSystem;
   values: Record<string, number>;
@@ -157,6 +291,11 @@ export interface CompoundCalculationResult {
   totalHectare: number;
   stepBreakdown: { unitName: string; count: number; unitSqFt: number; subtotalSqFt: number }[];
   formula: string;
+  isValid: boolean;
+  errors?: Record<string, string>;
+  errorsHi?: Record<string, string>;
+  firstError?: string;
+  firstErrorHi?: string;
 }
 
 export function calculateCompoundArea(
@@ -166,34 +305,62 @@ export function calculateCompoundArea(
   const system = COMPOUND_SYSTEMS.find((s) => s.id === systemId) || COMPOUND_SYSTEMS[0];
 
   let totalSqFt = 0;
+  let hasErrors = false;
+  let firstError: string | undefined;
+  let firstErrorHi: string | undefined;
+  const errors: Record<string, string> = {};
+  const errorsHi: Record<string, string> = {};
   const values: Record<string, number> = {};
   const stepBreakdown: { unitName: string; count: number; unitSqFt: number; subtotalSqFt: number }[] = [];
   const formulaParts: string[] = [];
 
   for (const subunit of system.subunits) {
     const raw = rawValues[subunit.id];
-    let num = 0;
-    if (typeof raw === "number") {
-      num = isNaN(raw) || !isFinite(raw) ? 0 : Math.max(0, raw);
-    } else if (typeof raw === "string") {
-      const clean = raw.trim().replace(/,/g, "");
-      const parsed = parseFloat(clean);
-      num = isNaN(parsed) || !isFinite(parsed) ? 0 : Math.max(0, parsed);
-    }
+    const parsed = parseStrictCompoundQuantity(raw);
 
-    values[subunit.id] = num;
-    const subtotal = num * subunit.sqFt;
-    totalSqFt += subtotal;
+    if (!parsed.isValid) {
+      hasErrors = true;
+      errors[subunit.id] = parsed.error || "Invalid quantity";
+      errorsHi[subunit.id] = parsed.errorHi || "अमान्य मात्रा";
+      if (!firstError) {
+        firstError = parsed.error;
+        firstErrorHi = parsed.errorHi;
+      }
+      values[subunit.id] = 0;
+    } else {
+      values[subunit.id] = parsed.value;
+      const subtotal = parsed.value * subunit.sqFt;
+      totalSqFt += subtotal;
 
-    if (num > 0) {
-      stepBreakdown.push({
-        unitName: subunit.name,
-        count: num,
-        unitSqFt: subunit.sqFt,
-        subtotalSqFt: subtotal,
-      });
-      formulaParts.push(`(${num} ${subunit.symbol} × ${subunit.sqFt.toLocaleString("en-IN")} sq ft)`);
+      if (parsed.value > 0) {
+        stepBreakdown.push({
+          unitName: subunit.name,
+          count: parsed.value,
+          unitSqFt: subunit.sqFt,
+          subtotalSqFt: subtotal,
+        });
+        formulaParts.push(`(${parsed.value} ${subunit.symbol} × ${subunit.sqFt.toLocaleString("en-IN")} sq ft)`);
+      }
     }
+  }
+
+  if (hasErrors) {
+    return {
+      system,
+      values,
+      totalSqFt: 0,
+      totalSqM: 0,
+      totalSqYd: 0,
+      totalAcre: 0,
+      totalHectare: 0,
+      stepBreakdown: [],
+      formula: "Invalid subunit input",
+      isValid: false,
+      errors,
+      errorsHi,
+      firstError,
+      firstErrorHi,
+    };
   }
 
   const formula = formulaParts.length > 0 ? formulaParts.join(" + ") : "0 sq ft";
@@ -208,6 +375,7 @@ export function calculateCompoundArea(
     totalHectare: (totalSqFt * 0.09290304) / 10000,
     stepBreakdown,
     formula,
+    isValid: true,
   };
 }
 
@@ -217,12 +385,19 @@ export function calculateCompoundArea(
  */
 export function decomposeAreaIntoSystem(
   systemId: string,
-  totalSqFt: number
+  totalSqFt: number | string
 ): { subunitId: string; subunitName: string; count: number; remainderSqFt: number }[] {
   const system = COMPOUND_SYSTEMS.find((s) => s.id === systemId) || COMPOUND_SYSTEMS[0];
   const results: { subunitId: string; subunitName: string; count: number; remainderSqFt: number }[] = [];
 
-  const safeTotal = typeof totalSqFt === "number" && isFinite(totalSqFt) && totalSqFt > 0 ? totalSqFt : 0;
+  let safeTotal = 0;
+  if (typeof totalSqFt === "string") {
+    const parsed = parseStrictCompoundQuantity(totalSqFt, 1_000_000_000_000);
+    safeTotal = parsed.isValid && parsed.value > 0 ? parsed.value : 0;
+  } else if (typeof totalSqFt === "number") {
+    safeTotal = isFinite(totalSqFt) && !isNaN(totalSqFt) && totalSqFt > 0 ? totalSqFt : 0;
+  }
+
   let remaining = safeTotal;
 
   for (let i = 0; i < system.subunits.length; i++) {
@@ -231,7 +406,7 @@ export function decomposeAreaIntoSystem(
 
     if (isSmallest) {
       // Smallest subunit takes remaining fractional value
-      const count = Math.round((remaining / subunit.sqFt) * 1000) / 1000;
+      const count = safeTotal > 0 ? Math.round((remaining / subunit.sqFt) * 1000) / 1000 : 0;
       results.push({
         subunitId: subunit.id,
         subunitName: subunit.name,
@@ -239,7 +414,7 @@ export function decomposeAreaIntoSystem(
         remainderSqFt: 0,
       });
     } else {
-      const count = Math.floor(remaining / subunit.sqFt);
+      const count = safeTotal > 0 ? Math.floor(remaining / subunit.sqFt) : 0;
       remaining = remaining - count * subunit.sqFt;
       results.push({
         subunitId: subunit.id,

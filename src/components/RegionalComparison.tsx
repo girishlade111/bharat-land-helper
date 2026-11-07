@@ -28,7 +28,7 @@ export interface ComparisonEntry {
   sqFt: number;
   acres: number;
   sqM: number;
-  confidence: "OFFICIAL_STANDARD" | "REGIONAL_STATUTORY" | "CUSTOMARY_UNOFFICIAL";
+  confidence: "OFFICIAL_STANDARD" | "REGIONAL_STATUTORY" | "CUSTOMARY_UNOFFICIAL" | "WIDELY_USED_CUSTOMARY" | "LOCAL_VARIANT" | "HISTORICAL_CUSTOMARY";
   sourceDoc: string;
   geographicScope: string;
   notes?: string;

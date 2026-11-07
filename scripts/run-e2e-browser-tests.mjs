@@ -1907,6 +1907,135 @@ async function main() {
     return { errorText, savedCount };
   });
 
+  // TEST 47: Reject Malformed Compound Quantity & Block Copy/Transfer (COMPOUND-020)
+  await runTest("TEST 47: Reject Malformed Compound Quantity & Block Copy/Transfer (COMPOUND-020)", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/tools/compound-land-unit-converter`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    // Enter malformed quantity "3/4" into Pucca Bigha input
+    await tabCdp.eval(`(() => {
+      const setInput = (sel, val) => {
+        const el = document.querySelector(sel);
+        if (!el) throw new Error("Element not found: " + sel);
+        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+        if (nativeSetter) {
+          nativeSetter.call(el, val);
+        } else {
+          el.value = val;
+        }
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      };
+      setInput('#sub-bigha', '3/4');
+    })()`);
+    await sleep(400);
+
+    // Inspect validation error feedback and button disabled states
+    const status = await tabCdp.eval(`(() => {
+      const bighaInput = document.querySelector('#sub-bigha');
+      const isAriaInvalid = bighaInput?.getAttribute('aria-invalid') === 'true';
+      const errorMsg = document.querySelector('#sub-error-bigha')?.textContent?.trim() || '';
+      const totalDisplay = document.querySelector('[data-testid="compound-total-sqft"]')?.textContent?.trim() || '';
+      
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const copyBtn = buttons.find(b => b.textContent.includes('Copy Breakdown') || b.textContent.includes('सारांश कॉपी'));
+      const transferBtn = buttons.find(b => b.textContent.includes('Transfer to Converter') || b.textContent.includes('कन्वर्टर में भेजें'));
+      
+      return {
+        isAriaInvalid,
+        errorMsg,
+        totalDisplay,
+        isCopyDisabled: copyBtn ? copyBtn.disabled : false,
+        isTransferDisabled: transferBtn ? transferBtn.disabled : false,
+      };
+    })()`);
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    if (!status.isAriaInvalid) {
+      throw new Error(`Expected aria-invalid="true" on #sub-bigha after entering '3/4'`);
+    }
+    if (!status.errorMsg.includes("valid non-negative number") && !status.errorMsg.includes("मान्य गैर-ऋणात्मक संख्या")) {
+      throw new Error(`Expected valid non-negative number error message, got: '${status.errorMsg}'`);
+    }
+    if (status.totalDisplay !== "—") {
+      throw new Error(`Expected total display to be '—' on malformed input, got: '${status.totalDisplay}'`);
+    }
+    if (!status.isCopyDisabled) {
+      throw new Error("Expected Copy Breakdown button to be disabled on invalid calculation");
+    }
+    if (!status.isTransferDisabled) {
+      throw new Error("Expected Transfer to Converter button to be disabled on invalid calculation");
+    }
+
+    return status;
+  });
+
+  // TEST 48: Transfer Valid Compound Calculation to Main Converter in Real Browser (COMPOUND-021)
+  await runTest("TEST 48: Transfer Valid Compound Calculation to Main Converter in Real Browser (COMPOUND-021)", async () => {
+    const tabRes = await fetch("http://127.0.0.1:9222/json/new?" + encodeURIComponent(`${BASE_URL}/tools/compound-land-unit-converter`), { method: "PUT" });
+    const tab = await tabRes.json();
+    const tabCdp = new CDPClient(tab.webSocketDebuggerUrl);
+    await tabCdp.connect();
+    await tabCdp.send("Page.enable");
+    await tabCdp.send("Runtime.enable");
+    await sleep(1000);
+
+    // Enter valid 1 Pucca Bigha, 0 Biswa, 0 Biswansi
+    await tabCdp.eval(`(() => {
+      const setInput = (sel, val) => {
+        const el = document.querySelector(sel);
+        if (!el) throw new Error("Element not found: " + sel);
+        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+        if (nativeSetter) {
+          nativeSetter.call(el, val);
+        } else {
+          el.value = val;
+        }
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      };
+      setInput('#sub-bigha', '1');
+      setInput('#sub-biswa', '0');
+      setInput('#sub-biswansi', '0');
+    })()`);
+    await sleep(400);
+
+    // Verify valid total calculation
+    const totalDisplay = await tabCdp.eval(`document.querySelector('[data-testid="compound-total-sqft"]')?.textContent?.trim() || ''`);
+    if (!totalDisplay.includes("27,225")) {
+      throw new Error(`Expected total display 27,225 sq ft for 1 Pucca Bigha, got: '${totalDisplay}'`);
+    }
+
+    // Click Transfer to Converter button
+    await tabCdp.eval(`(() => {
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const transferBtn = buttons.find(b => b.textContent.includes('Transfer to Converter') || b.textContent.includes('कन्वर्टर में भेजें'));
+      if (!transferBtn) throw new Error("Transfer button not found");
+      transferBtn.click();
+    })()`);
+    await sleep(500);
+
+    // Verify toast notification appears confirming transfer
+    const toastText = await tabCdp.eval(`document.body.innerText`);
+    const hasTransferToast = toastText.includes("27,225 sq ft") || toastText.includes("Transferred to Converter") || toastText.includes("कन्वर्टर में भेजा गया");
+
+    tabCdp.close();
+    await fetch(`http://127.0.0.1:9222/json/close/${tab.id}`);
+
+    if (!hasTransferToast) {
+      throw new Error(`Expected transfer toast with 27,225 sq ft, but toast text not found on page`);
+    }
+
+    return { totalDisplay, hasTransferToast };
+  });
+
   // Cleanup
   console.log("==================================================");
   console.log("E2E TESTS COMPLETE");

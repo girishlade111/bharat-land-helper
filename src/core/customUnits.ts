@@ -246,7 +246,7 @@ export function loadCustomPresets(): CustomUnitPreset[] {
 
 export function saveCustomPreset(
   name: string,
-  factor: number,
+  factor: string | number,
   referenceUnit: CustomReferenceUnit,
   note?: string
 ): { success: boolean; preset?: CustomUnitPreset; error?: string } {

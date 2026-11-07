@@ -11,6 +11,7 @@ export interface Region {
   code: string;
   name: string;
   nameHi: string;
+  nameMr?: string;
   type: RegionType;
   officialSystem: string;
   officialSystemHi: string;
