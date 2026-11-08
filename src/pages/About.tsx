@@ -35,8 +35,8 @@ export default function About() {
             </p>
             <p className="mt-2">
               This creates confusion for farmers, real estate agents, lawyers, civil engineers, and students who deal with land transactions
-              across state borders. A Bigha in Uttar Pradesh (27,000 sq ft) is completely different from a Bigha in West Bengal (14,400 sq ft)
-              or Madhya Pradesh (12,000 sq ft).
+              across state borders. A statutory Bigha in Uttar Pradesh or Bihar (27,225 sq ft) is completely different from a Bigha in West Bengal (14,400 sq ft)
+              or Madhya Pradesh Gwalior (12,000 sq ft).
             </p>
             <p className="mt-2">
               <strong>Bharat Land Converter</strong> was built to solve this problem — a single, free, reliable tool that converts between
@@ -112,10 +112,10 @@ export default function About() {
                 <tbody className="divide-y divide-border/30">
                   {[
                     ["Guntha", "Maharashtra / Karnataka", "1,089"],
-                    ["Bigha", "UP", "27,000"],
-                    ["Bigha", "Bihar", "27,220"],
-                    ["Bigha", "West Bengal", "14,400"],
-                    ["Bigha", "MP", "12,000"],
+                    ["Bigha (Pucca)", "UP / Rajasthan / Bihar", "27,225"],
+                    ["Bigha (Standard)", "West Bengal / Assam", "14,400"],
+                    ["Bigha (Gwalior)", "MP Customary", "12,000"],
+                    ["Chatak", "West Bengal (1/16 Kattha)", "45"],
                     ["Kanal", "Punjab / Haryana", "5,445"],
                     ["Marla", "Punjab / Haryana", "272.25"],
                     ["Cent", "South India", "435.6"],

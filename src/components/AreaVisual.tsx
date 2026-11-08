@@ -1,73 +1,88 @@
 import { useApp } from "@/context/AppContext";
-import { UNITS } from "@/data/units";
+import { formatIndianNumber } from "@/core";
 import { t } from "@/data/translations";
 
 export default function AreaVisual() {
-  const { lang, inputValue, fromUnitId } = useApp();
+  const { lang, fromUnit, validation, toUnit, primaryResult } = useApp();
 
-  const numValue = parseFloat(inputValue);
-  const fromUnit = UNITS.find((u) => u.id === fromUnitId);
-  if (!fromUnit || isNaN(numValue) || numValue <= 0) return null;
+  if (!validation.isValid || validation.parsedValue <= 0) return null;
 
-  const totalSqft = numValue * fromUnit.sqft;
-  const side = Math.sqrt(totalSqft);
+  const totalSqft = validation.parsedValue * fromUnit.sqFt;
+  const sideFt = Math.sqrt(totalSqft);
+  const sideMeters = sideFt * 0.3048;
 
-  // Determine scale label
-  let label = "";
-  let emoji = "";
-  if (totalSqft < 1000) {
-    label = `${side.toFixed(1)} ft × ${side.toFixed(1)} ft`;
-    emoji = "🌱";
-  } else if (totalSqft < 43560) {
-    const guntha = totalSqft / 1089;
-    label = `≈ ${guntha.toFixed(2)} Guntha`;
-    emoji = "🌾";
-  } else {
-    const acre = totalSqft / 43560;
-    label = `≈ ${acre.toFixed(2)} Acre`;
-    emoji = "🏡";
-  }
-
-  // SVG square size: map totalSqft to visual size (40–200px)
-  const visualSize = Math.min(200, Math.max(40, Math.log10(totalSqft + 1) * 45));
+  // Visual SVG boundary dimension
+  const visualDimension = Math.min(180, Math.max(60, Math.log10(totalSqft + 1) * 38));
 
   return (
-    <div className="flex flex-col items-center rounded-xl border border-border/50 bg-card p-4">
-      <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+    <div className="flex flex-col items-center rounded-2xl border border-border/70 bg-card p-4 shadow-sm text-center">
+      <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
         {t("areaVisual", lang)}
-      </div>
-      <svg width={visualSize + 20} height={visualSize + 20} viewBox={`0 0 ${visualSize + 20} ${visualSize + 20}`}>
-        <defs>
-          <linearGradient id="areaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="hsl(152, 60%, 38%)" stopOpacity="0.15" />
-            <stop offset="100%" stopColor="hsl(152, 60%, 38%)" stopOpacity="0.08" />
-          </linearGradient>
-        </defs>
-        <rect
-          x="10" y="10"
-          width={visualSize}
-          height={visualSize}
-          rx="8"
-          fill="url(#areaGrad)"
-          stroke="hsl(152, 60%, 38%)"
-          strokeWidth="1.5"
-          strokeDasharray="4 2"
-        />
-        <text
-          x={(visualSize + 20) / 2}
-          y={(visualSize + 20) / 2}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          className="text-2xl"
-          fontSize="24"
+      </span>
+
+      {/* Clean Survey Plot Diagram with Dimension Markers */}
+      <div className="relative my-2 flex items-center justify-center">
+        <svg
+          width={visualDimension + 36}
+          height={visualDimension + 36}
+          viewBox={`0 0 ${visualDimension + 36} ${visualDimension + 36}`}
+          className="overflow-visible"
+          role="img"
+          aria-label={`Square plot visualization of ${formatIndianNumber(totalSqft)} square feet`}
         >
-          {emoji}
-        </text>
-      </svg>
-      <div className="mt-2 text-center text-sm font-bold text-foreground">{label}</div>
-      <div className="text-xs tabular-nums text-muted-foreground">
-        {Math.round(totalSqft).toLocaleString("en-IN")} sq ft
+          <defs>
+            <linearGradient id="plotGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.18" />
+              <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.06" />
+            </linearGradient>
+          </defs>
+
+          {/* Plot Boundary */}
+          <rect
+            x="18"
+            y="18"
+            width={visualDimension}
+            height={visualDimension}
+            rx="6"
+            fill="url(#plotGradient)"
+            stroke="hsl(var(--primary))"
+            strokeWidth="2"
+            strokeDasharray="4 2"
+          />
+
+          {/* Corner Survey Pegs */}
+          <circle cx="18" cy="18" r="3" fill="hsl(var(--primary))" />
+          <circle cx={18 + visualDimension} cy="18" r="3" fill="hsl(var(--primary))" />
+          <circle cx="18" cy={18 + visualDimension} r="3" fill="hsl(var(--primary))" />
+          <circle cx={18 + visualDimension} cy={18 + visualDimension} r="3" fill="hsl(var(--primary))" />
+
+          {/* Dimension Label in Center */}
+          <text
+            x={18 + visualDimension / 2}
+            y={18 + visualDimension / 2}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            className="text-[11px] font-mono font-bold fill-foreground"
+          >
+            {formatIndianNumber(totalSqft, { maxDecimals: 0 })} sq ft
+          </text>
+        </svg>
       </div>
+
+      {/* Side Dimensions */}
+      <div className="text-xs font-bold text-foreground">
+        ≈ {formatIndianNumber(sideFt, { maxDecimals: 1 })} ft × {formatIndianNumber(sideFt, { maxDecimals: 1 })} ft
+      </div>
+      <div className="text-[11px] text-muted-foreground tabular-nums">
+        ({formatIndianNumber(sideMeters, { maxDecimals: 1 })} m × {formatIndianNumber(sideMeters, { maxDecimals: 1 })} m)
+      </div>
+
+      {/* Local unit equivalent */}
+      {primaryResult && (
+        <div className="mt-2 pt-2 border-t border-border/40 w-full text-xs font-semibold text-primary">
+          = {primaryResult.formattedResult} {lang === "hi" ? toUnit.nameHi : toUnit.name}
+        </div>
+      )}
     </div>
   );
 }
